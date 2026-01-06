@@ -39,7 +39,6 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize database connection pool
     let pool = PgPoolOptions::new()
-        .max_connections(config.database.max_connections)
         .connect(&config.database.url)
         .await?;
 

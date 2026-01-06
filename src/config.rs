@@ -20,7 +20,6 @@ pub struct ServerConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatabaseConfig {
     pub url: String,
-    pub max_connections: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,28 +30,20 @@ pub struct SigningConfig {
 
 impl Config {
     /// Load configuration from environment variables
+    /// Returns an error if any required environment variable is missing
     pub fn from_env() -> anyhow::Result<Self> {
         let server = ServerConfig {
-            host: std::env::var("SERVER_HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
-            port: std::env::var("SERVER_PORT")
-                .unwrap_or_else(|_| "3000".to_string())
-                .parse()?,
+            host: std::env::var("SERVER_HOST")?,
+            port: std::env::var("SERVER_PORT")?.parse()?,
         };
 
         let database = DatabaseConfig {
-            url: std::env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost/credentials".to_string()),
-            max_connections: std::env::var("DATABASE_MAX_CONNECTIONS")
-                .unwrap_or_else(|_| "5".to_string())
-                .parse()?,
+            url: std::env::var("DATABASE_URL")?,
         };
 
         let signing = SigningConfig {
-            use_grpc: std::env::var("SIGNING_USE_GRPC")
-                .unwrap_or_else(|_| "false".to_string())
-                .parse()?,
-            service_url: std::env::var("SIGNING_SERVICE_URL")
-                .unwrap_or_else(|_| "http://localhost:50051".to_string()),
+            use_grpc: std::env::var("SIGNING_USE_GRPC")?.parse()?,
+            service_url: std::env::var("SIGNING_SERVICE_URL")?,
         };
 
         Ok(Config {
