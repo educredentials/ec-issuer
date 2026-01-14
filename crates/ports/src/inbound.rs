@@ -74,7 +74,10 @@ pub struct RevokeCredentialResponse {
 /// Use case: Issue a new credential
 #[async_trait]
 pub trait IssueCredentialUseCase: Send + Sync {
-    async fn execute(&self, request: IssueCredentialRequest) -> DomainResult<IssueCredentialResponse>;
+    async fn execute(
+        &self,
+        request: IssueCredentialRequest,
+    ) -> DomainResult<IssueCredentialResponse>;
 }
 
 /// Use case: Get a credential by ID (optionally in a specific format)
@@ -86,11 +89,17 @@ pub trait GetCredentialUseCase: Send + Sync {
 /// Use case: List credentials with filters
 #[async_trait]
 pub trait ListCredentialsUseCase: Send + Sync {
-    async fn execute(&self, request: ListCredentialsRequest) -> DomainResult<ListCredentialsResponse>;
+    async fn execute(
+        &self,
+        request: ListCredentialsRequest,
+    ) -> DomainResult<ListCredentialsResponse>;
 }
 
 /// Use case: Revoke a credential
 #[async_trait]
 pub trait RevokeCredentialUseCase: Send + Sync {
-    async fn execute(&self, request: RevokeCredentialRequest) -> DomainResult<RevokeCredentialResponse>;
+    async fn execute(
+        &self,
+        request: RevokeCredentialRequest,
+    ) -> DomainResult<RevokeCredentialResponse>;
 }

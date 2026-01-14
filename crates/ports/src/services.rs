@@ -43,14 +43,20 @@ impl CredentialService {
     }
 
     /// Find a serializer for the given format
-    fn find_serializer(&self, format: credential_domain::CredentialFormat) -> Option<&Arc<dyn CredentialSerializer>> {
+    fn find_serializer(
+        &self,
+        format: credential_domain::CredentialFormat,
+    ) -> Option<&Arc<dyn CredentialSerializer>> {
         self.serializers.iter().find(|s| s.format() == format)
     }
 }
 
 #[async_trait]
 impl IssueCredentialUseCase for CredentialService {
-    async fn execute(&self, request: IssueCredentialRequest) -> DomainResult<IssueCredentialResponse> {
+    async fn execute(
+        &self,
+        request: IssueCredentialRequest,
+    ) -> DomainResult<IssueCredentialResponse> {
         // Fetch achievement from external service
         let achievement = self
             .achievement_client
@@ -138,7 +144,10 @@ impl GetCredentialUseCase for CredentialService {
 
 #[async_trait]
 impl ListCredentialsUseCase for CredentialService {
-    async fn execute(&self, request: ListCredentialsRequest) -> DomainResult<ListCredentialsResponse> {
+    async fn execute(
+        &self,
+        request: ListCredentialsRequest,
+    ) -> DomainResult<ListCredentialsResponse> {
         let filters = ListFilters {
             subject_id: request.subject_id,
             issuer_id: request.issuer_id,
@@ -156,7 +165,10 @@ impl ListCredentialsUseCase for CredentialService {
 
 #[async_trait]
 impl RevokeCredentialUseCase for CredentialService {
-    async fn execute(&self, request: RevokeCredentialRequest) -> DomainResult<RevokeCredentialResponse> {
+    async fn execute(
+        &self,
+        request: RevokeCredentialRequest,
+    ) -> DomainResult<RevokeCredentialResponse> {
         // Fetch credential
         let mut credential = self
             .repository
@@ -182,8 +194,8 @@ impl RevokeCredentialUseCase for CredentialService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mockall::predicate::*;
     use mockall::mock;
+    use mockall::predicate::*;
 
     // Mock implementations would go here for testing
     // This requires the mockall crate features to be properly configured

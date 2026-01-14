@@ -155,7 +155,10 @@ mod tests {
         assert!(elm["@context"].is_array());
 
         // Verify types
-        assert!(elm["type"].as_array().unwrap().contains(&json!("EuropassCredential")));
+        assert!(elm["type"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("EuropassCredential")));
 
         // Verify structure
         assert!(elm["issuer"].is_object());

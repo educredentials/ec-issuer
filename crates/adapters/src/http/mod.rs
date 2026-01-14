@@ -2,10 +2,10 @@
 //!
 //! REST API for credential operations
 
+pub mod errors;
 pub mod handlers;
 pub mod routes;
-pub mod errors;
 
+pub use errors::*;
 pub use handlers::*;
 pub use routes::*;
-pub use errors::*;

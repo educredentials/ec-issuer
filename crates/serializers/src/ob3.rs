@@ -146,13 +146,13 @@ mod tests {
 
         // Verify JSON-LD context
         assert!(ob3["@context"].is_array());
-        assert_eq!(
-            ob3["@context"][0],
-            "https://www.w3.org/2018/credentials/v1"
-        );
+        assert_eq!(ob3["@context"][0], "https://www.w3.org/2018/credentials/v1");
 
         // Verify types
-        assert!(ob3["type"].as_array().unwrap().contains(&json!("OpenBadgeCredential")));
+        assert!(ob3["type"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("OpenBadgeCredential")));
 
         // Verify structure
         assert!(ob3["issuer"].is_object());
