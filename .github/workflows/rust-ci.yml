@@ -47,6 +47,8 @@ jobs:
     name: Build Docker image
     runs-on: ubuntu-latest
     needs: test
+    # Only run on main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
 
