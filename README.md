@@ -89,7 +89,7 @@ More API calls and details on the API structure, authorization and API documenta
 ## Testing
 
 ```bash
-cargo test
+cargo test --all
 ```
 
 ## Development
@@ -105,6 +105,13 @@ See [Way of Working](https://confluence.ia.surf.nl/spaces/EDUCRED/pages/26073889
 - Use cargo clippy to check for code quality issues
 - Use cargo fmt to format and lint
 - Make a pull request against main.
+
+```
+cargo check --all
+cargo test --all
+cargo fmt --all
+cargo clippy --all
+```
 
 ## Extending the Service
 

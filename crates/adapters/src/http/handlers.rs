@@ -100,7 +100,7 @@ pub async fn list_credentials(
     let credentials: Result<Vec<serde_json::Value>, _> = response
         .credentials
         .iter()
-        .map(|c| serde_json::to_value(c))
+        .map(serde_json::to_value)
         .collect();
 
     let credentials = credentials
