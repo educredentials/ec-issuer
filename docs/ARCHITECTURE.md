@@ -32,6 +32,7 @@ The domain layer (`crates/domain/`) is the heart of the application:
 Ports (`crates/ports/`) define **contracts** between layers:
 
 **Inbound Ports** (Use Cases):
+
 ```rust
 #[async_trait]
 pub trait IssueCredentialUseCase: Send + Sync {
@@ -41,6 +42,7 @@ pub trait IssueCredentialUseCase: Send + Sync {
 ```
 
 **Outbound Ports** (Infrastructure Needs):
+
 ```rust
 #[async_trait]
 pub trait CredentialRepository: Send + Sync {
@@ -55,10 +57,12 @@ pub trait CredentialRepository: Send + Sync {
 Adapters (`crates/adapters/`) provide concrete implementations:
 
 **Inbound Adapters** (Drivers):
+
 - HTTP REST API (Axum)
 - Could add: gRPC server, CLI, GraphQL, etc.
 
 **Outbound Adapters** (Driven):
+
 - PostgreSQL repository (SQLx)
 - gRPC signing client (Tonic)
 - HTTP clients for external services
@@ -75,28 +79,61 @@ Domain NEVER depends on Ports or Adapters
 ```
 
 This is enforced by Cargo dependencies:
+
 - `domain/Cargo.toml`: No dependency on `ports` or `adapters`
 - `ports/Cargo.toml`: Depends on `domain`, not `adapters`
 - `adapters/Cargo.toml`: Depends on both `domain` and `ports`
 
 ## Layer Details
 
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Adapters (Inbound)                      │
+│                    HTTP API (Axum)                           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                   Ports (Inbound)                            │
+│    Use Cases: Issue, Get, List, Revoke Credentials          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                    Domain Layer                              │
+│   Entities: Credential, Achievement, Issuer                  │
+│   Business Logic: Validation, Revocation, Expiration         │
+│   Value Objects: CredentialStatus, CredentialFormat          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                   Ports (Outbound)                           │
+│   Interfaces: Repository, SigningClient, EventPublisher      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                   Adapters (Outbound)                        │
+│   PostgreSQL, gRPC Signing, HTTP Clients                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### Domain Layer
 
 **Location**: `crates/domain/src/`
 
 **Responsibilities**:
+
 - Define domain entities (`Credential`, `Achievement`, `Issuer`)
 - Implement business rules (validation, revocation, expiration)
 - Define domain errors
 - Value objects (status, formats, etc.)
 
 **Key Files**:
+
 - `entities.rs`: Core domain entities with behavior
 - `value_objects.rs`: Immutable domain concepts
 - `errors.rs`: Domain-specific errors
 
 **Example**:
+
 ```rust
 impl Credential {
     pub fn revoke(&mut self, reason: Option<String>) -> DomainResult<()> {
@@ -119,16 +156,19 @@ impl Credential {
 **Location**: `crates/ports/src/`
 
 **Responsibilities**:
+
 - Define use case interfaces (inbound ports)
 - Define infrastructure interfaces (outbound ports)
 - Implement application services (use case orchestration)
 
 **Key Files**:
+
 - `inbound.rs`: Use case trait definitions
 - `outbound.rs`: Infrastructure trait definitions
 - `services.rs`: Application service implementations
 
 **Example**:
+
 ```rust
 pub struct CredentialService {
     repository: Arc<dyn CredentialRepository>,
@@ -175,15 +215,18 @@ impl IssueCredentialUseCase for CredentialService {
 **Location**: `crates/serializers/src/`
 
 **Responsibilities**:
+
 - Convert canonical domain model to format-specific representations
 - Open Badges 3.0 (OB3) serialization
 - European Learner Model (ELM) serialization
 
 **Key Files**:
+
 - `ob3.rs`: Open Badges 3.0 serializer
 - `elm.rs`: European Learner Model serializer
 
 **Example**:
+
 ```rust
 impl CredentialSerializer for OB3Serializer {
     fn format(&self) -> CredentialFormat {
@@ -209,11 +252,13 @@ impl CredentialSerializer for OB3Serializer {
 **Location**: `crates/adapters/src/`
 
 **Responsibilities**:
+
 - Implement inbound adapters (HTTP API)
 - Implement outbound adapters (database, gRPC, HTTP clients)
 - Handle infrastructure concerns (error translation, logging)
 
 **Key Files**:
+
 - `http/`: REST API with Axum
 - `repository.rs`: PostgreSQL implementation
 - `signing.rs`: Signing client implementations
@@ -221,6 +266,7 @@ impl CredentialSerializer for OB3Serializer {
 - `events.rs`: Event publisher implementations
 
 **Example - Repository**:
+
 ```rust
 pub struct PostgresCredentialRepository {
     pool: PgPool,
@@ -241,6 +287,7 @@ impl CredentialRepository for PostgresCredentialRepository {
 ```
 
 **Example - HTTP Handler**:
+
 ```rust
 pub async fn issue_credential(
     State(state): State<AppState>,
@@ -374,6 +421,7 @@ let signing = Arc::new(GrpcSigningClient::new(url));
 ### 5. Business Logic Focus
 
 Developers can work on domain logic without worrying about:
+
 - Database details
 - HTTP concerns
 - External service protocols

@@ -27,6 +27,7 @@ curl -X POST http://localhost:3000/api/v1/credentials \
 ```
 
 Response:
+
 ```json
 {
   "credential": {
@@ -68,6 +69,7 @@ curl http://localhost:3000/api/v1/credentials/550e8400-e29b-41d4-a716-4466554400
 ```
 
 Response (OB3 with JSON-LD):
+
 ```json
 {
   "@context": [
@@ -106,6 +108,7 @@ curl http://localhost:3000/api/v1/credentials/550e8400-e29b-41d4-a716-4466554400
 ```
 
 Response (European Learner Model):
+
 ```json
 {
   "@context": [
@@ -123,15 +126,17 @@ Response (European Learner Model):
     "id": "did:example:alice123",
     "type": ["Person"],
     "fullName": "Alice Smith",
-    "achieved": [{
-      "id": "https://example.com/achievements/1",
-      "title": "Digital Literacy Certificate",
-      "learningAchievement": {
+    "achieved": [
+      {
         "id": "https://example.com/achievements/1",
         "title": "Digital Literacy Certificate",
-        "description": "Demonstrates proficiency in digital literacy skills"
+        "learningAchievement": {
+          "id": "https://example.com/achievements/1",
+          "title": "Digital Literacy Certificate",
+          "description": "Demonstrates proficiency in digital literacy skills"
+        }
       }
-    }]
+    ]
   }
 }
 ```
@@ -153,11 +158,16 @@ curl http://localhost:3000/api/v1/credentials?limit=10&offset=0
 ```
 
 Response:
+
 ```json
 {
   "credentials": [
-    { /* credential 1 */ },
-    { /* credential 2 */ }
+    {
+      /* credential 1 */
+    },
+    {
+      /* credential 2 */
+    }
   ],
   "total": 2
 }
@@ -174,6 +184,7 @@ curl -X POST http://localhost:3000/api/v1/credentials/550e8400-e29b-41d4-a716-44
 ```
 
 Response:
+
 ```json
 {
   "credential": {
@@ -210,6 +221,7 @@ curl -X POST http://localhost:3000/api/v1/credentials \
 ```
 
 Response: `400 Bad Request`
+
 ```json
 {
   "error": "ValidationError",
@@ -225,6 +237,7 @@ curl http://localhost:3000/api/v1/credentials/00000000-0000-0000-0000-0000000000
 ```
 
 Response: `404 Not Found`
+
 ```json
 {
   "error": "CredentialNotFound",
@@ -243,6 +256,7 @@ curl -X POST http://localhost:3000/api/v1/credentials/{id}/revoke \
 ```
 
 Response: `409 Conflict`
+
 ```json
 {
   "error": "CredentialAlreadyRevoked",

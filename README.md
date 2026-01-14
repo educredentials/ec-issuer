@@ -1,97 +1,6 @@
 # Credential Service - Hexagonal Architecture in Rust
 
-A production-ready credential service that issues and signs **Open Badges 3.0** and **European Learner Model (ELM)** credentials, built with hexagonal architecture principles in Rust.
-
-## Architecture Overview
-
-This project strictly follows **Hexagonal Architecture** (also known as Ports and Adapters):
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Adapters (Inbound)                      │
-│                    HTTP API (Axum)                           │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                   Ports (Inbound)                            │
-│    Use Cases: Issue, Get, List, Revoke Credentials          │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                    Domain Layer                              │
-│   Entities: Credential, Achievement, Issuer                  │
-│   Business Logic: Validation, Revocation, Expiration         │
-│   Value Objects: CredentialStatus, CredentialFormat          │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                   Ports (Outbound)                           │
-│   Interfaces: Repository, SigningClient, EventPublisher      │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                   Adapters (Outbound)                        │
-│   PostgreSQL, gRPC Signing, HTTP Clients                     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Layer Responsibilities
-
-**Domain Layer** (`crates/domain/`)
-- Pure business logic with ZERO infrastructure dependencies
-- Domain entities: `Credential`, `Achievement`, `Issuer`, `CredentialSubject`
-- Value objects: `CredentialStatus`, `CredentialFormat`, `RevocationInfo`
-- Domain errors and validation rules
-
-**Ports Layer** (`crates/ports/`)
-- **Inbound Ports**: Use case interfaces (traits) that define what the application does
-- **Outbound Ports**: Infrastructure interfaces (traits) that define what the application needs
-- Application services that implement use cases
-
-**Serializers** (`crates/serializers/`)
-- Format-specific serializers: OB3 (Open Badges 3.0), ELM (European Learner Model)
-- Converts canonical domain model to format-specific JSON-LD
-
-**Adapters Layer** (`crates/adapters/`)
-- **Inbound Adapters**: HTTP API (Axum REST controllers)
-- **Outbound Adapters**: PostgreSQL repository, gRPC signing client, HTTP clients
-
-## Project Structure
-
-```
-credential-service/
-├── Cargo.toml                      # Workspace root
-├── src/
-│   ├── main.rs                     # Application entry point (DI wiring)
-│   └── config.rs                   # Configuration management
-├── crates/
-│   ├── domain/                     # Domain layer (pure business logic)
-│   │   ├── src/
-│   │   │   ├── entities.rs         # Credential entity
-│   │   │   ├── value_objects.rs    # Value objects
-│   │   │   └── errors.rs           # Domain errors
-│   │   └── Cargo.toml
-│   ├── ports/                      # Ports (interfaces)
-│   │   ├── src/
-│   │   │   ├── inbound.rs          # Use case interfaces
-│   │   │   ├── outbound.rs         # Infrastructure interfaces
-│   │   │   └── services.rs         # Application services
-│   │   └── Cargo.toml
-│   ├── serializers/                # Format serializers
-│   │   ├── src/
-│   │   │   ├── ob3.rs              # Open Badges 3.0
-│   │   │   └── elm.rs              # European Learner Model
-│   │   └── Cargo.toml
-│   └── adapters/                   # Infrastructure adapters
-│       ├── src/
-│       │   ├── http/               # HTTP API (Axum)
-│       │   ├── repository.rs       # PostgreSQL repository
-│       │   ├── signing.rs          # gRPC signing client
-│       │   ├── clients.rs          # External API clients
-│       │   └── events.rs           # Event publisher
-│       └── Cargo.toml
-└── README.md
-```
+Credential service that issues and signs **Open Badges 3.0** and **European Learner Model (ELM)** credentials.
 
 ## Features
 
@@ -153,127 +62,56 @@ docker run -d \
 export DATABASE_URL=postgresql://postgres:postgres@localhost/credentials
 
 # Build and run
-cargo build --release
-cargo run --release
+cargo build
+cargo run
 ```
 
 The service will start on `http://localhost:3000`
 
-### Running Tests
+Now issue a credential:
 
 ```bash
-# Run all tests
+curl -X POST http://localhost:3000/api/v1/credentials \
+  -H "Authorization: Bearer FAKETOKEN"
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject_id": "did:example:alice123",
+    "subject_name": "Alice Smith",
+    "subject_email": "alice@example.com",
+    "achievement_id": "achievement-1",
+    "issuer_id": "issuer-1",
+    "expires_at": "2025-12-31T23:59:59Z"
+  }'
+```
+
+More API calls and details on the API structure, authorization and API documentation can be found in [docs/API.md](docs/API.md)
+
+## Testing
+
+```bash
 cargo test
-
-# Run tests for specific crate
-cargo test -p credential-domain
-cargo test -p credential-ports
-cargo test -p credential-serializers
 ```
 
-## API Reference
+## Development
 
-### Issue Credential
+See [Way of Working](https://confluence.ia.surf.nl/spaces/EDUCRED/pages/260738891/Way+of+working+EduCredentials)
 
-**POST** `/api/v1/credentials`
-
-```json
-{
-  "subject_id": "did:example:recipient123",
-  "subject_name": "Alice Smith",
-  "subject_email": "alice@example.com",
-  "achievement_id": "achievement-1",
-  "issuer_id": "issuer-1",
-  "expires_at": "2025-12-31T23:59:59Z",
-  "metadata": {}
-}
-```
-
-Response: `201 Created`
-
-### Get Credential
-
-**GET** `/api/v1/credentials/:id?format=ob3`
-
-Query parameters:
-- `format`: Optional. Values: `ob3` (Open Badges 3.0), `elm` (European Learner Model)
-
-Response: `200 OK` with credential in requested format
-
-### List Credentials
-
-**GET** `/api/v1/credentials?subject_id=did:example:123&limit=10`
-
-Query parameters:
-- `subject_id`: Filter by subject
-- `issuer_id`: Filter by issuer
-- `achievement_id`: Filter by achievement
-- `status`: Filter by status (active, revoked, expired)
-- `limit`: Max results (default: 100)
-- `offset`: Pagination offset
-
-Response: `200 OK`
-
-### Revoke Credential
-
-**POST** `/api/v1/credentials/:id/revoke`
-
-```json
-{
-  "reason": "Credential no longer valid"
-}
-```
-
-Response: `200 OK`
-
-### Health Check
-
-**GET** `/health`
-
-Response: `200 OK`
-
-## Hexagonal Architecture Benefits
-
-### 1. Domain Independence
-The domain layer has **zero dependencies** on infrastructure. You can change databases, HTTP frameworks, or signing services without touching business logic.
-
-### 2. Testability
-Each layer can be tested independently:
-- Domain: Pure unit tests
-- Ports: Interface contracts
-- Adapters: Integration tests with mocks
-
-### 3. Flexibility
-Swap implementations easily:
-```rust
-// Development: Use in-memory signing
-Arc::new(InMemorySigningClient::new())
-
-// Production: Use gRPC signing service
-Arc::new(GrpcSigningClient::new(url))
-```
-
-### 4. Clear Boundaries
-Dependencies flow inward:
-```
-Adapters → Ports → Domain
-```
-The domain never depends on outer layers.
-
-## Design Patterns Used
-
-1. **Dependency Injection**: All dependencies passed via constructors
-2. **Repository Pattern**: Abstracts data persistence
-3. **Service Layer**: Orchestrates use cases
-4. **Builder Pattern**: Fluent credential creation
-5. **Value Objects**: Immutable domain concepts
-6. **Domain Events**: Publish credential lifecycle events
+- Make a branch from `main`, e.g. feature/foozing-the-bars
+- Add new \*_end to end_ tests for the feature in `tests` e.g. `tests/foozing_the_bars.rs`¹
+- Start developing the feature in the appropriate module or modules:
+  - Add unit tests to the module or modules where the feature is implemented: Unit tests live in the file or module that they test, not in separate files
+  - Make the changes, repeat¹.
+- Run tests before committing
+- Use cargo clippy to check for code quality issues
+- Use cargo fmt to format and lint
+- Make a pull request against main.
 
 ## Extending the Service
 
 ### Adding a New Format
 
 1. Create serializer in `crates/serializers/src/`:
+
 ```rust
 pub struct MyFormatSerializer;
 
@@ -289,6 +127,7 @@ impl CredentialSerializer for MyFormatSerializer {
 ```
 
 2. Register in `main.rs`:
+
 ```rust
 let serializers = vec![
     Arc::new(OB3Serializer::new()),
@@ -315,7 +154,3 @@ let serializers = vec![
 - [ ] Add circuit breakers for external services
 - [ ] Implement credential caching strategy
 - [ ] Set up backup and recovery procedures
-
-## License
-
-This is a demonstration project for hexagonal architecture in Rust.
