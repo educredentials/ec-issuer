@@ -3,7 +3,7 @@
 //! Implements the SigningClient port using Tonic gRPC
 
 use async_trait::async_trait;
-use credential_domain::{Credential, DomainError, DomainResult};
+use credential_domain::{Credential, DomainResult};
 use credential_ports::SigningClient;
 use serde_json::json;
 

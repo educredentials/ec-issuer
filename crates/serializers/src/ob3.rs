@@ -87,7 +87,7 @@ impl OB3Serializer {
     }
 
     /// Parse OB3 format to canonical credential (basic implementation)
-    fn from_ob3(&self, _data: &Value) -> DomainResult<Credential> {
+    fn from_ob3(_data: &Value) -> DomainResult<Credential> {
         // This would require full parsing logic - stub for now
         Err(DomainError::serialization_error(
             "Deserialization from OB3 not yet implemented",
@@ -111,7 +111,7 @@ impl CredentialSerializer for OB3Serializer {
     }
 
     fn deserialize(&self, data: &Value) -> DomainResult<Credential> {
-        self.from_ob3(data)
+        OB3Serializer::from_ob3(data)
     }
 }
 
@@ -146,13 +146,13 @@ mod tests {
 
         // Verify JSON-LD context
         assert!(ob3["@context"].is_array());
-        assert_eq!(
-            ob3["@context"][0],
-            "https://www.w3.org/2018/credentials/v1"
-        );
+        assert_eq!(ob3["@context"][0], "https://www.w3.org/2018/credentials/v1");
 
         // Verify types
-        assert!(ob3["type"].as_array().unwrap().contains(&json!("OpenBadgeCredential")));
+        assert!(ob3["type"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("OpenBadgeCredential")));
 
         // Verify structure
         assert!(ob3["issuer"].is_object());

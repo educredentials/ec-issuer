@@ -184,7 +184,10 @@ impl Achievement {
 
     pub fn validate(&self) -> DomainResult<()> {
         if self.id.is_empty() {
-            return Err(DomainError::validation("achievement.id", "ID cannot be empty"));
+            return Err(DomainError::validation(
+                "achievement.id",
+                "ID cannot be empty",
+            ));
         }
         if self.name.is_empty() {
             return Err(DomainError::validation(
@@ -247,7 +250,10 @@ impl Issuer {
         }
 
         if self.name.is_empty() {
-            return Err(DomainError::validation("issuer.name", "Name cannot be empty"));
+            return Err(DomainError::validation(
+                "issuer.name",
+                "Name cannot be empty",
+            ));
         }
         Ok(())
     }
@@ -282,35 +288,43 @@ mod tests {
 
     #[test]
     fn test_credential_status_parsing() {
-        assert_eq!("active".parse::<CredentialStatus>().unwrap(), CredentialStatus::Active);
         assert_eq!(
-            "revoked".parse::<CredentialStatus>().unwrap()
-           , CredentialStatus::Revoked);
+            "active".parse::<CredentialStatus>().unwrap(),
+            CredentialStatus::Active
+        );
+        assert_eq!(
+            "revoked".parse::<CredentialStatus>().unwrap(),
+            CredentialStatus::Revoked
+        );
         assert!("in
-            valid".parse::<CredentialStatus>().is_err());
-
-
+            valid"
+            .parse::<CredentialStatus>()
+            .is_err());
     }
 
     #[test]
     fn test_credential_format_parsing() {
-        assert_eq!("ob3".parse::<CredentialFormat>().unwrap(), CredentialFormat::OpenBadges3);
+        assert_eq!(
+            "ob3".parse::<CredentialFormat>().unwrap(),
+            CredentialFormat::OpenBadges3
+        );
         assert_eq!(
             "elm".parse::<CredentialFormat>().unwrap(),
-            CredentialFormat::EuropeanLearnerModel);
+            CredentialFormat::EuropeanLearnerModel
+        );
         assert!("in
-            valid".parse::<CredentialFormat>().is_err()
-           );
-
+            valid"
+            .parse::<CredentialFormat>()
+            .is_err());
     }
 
     #[test]
     fn test_credential_subject_validation() {
-        let subject = CredentialSubject::new("did:example:123")
-            .with_email("user@example.com");rt!(subject.validate().is_ok());
+        let subject = CredentialSubject::new("did:example:123").with_email("user@example.com");
+        assert!(subject.validate().is_ok());
 
-        let invalid_subject = CredentialSubject::new("")
-            .with_email("invalid-email");rt!(invalid_subject.validate().is_err());
+        let invalid_subject = CredentialSubject::new("").with_email("invalid-email");
+        assert!(invalid_subject.validate().is_err());
     }
 
     #[test]
@@ -318,7 +332,7 @@ mod tests {
         let achievement = Achievement::new(
             "https://example.com/achievements/1",
             "Test Achievement",
-            "Test Description"
+            "Test Description",
         );
         assert!(achievement.validate().is_ok());
 

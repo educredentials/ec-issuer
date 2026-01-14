@@ -38,9 +38,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Configuration loaded");
 
     // Initialize database connection pool
-    let pool = PgPoolOptions::new()
-        .connect(&config.database.url)
-        .await?;
+    let pool = PgPoolOptions::new().connect(&config.database.url).await?;
 
     tracing::info!("Database connection established");
 
@@ -91,8 +89,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Create router with all routes
-    let app = credential_adapters::create_router(app_state)
-        .layer(TraceLayer::new_for_http());
+    let app = credential_adapters::create_router(app_state).layer(TraceLayer::new_for_http());
 
     // Start server
     let addr = format!("{}:{}", config.server.host, config.server.port);

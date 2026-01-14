@@ -4,8 +4,8 @@
 //! - Open Badges 3.0 (OB3)
 //! - European Learner Model (ELM)
 
-pub mod ob3;
 pub mod elm;
+pub mod ob3;
 
-pub use ob3::OB3Serializer;
 pub use elm::ELMSerializer;
+pub use ob3::OB3Serializer;

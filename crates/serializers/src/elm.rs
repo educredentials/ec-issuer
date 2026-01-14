@@ -94,7 +94,7 @@ impl ELMSerializer {
     }
 
     /// Parse ELM format to canonical credential (basic implementation)
-    fn from_elm(&self, _data: &Value) -> DomainResult<Credential> {
+    fn from_elm(_data: &Value) -> DomainResult<Credential> {
         // This would require full parsing logic - stub for now
         Err(DomainError::serialization_error(
             "Deserialization from ELM not yet implemented",
@@ -118,7 +118,7 @@ impl CredentialSerializer for ELMSerializer {
     }
 
     fn deserialize(&self, data: &Value) -> DomainResult<Credential> {
-        self.from_elm(data)
+        ELMSerializer::from_elm(data)
     }
 }
 
@@ -155,7 +155,10 @@ mod tests {
         assert!(elm["@context"].is_array());
 
         // Verify types
-        assert!(elm["type"].as_array().unwrap().contains(&json!("EuropassCredential")));
+        assert!(elm["type"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("EuropassCredential")));
 
         // Verify structure
         assert!(elm["issuer"].is_object());

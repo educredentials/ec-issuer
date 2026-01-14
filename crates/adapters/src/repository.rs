@@ -65,6 +65,9 @@ impl CredentialRepository for PostgresCredentialRepository {
         let issuer_data = serde_json::to_value(&credential.issuer)
             .map_err(|e| DomainError::serialization_error(e.to_string()))?;
 
+        let revocation_info = serde_json::to_value(&credential.revocation_info)
+            .map_err(|e| DomainError::serialization_error(e.to_string()))?;
+
         sqlx::query(
             r#"
             INSERT INTO credentials (
@@ -84,7 +87,7 @@ impl CredentialRepository for PostgresCredentialRepository {
         .bind(credential.status.to_string())
         .bind(credential.issued_at)
         .bind(credential.expires_at)
-        .bind(credential.revocation_info)
+        .bind(revocation_info)
         .bind(&credential.proof)
         .bind(&credential.metadata)
         .bind(credential.created_at)
@@ -126,7 +129,8 @@ impl CredentialRepository for PostgresCredentialRepository {
                     .map_err(|e: DomainError| e)?,
                 issued_at: row.get("issued_at"),
                 expires_at: row.get("expires_at"),
-                revocation_info: row.get("revocation_info"),
+                revocation_info: serde_json::from_value(row.get("revocation_info"))
+                    .map_err(|e| DomainError::serialization_error(e.to_string()))?,
                 proof: row.get("proof"),
                 metadata: row.get("metadata"),
                 created_at: row.get("created_at"),
@@ -149,6 +153,9 @@ impl CredentialRepository for PostgresCredentialRepository {
         let issuer_data = serde_json::to_value(&credential.issuer)
             .map_err(|e| DomainError::serialization_error(e.to_string()))?;
 
+        let revocation_info = serde_json::to_value(&credential.revocation_info)
+            .map_err(|e| DomainError::serialization_error(e.to_string()))?;
+
         sqlx::query(
             r#"
             UPDATE credentials
@@ -164,7 +171,7 @@ impl CredentialRepository for PostgresCredentialRepository {
         .bind(issuer_data)
         .bind(credential.status.to_string())
         .bind(credential.expires_at)
-        .bind(&credential.revocation_info)
+        .bind(revocation_info)
         .bind(&credential.proof)
         .bind(&credential.metadata)
         .bind(credential.updated_at)
@@ -254,7 +261,8 @@ impl CredentialRepository for PostgresCredentialRepository {
                         .map_err(|e: DomainError| e)?,
                     issued_at: row.get("issued_at"),
                     expires_at: row.get("expires_at"),
-                    revocation_info: row.get("revocation_info"),
+                    revocation_info: serde_json::from_value(row.get("revocation_info"))
+                        .map_err(|e| DomainError::serialization_error(e.to_string()))?,
                     proof: row.get("proof"),
                     metadata: row.get("metadata"),
                     created_at: row.get("created_at"),
