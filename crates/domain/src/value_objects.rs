@@ -321,10 +321,10 @@ mod tests {
     #[test]
     fn test_credential_subject_validation() {
         let subject = CredentialSubject::new("did:example:123").with_email("user@example.com");
-        rt!(subject.validate().is_ok());
+        assert!(subject.validate().is_ok());
 
         let invalid_subject = CredentialSubject::new("").with_email("invalid-email");
-        rt!(invalid_subject.validate().is_err());
+        assert!(invalid_subject.validate().is_err());
     }
 
     #[test]

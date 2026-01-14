@@ -4,11 +4,8 @@
 //! using the outbound ports (infrastructure interfaces).
 
 use async_trait::async_trait;
-use credential_domain::{
-    Achievement, Credential, CredentialBuilder, CredentialSubject, DomainResult, Issuer,
-};
+use credential_domain::{CredentialBuilder, CredentialSubject, DomainResult};
 use std::sync::Arc;
-use uuid::Uuid;
 
 use crate::inbound::*;
 use crate::outbound::*;
@@ -193,9 +190,6 @@ impl RevokeCredentialUseCase for CredentialService {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use mockall::mock;
-    use mockall::predicate::*;
 
     // Mock implementations would go here for testing
     // This requires the mockall crate features to be properly configured
