@@ -143,21 +143,59 @@ let serializers = vec![
 ];
 ```
 
-### Adding a New Adapter
+## Roadmap
 
-1. Implement the port trait in `crates/adapters/`
-2. Wire it up in dependency injection (main.rs)
-3. No changes to domain or ports needed!
+### Milestone 1: Scaffold
 
-## Production Considerations
+As a developer, I can document, test, build, and deploy the service.
 
-- [ ] Enable TLS for database connections
-- [ ] Implement proper gRPC signing client (currently stubbed)
-- [ ] Add authentication/authorization
-- [ ] Implement rate limiting
-- [ ] Add comprehensive logging and metrics
-- [ ] Set up distributed tracing
-- [ ] Configure connection pooling
-- [ ] Add circuit breakers for external services
-- [ ] Implement credential caching strategy
-- [ ] Set up backup and recovery procedures
+- [ ] CI/CD with linting, testing, container builds on GitHub Actions
+- [ ] Hosting and deployment on ???
+- [ ] Documentation builds on ???
+- [ ] Event Sourcing and CQRS setup
+- [ ] E2E testing setup
+- [ ] Unit testing setup
+- [ ] /health, /metrics and /info endpoints
+
+### Milestone 2: Create Offer
+
+As a teacher, I can issue an achievement assertion to a student.
+
+- [ ] A create offer endpoint, driven by queries, aggregates, commands and events
+- [ ] Authentication and authorization with errors and events
+- [ ] Fetch achievement from mock ec-achievement
+- [ ] Fetch student data from mock ec-user
+- [ ] Notify student via mock ec-notifications
+
+### Milestone 3: Issue Credential
+
+As a student with a selected wallet, and an offer for an assertion, I can accept the assertion.
+See [OBv3 Use Case 3.1](https://www.imsglobal.org/spec/ob/v3p0/#assertion-issuance-to-wallet)
+
+- [ ] Select a preferred wallet
+- [ ] Integrate ssi-agent in project
+- [ ] Use mock ec-key service with one hardcoded key for signing. Use only one signing algorithm.
+- [ ] Integrate authentication service
+- [ ] Implement (OID4VCI)[https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID2.html] with [Authorization Code flow](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID2.html#name-authorization-code-flow) endpoints with aggregates, events etc
+- [ ] Implement [deferred credential endpoint](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID2.html#name-deferred-credential-endpoin).
+- [ ] Store credential in mock ec-award
+- [ ] Notify issuing-teacher via mock ec-notifications
+
+### Milestone 4: signing service
+
+As an institute admin, I can provide my own keys for signing credentials.
+
+- [ ] Replace the mock ec-key service with a real one. Location and details to be determined.
+- [ ] Integrate the signing service with the credential issuance process.
+- [ ] Implement all DIIPv4 signing algorithms in the ec-key service and issuer
+- [ ] Implement ELM signing with eSeal.
+- [ ] Store signed credentials in obv3 and elm format in mock ec-award
+
+### Milestone 5: Revocation
+
+As a teacher, I can revoke any assertion that I issued.
+As an institution admin, I can revoke any assertion within my institution.
+
+- [ ] Push issuance events via mock ec-event
+- [ ] Implement mock ec-status service
+- [ ] Implement revocation endpoint with aggregates, events etc. via mock ec-event
