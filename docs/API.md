@@ -56,123 +56,6 @@ Response:
 }
 ```
 
-## Get Credential (Canonical Format)
-
-```bash
-curl http://localhost:3000/api/v1/credentials/550e8400-e29b-41d4-a716-446655440000
-```
-
-## Get Credential in Open Badges 3.0 Format
-
-```bash
-curl http://localhost:3000/api/v1/credentials/550e8400-e29b-41d4-a716-446655440000?format=ob3
-```
-
-Response (OB3 with JSON-LD):
-
-```json
-{
-  "@context": [
-    "https://www.w3.org/2018/credentials/v1",
-    "https://purl.imsglobal.org/spec/ob/v3p0/context.json"
-  ],
-  "id": "urn:uuid:550e8400-e29b-41d4-a716-446655440000",
-  "type": ["VerifiableCredential", "OpenBadgeCredential"],
-  "issuer": {
-    "id": "https://example.com/issuers/1",
-    "type": ["Profile"],
-    "name": "Example University"
-  },
-  "issuanceDate": "2025-12-05T10:30:00Z",
-  "credentialSubject": {
-    "id": "did:example:alice123",
-    "type": ["AchievementSubject"],
-    "achievement": {
-      "id": "https://example.com/achievements/1",
-      "type": ["Achievement"],
-      "name": "Digital Literacy Certificate",
-      "description": "Demonstrates proficiency in digital literacy skills"
-    }
-  },
-  "proof": {
-    "type": "Ed25519Signature2020",
-    "proofValue": "mock-signature-..."
-  }
-}
-```
-
-## Get Credential in ELM Format
-
-```bash
-curl http://localhost:3000/api/v1/credentials/550e8400-e29b-41d4-a716-446655440000?format=elm
-```
-
-Response (European Learner Model):
-
-```json
-{
-  "@context": [
-    "https://www.w3.org/2018/credentials/v1",
-    "https://europa.eu/europass/model/credentials/v1"
-  ],
-  "id": "urn:credential:550e8400-e29b-41d4-a716-446655440000",
-  "type": ["VerifiableCredential", "EuropassCredential"],
-  "issuer": {
-    "id": "https://example.com/issuers/1",
-    "preferredName": "Example University"
-  },
-  "issuanceDate": "2025-12-05T10:30:00Z",
-  "credentialSubject": {
-    "id": "did:example:alice123",
-    "type": ["Person"],
-    "fullName": "Alice Smith",
-    "achieved": [
-      {
-        "id": "https://example.com/achievements/1",
-        "title": "Digital Literacy Certificate",
-        "learningAchievement": {
-          "id": "https://example.com/achievements/1",
-          "title": "Digital Literacy Certificate",
-          "description": "Demonstrates proficiency in digital literacy skills"
-        }
-      }
-    ]
-  }
-}
-```
-
-## List Credentials
-
-```bash
-# List all credentials
-curl http://localhost:3000/api/v1/credentials
-
-# Filter by subject
-curl http://localhost:3000/api/v1/credentials?subject_id=did:example:alice123
-
-# Filter by status
-curl http://localhost:3000/api/v1/credentials?status=active
-
-# Pagination
-curl http://localhost:3000/api/v1/credentials?limit=10&offset=0
-```
-
-Response:
-
-```json
-{
-  "credentials": [
-    {
-      /* credential 1 */
-    },
-    {
-      /* credential 2 */
-    }
-  ],
-  "total": 2
-}
-```
-
 ## Revoke a Credential
 
 ```bash
@@ -277,12 +160,6 @@ http POST localhost:3000/api/v1/credentials \
   achievement_id=achievement-1 \
   issuer_id=issuer-1
 
-# Get credential in OB3 format
-http localhost:3000/api/v1/credentials/{id} format==ob3
-
-# List credentials
-http localhost:3000/api/v1/credentials subject_id==did:example:bob456
-
 # Revoke credential
 http POST localhost:3000/api/v1/credentials/{id}/revoke \
   reason="No longer applicable"
@@ -303,18 +180,6 @@ Import the following collection:
        "issuer_id": "issuer-1"
      }
      ```
-
-2. **Get Credential (OB3)**
-   - Method: GET
-   - URL: `http://localhost:3000/api/v1/credentials/{{credential_id}}?format=ob3`
-
-3. **Get Credential (ELM)**
-   - Method: GET
-   - URL: `http://localhost:3000/api/v1/credentials/{{credential_id}}?format=elm`
-
-4. **List Credentials**
-   - Method: GET
-   - URL: `http://localhost:3000/api/v1/credentials`
 
 5. **Revoke Credential**
    - Method: POST
