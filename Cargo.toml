@@ -1,19 +1,10 @@
 [package]
-name = "educredentials-hexagonal-credential-service"
-version = "0.1.0"
+name = "ec-issuer"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.75"
 
-[workspace]
-members = [
-    ".",
-    "crates/domain",
-    "crates/ports",
-    "crates/serializers",
-    "crates/adapters",
-]
-
-[workspace.dependencies]
+[dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 async-trait = "0.1"
@@ -53,27 +44,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Validation
 validator = { version = "0.18", features = ["derive"] }
-
-[dependencies]
-# Workspace crates
-credential-domain = { path = "crates/domain" }
-credential-ports = { path = "crates/ports" }
-credential-serializers = { path = "crates/serializers" }
-credential-adapters = { path = "crates/adapters" }
-
-# External dependencies
-tokio = { workspace = true }
-axum = { workspace = true }
-tower = { workspace = true }
-tower-http = { workspace = true }
-sqlx = { workspace = true }
-serde = { workspace = true }
-serde_json.workspace = true
-config = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-anyhow = { workspace = true }
-chrono.workspace = true
 
 [dev-dependencies]
 mockall = "0.12"
