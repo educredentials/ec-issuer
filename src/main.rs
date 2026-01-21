@@ -18,7 +18,9 @@ async fn main() -> anyhow::Result<()> {
     let config = Config::from_env()?;
     tracing::info!("Configuration loaded");
 
-    let app = Router::new().route("/", get(|| async { "Hello, world!" }));
+    let app = Router::new()
+        .route("/", get(|| async { "Hello, world!" }))
+        .route("/health", get(|| async { "OK" }));
 
     let addr = format!("{}:{}", config.server.host, config.server.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
