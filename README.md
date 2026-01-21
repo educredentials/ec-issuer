@@ -92,6 +92,26 @@ More API calls and details on the API structure, authorization and API documenta
 cargo test --all
 ```
 
+## Ports and Adapters: Compile time feature-flags
+
+> [!NOTE]
+> Below strategy is under consideration. We haven't decided if this is the best way to have Ports and Adapters in rust.
+
+We use compile time feature-flags to provide which ports and adapters are used.
+We provide defaults for all such ports and adapters.
+
+For example, to use the logging-text adapter, wich is the default, just run the service:
+
+```bash
+cargo run
+```
+
+But if you want to use the logging-json adapter, you can run the service with the following command:
+
+```bash
+cargo run --features logging-json --no-default-features
+```
+
 ## Development
 
 See [Way of Working](https://confluence.ia.surf.nl/spaces/EDUCRED/pages/260738891/Way+of+working+EduCredentials)

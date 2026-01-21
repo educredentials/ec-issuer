@@ -7,7 +7,7 @@ use config::Config;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    logging::tracing_init();
+    logging::init_logging();
 
     tracing::info!("Starting Credential Service");
 
