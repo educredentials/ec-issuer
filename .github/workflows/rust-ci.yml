@@ -87,6 +87,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            cr.surf.nl/edubadges-edubadges/edubadges/ec-issuer:latest
-            cr.surf.nl/edubadges-edubadges/edubadges/ec-issuer:${{ steps.version.outputs.VERSION }}
-            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-edubadges/edubadges/ec-issuer:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
+            cr.surf.nl/edubadges-educredentials/ec-issuer:latest
+            cr.surf.nl/edubadges-educredentials/ec-issuer:${{ steps.version.outputs.VERSION }}
+            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
