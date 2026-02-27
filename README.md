@@ -72,7 +72,7 @@ pytest tests/
 
 ## Development
 
-This project uses [Just](https://github.com/casey/just) for common development tasks.
+This project uses [Just](https://github.com/casey/just) for common development tasks and has a GitHub Actions CI/CD pipeline.
 
 ### Project Structure
 
