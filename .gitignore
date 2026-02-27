@@ -1,24 +1,52 @@
-# Rust
-/target
-**/*.rs.bk
-*.pdb
-Cargo.lock
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
+.env
 
 # IDE
 .idea/
 .vscode/
-*.swp
-*.swo
-*~
 
-# Environment
-.env
-.env.local
-
-# OS
+# macOS
 .DS_Store
-Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Coverage
+.htmlcov/
+.coverage
+
+# Build
+build/
+dist/
 
 # Database
 *.db
 *.sqlite
+
+# Docker
+.env.docker
+
+# Tests
+.hypothesis/
+
+# Python cache
+.pytest_cache/
+
+# UV
+.uv/
+
+# Ruff cache
+.ruff_cache/
+
+# Mypy cache
+.mypy_cache/

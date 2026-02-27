@@ -1,0 +1,46 @@
+[project]
+name = "ec-issuer"
+version = "0.1.0"
+description = "Educredentials Issuer"
+authors = [{ name = "Bèr Kessels", email = "ber@berk.es" }]
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "types-flask>=3.0.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "types-flask>=3.0.0",
+]
+
+[tool.ruff]
+# Using default Ruff configuration
+
+[tool.mypy]
+# Using default Mypy configuration
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+markers = [
+    "e2e: end-to-end tests",
+    "unit: unit tests",
+    "integration: integration tests",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
