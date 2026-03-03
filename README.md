@@ -129,8 +129,8 @@ docker run -p 8080:8080 ec-issuer
 - [x] Flask application structure
 - [x] Health endpoint
 - [x] Basic testing setup
-- [ ] Configuration management
-- [ ] Database integration
+- [x] Configuration management
+- [x] CI/CD pipeline
 
 ### Milestone 2: Credential Issuance
 - [ ] Create credential endpoint
@@ -141,7 +141,6 @@ docker run -p 8080:8080 ec-issuer
 ### Milestone 3: Production Readiness
 - [ ] Authentication and authorization
 - [ ] Logging and monitoring
-- [ ] CI/CD pipeline
 - [ ] Documentation
 
 ## License
