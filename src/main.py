@@ -2,7 +2,8 @@
 """Main application entry point for the EC Issuer."""
 
 from flask import Flask
-from src.config import Config
+
+from src.config import EnvConfigRepo
 
 
 def create_app() -> Flask:
@@ -24,5 +25,5 @@ def create_app() -> Flask:
 
 if __name__ == "__main__":
     app = create_app()
-    config = Config.from_env()
+    config = EnvConfigRepo()
     app.run(host=config.server_host, port=config.server_port, debug=True)

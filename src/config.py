@@ -1,20 +1,29 @@
-"""Configuration management for the EC Issuer Flask application."""
+"""Configuration management using Ports/Adapters architecture."""
 
-import os
-from dataclasses import dataclass
+from os import environ
+from typing import Protocol
+
+from typing_extensions import Mapping
 
 
-@dataclass
-class Config:
-    """Application configuration from environment variables."""
+class ConfigRepo(Protocol):
+    """Port: Configuration repository interface."""
 
-    server_host: str = "0.0.0.0"
-    server_port: int = 8000
+    server_host: str
+    server_port: int
 
-    @classmethod
-    def from_env(cls) -> 'Config':
-        """Load configuration from environment variables."""
-        return cls(
-            server_host=os.environ.get("SERVER_HOST", "0.0.0.0"),
-            server_port=int(os.environ.get("SERVER_PORT", "8000"))
-        )
+
+class EnvConfigRepo:
+    """Adapter: Configuration repository using environment variables."""
+
+    server_host: str
+    server_port: int
+
+    def __init__(self, env: Mapping[str, str] = environ):
+        """Initialize with optional environment mapping.
+
+        Args:
+            env: Environment variable mapping. Defaults to os.environ.
+        """
+        self.server_host = env["SERVER_HOST"]
+        self.server_port = int(env["SERVER_PORT"])

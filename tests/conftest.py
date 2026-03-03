@@ -1,6 +1,7 @@
 """Global pytest configuration and fixtures for the EC Issuer project."""
 
 import pytest
+
 from src.main import create_app
 
 
@@ -8,9 +9,11 @@ from src.main import create_app
 def app():
     """Create and configure the Flask app for testing."""
     app = create_app()
-    app.config.update({
-        "TESTING": True,
-    })
+    app.config.update(
+        {
+            "TESTING": True,
+        }
+    )
     return app
 
 
