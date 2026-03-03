@@ -1,15 +1,6 @@
 # API Examples
 
-## Setup
-
-Start the service:
-
-```bash
-export DATABASE_URL=postgresql://postgres:postgres@localhost/credentials
-cargo run
-```
-
-The service will be available at `http://localhost:3000`
+With a running instance of the service, you can interact with the API using the following examples.
 
 ## Issue a Credential
 
