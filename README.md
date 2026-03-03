@@ -133,15 +133,21 @@ docker run -p 8080:8080 ec-issuer
 - [x] CI/CD pipeline
 
 ### Milestone 2: Credential Issuance
-- [ ] Create credential endpoint
-- [ ] Signing service integration
+- [ ] Create credential endpoint (Issue credential)
 - [ ] Open Badges 3.0 support
 - [ ] European Learner Model support
+- [ ] Statuslist support
+- [ ] Create credential with metadata (Cijfer, Persoonlijke Boodschap, Naam, Beschrijving)
+- [ ] Create Credential with evidence metadata (Evidence URL)
 
-### Milestone 3: Production Readiness
-- [ ] Authentication and authorization
-- [ ] Logging and monitoring
-- [ ] Documentation
+### Milestone 3: Authorization Code Flow
+- [ ] Implement full OIDC4VCI flow for OBv3.0
+- [ ] Use, link or mock an openid service that supports OIDC4VCI and wraps surfconext
+- [ ] On return, callback to "achievement" endpoint to fetch the final achievement
+
+### Milestone 4: Signing
+- [ ] Signing service integration
+- [ ] eseal signature support
 
 ## License
 

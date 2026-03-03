@@ -2,15 +2,35 @@
 
 With a running instance of the service, you can interact with the API using the following examples.
 
-## Issue a Credential
+## Get Metadata
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/credentials \
+curl http://localhost:3000/.well-known/openid-credential-issuer
+```
+
+Other endpoints:
+
+get /.well-known/did-configuration.json
+get /.well-known/did.json
+get /.well-known/oauth-authorization-server
+get /.well-known/openid-credential-issuer
+
+Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-metadata)
+
+```json
+{
+  "credential_issuer": "https://example.com",
+  "credentials_supported": []
+}
+```
+
+## Issue an Achievement as Credential, aka Create Offer
+
+```bash
+curl -X POST http://localhost:3000/api/v1/offers  \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject_id": "did:example:alice123",
-    "subject_name": "Alice Smith",
-    "subject_email": "alice@example.com",
     "achievement_id": "achievement-1",
     "issuer_id": "issuer-1",
     "expires_at": "2025-12-31T23:59:59Z"
@@ -21,30 +41,84 @@ Response:
 
 ```json
 {
-  "credential": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "credential_subject": {
-      "id": "did:example:alice123",
-      "name": "Alice Smith",
-      "email": "alice@example.com"
-    },
-    "achievement": {
-      "id": "https://example.com/achievements/1",
-      "name": "Digital Literacy Certificate",
-      "description": "Demonstrates proficiency in digital literacy skills"
-    },
-    "issuer": {
-      "id": "https://example.com/issuers/1",
-      "name": "Example University"
-    },
-    "status": "active",
-    "issued_at": "2025-12-05T10:30:00Z",
-    "proof": {
-      "type": "Ed25519Signature2020",
-      "proofValue": "mock-signature-..."
+  "uri": "openid-credential-offer://?credential_offer_uri=https://example.com/api/v1/offers/550e8400-e29b-41d4-a716-446655440000",
+  "offer_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+Get the offer
+
+```bash
+curl http://localhost:3000/api/v1/offers/550e8400-e29b-41d4-a716-446655440000
+```
+
+Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer-response):
+
+```json
+{
+  "credential_issuer": "https://credential-issuer.example.com",
+  "credential_configuration_ids": [
+    "UniversityDegreeCredential"
+  ],
+  "grants": {
+    "authorization_code": {
+      "issuer_state": "eyJhbGciOiJSU0Et...FYUaBy"
     }
   }
 }
+```
+
+## Get a credential (OpenId for VCI authorization code flow)
+
+See get Metadata
+
+Get the credential. A reference to deferred endpoint is always returned.
+
+Request:
+https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request
+
+```bash
+curl -X POST http://localhost:3000/api/v1/credentials \
+  -H "Authorization: Bearer TokenAsReturnedFromAuthServer" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "credential_configuration_id": "UniversityDegreeCredential",
+    "proofs": {
+        "jwt": [
+            "eyJraWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEva2V5cy8x IiwiYWxnIjoiRVMyNTYiLCJ0eXAiOiJKV1QifQ"
+        ]
+    }
+}`
+```
+
+Response:
+```
+{
+  "transaction_id": "8xLOxBtZp8",
+  "interval" : 3600
+}
+```
+
+
+Get the credential at the deferred endpoint (https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin)
+
+Request:
+```bash
+curl -X POST http://localhost:3000/api/v1/deferred_credential
+  -H "Authorization: Bearer TokenAsReturnedFromAuthServer" \
+  -H "Content-Type: application/json" \
+  -d '{ "transaction_id": "8xLOxBtZp8" }'
+```
+
+Response (once the credential is ready):
+```json
+{
+  "credentials": [
+    {
+      "credential": "LUpixVCWJk0eOt4CXQe1NXK....WZwmhmn9OQp6YxX0a2L"
+    }
+  ]
+} 
 ```
 
 ## Revoke a Credential
@@ -81,6 +155,10 @@ curl http://localhost:3000/health
 Response: `200 OK`
 
 ## Error Responses
+
+See
+* https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-error-response
+*  https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-error-r
 
 ### Validation Error
 
