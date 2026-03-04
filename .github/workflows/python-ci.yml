@@ -34,7 +34,7 @@ jobs:
         run: . .venv/bin/activate && ruff check .
 
       - name: Run type checking
-        run: . .venv/bin/activate && mypy .
+        run: . .venv/bin/activate && ruff ty .
 
       - name: Run tests
         run: . .venv/bin/activate && pytest tests/ -v
