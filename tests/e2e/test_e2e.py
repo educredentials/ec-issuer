@@ -23,3 +23,18 @@ class TestRootEndpoint:
         response = client.get("/")
         assert response.status_code == 200
         assert response.data == b"Hello, World!"
+
+
+@pytest.mark.e2e
+class TestCredentialIssuerMetadataEndpoint:
+    """Test the Credential Issuer Metadata endpoint."""
+
+    def test_credential_issuer_metadata_returns_correct_json(self, client):
+        """Test Credential Issuer Metadata endpoint returns correct JSON."""
+        response = client.get("/.well-known/openid-credential-issuer")
+        assert response.status_code == 200
+        assert response.json == {
+            "credential_issuer": "https://example.com",
+            "authorization_servers": ["https://authn.example.com"],
+            "credential_configurations_supported": {},
+        }

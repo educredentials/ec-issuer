@@ -2,13 +2,15 @@
 
 import pytest
 
+from src.issuer_agent_adapter.hardcoded_adapter import HardcodedIssuerAgentAdapter
 from src.main import create_app
 
 
 @pytest.fixture(scope="session")
 def app():
     """Create and configure the Flask app for testing."""
-    app = create_app()
+    # Use the hardcoded adapter for testing
+    app = create_app(HardcodedIssuerAgentAdapter())
     app.config.update(
         {
             "TESTING": True,

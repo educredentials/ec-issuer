@@ -20,7 +20,8 @@ Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1
 ```json
 {
   "credential_issuer": "https://example.com",
-  "credentials_supported": []
+  "authorization_servers": ["https://authn.example.com"],
+  "credential_configurations_supported": {},
 }
 ```
 
