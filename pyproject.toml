@@ -1,0 +1,31 @@
+[project]
+name = "ec-issuer"
+version = "0.1.0"
+description = "Educredentials Issuer"
+authors = [{ name = "Bèr Kessels", email = "ber@berk.es" }]
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0.0",
+    "requests>=2.32.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.15.4",
+    "ty>=0.0.20",
+    "types-requests>=2.32.4.20260107",
+]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+markers = [
+    "e2e: end-to-end tests",
+    "unit: unit tests",
+    "integration: integration tests",
+]

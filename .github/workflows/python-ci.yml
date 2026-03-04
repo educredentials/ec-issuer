@@ -1,4 +1,4 @@
-name: Rust CI/CD
+name: Python CI/CD
 
 on:
   push:
@@ -12,36 +12,28 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          components: rustfmt, clippy
+          version: 0.9.26
 
-      - name: Setup cargo cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+      - name: Set up Python
+        run: uv python install
 
-      - name: Cargo check
-        run: cargo check
 
-      - name: Check formatting
-        run: cargo fmt --check
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
 
-      - name: Check quality
-        run: cargo clippy -- -D warnings
+      - name: Run linting
+        run: uv run ruff check .
+
+      - name: Run type checking
+        run: uv run ty check .
 
       - name: Run tests
-        run: cargo test
+        run: uv run pytest tests
 
   build:
     name: Build Docker image
@@ -50,10 +42,7 @@ jobs:
     # Only run on main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
 
       - name: Log in to SDP Container Registry "Harbor"
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
@@ -65,9 +54,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Extract version from Cargo.toml
+      - name: Extract version from pyproject.toml
         id: version
-        run: echo "VERSION=$(cargo read-manifest | jq -r '.version')" >> $GITHUB_OUTPUT
+        run: echo "VERSION=$(grep '^version' pyproject.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
 
       - name: Get Git tag if available
         id: git_tag
@@ -79,7 +68,7 @@ jobs:
             echo "HAS_TAG=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .

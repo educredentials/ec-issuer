@@ -1,6 +1,6 @@
-# Credential Service - Hexagonal Architecture in Rust
+# Credential Service - Flask-based EC Issuer
 
-Credential service that issues and signs **Open Badges 3.0** and **European Learner Model (ELM)** credentials.
+Flask-based credential service that issues and signs **Open Badges 3.0** and **European Learner Model (ELM)** credentials.
 
 ## Features
 
@@ -8,194 +8,147 @@ Credential service that issues and signs **Open Badges 3.0** and **European Lear
 - **Multiple Formats**: Support for Open Badges 3.0 and European Learner Model
 - **Revocation**: Revoke credentials with reason tracking
 - **Expiration**: Automatic status updates for expired credentials
-- **Digital Signatures**: Integration with signing service via gRPC
-- **PostgreSQL Storage**: Full ACID compliance with SQLx
-- **REST API**: Clean HTTP API with Axum
-- **Type Safety**: Leverages Rust's type system for correctness
+- **Digital Signatures**: Integration with signing service
+- **REST API**: Clean HTTP API with Flask
+- **Type Safety**: Python type annotations for correctness
 
 ## Technology Stack
 
-- **Axum**: High-performance HTTP server
-- **SQLx**: Async PostgreSQL with compile-time query verification
-- **Tonic**: gRPC framework
-- **Tokio**: Async runtime
-- **Serde**: Serialization/deserialization
-- **Chrono**: Date/time handling
-- **UUID**: Unique identifiers
+- **Flask**: Lightweight HTTP server
+- **SQLAlchemy**: ORM for database interactions
+- **Pydantic**: Data validation and settings management
+- **Uvicorn**: ASGI server for production
+- **Python 3.10+**: Modern Python features
 
 ## Getting Started
 
 ### Prerequisites
 
-- Rust 1.75+
-- PostgreSQL 14+
-- (Optional) Signing service for production use
+- Python 3.10+
+- UV (for dependency management)
+- PostgreSQL 14+ (for production)
+- SQLite (for development)
 
 ### Environment Variables
 
 ```bash
 # Server configuration
 SERVER_HOST=0.0.0.0
-SERVER_PORT=3000
+SERVER_PORT=8080
 
-# Database configuration
-DATABASE_URL=postgresql://postgres:postgres@localhost/credentials
-DATABASE_MAX_CONNECTIONS=5
+# Database configuration (SQLite for development)
+DATABASE_URL=sqlite:///credentials.db
 
 # Signing service configuration
-SIGNING_USE_GRPC=false  # Set to true for gRPC signing service
+SIGNING_USE_GRPC=false
 SIGNING_SERVICE_URL=http://localhost:50051
 ```
 
 ### Running the Service
 
 ```bash
-# Start PostgreSQL
-docker run -d \
-  --name postgres \
-  -e POSTGRES_DB=credentials \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
-  postgres:14
+# Create and activate virtual environment
+uv venv
+source .venv/bin/activate
 
-# Set environment variables
-export DATABASE_URL=postgresql://postgres:postgres@localhost/credentials
+# Install dependencies
+uv pip install -e .
 
-# Build and run
-cargo build
-cargo run
+# Run the application
+flask run --host=0.0.0.0 --port=8080
 ```
 
-The service will start on `http://localhost:3000`
+The service will start on `http://localhost:8080`
 
-Now issue a credential:
-
-```bash
-curl -X POST http://localhost:3000/api/v1/credentials \
-  -H "Authorization: Bearer FAKETOKEN"
-  -H "Content-Type: application/json" \
-  -d '{
-    "subject_id": "did:example:alice123",
-    "subject_name": "Alice Smith",
-    "subject_email": "alice@example.com",
-    "achievement_id": "achievement-1",
-    "issuer_id": "issuer-1",
-    "expires_at": "2025-12-31T23:59:59Z"
-  }'
-```
-
-More API calls and details on the API structure, authorization and API documentation can be found in [docs/API.md](docs/API.md)
-
-## Testing
+### Running Tests
 
 ```bash
-cargo test --all
+# Install test dependencies
+uv pip install pytest requests
+
+# Run tests
+pytest tests/
 ```
 
 ## Development
 
-See [Way of Working](https://confluence.ia.surf.nl/spaces/EDUCRED/pages/260738891/Way+of+working+EduCredentials)
+This project uses [Just](https://github.com/casey/just) for common development tasks and has a GitHub Actions CI/CD pipeline.
 
-- Make a branch from `main`, e.g. feature/foozing-the-bars
-- Add new \*_end to end_ tests for the feature in `tests` e.g. `tests/foozing_the_bars.rs`¹
-- Start developing the feature in the appropriate module or modules:
-  - Add unit tests to the module or modules where the feature is implemented: Unit tests live in the file or module that they test, not in separate files
-  - Make the changes, repeat¹.
-- Run tests before committing
-- Use cargo clippy to check for code quality issues
-- Use cargo fmt to format and lint
-- Make a pull request against main.
+### Project Structure
 
 ```
-cargo check --all
-cargo test --all
-cargo fmt --all
-cargo clippy --all
+src/
+├── main.py          # Flask application entry point
+├── config.py        # Configuration management
+├── models.py        # Database models
+├── routes/          # API routes
+└── services/        # Business logic
+
+tests/
+├── e2e/            # End-to-end tests
+└── unit/           # Unit tests
 ```
 
-## Extending the Service
+### Available Commands
 
-### Adding a New Format
+```bash
+# Start development server
+just develop
 
-1. Create serializer in `crates/serializers/src/`:
+# Run quality checks (linting + type checking)
+just lint
 
-```rust
-pub struct MyFormatSerializer;
+# Run tests
+just test        # All tests
+just test-unit   # Only unit tests
+just test-e2e    # Only e2e tests
 
-impl CredentialSerializer for MyFormatSerializer {
-    fn format(&self) -> CredentialFormat {
-        CredentialFormat::MyFormat
-    }
-
-    fn serialize(&self, credential: &Credential) -> DomainResult<Value> {
-        // Implementation
-    }
-}
+# Run everything
+just all
 ```
 
-2. Register in `main.rs`:
+### Adding a New Endpoint
 
-```rust
-let serializers = vec![
-    Arc::new(OB3Serializer::new()),
-    Arc::new(ELMSerializer::new()),
-    Arc::new(MyFormatSerializer::new()), // Add here
-];
+1. Create a new route in `src/routes/`
+2. Add the route to the Flask app in `src/main.py`
+3. Write tests in `tests/`
+4. Implement the business logic in `src/services/`
+
+## Docker
+
+Build and run the service using Docker:
+
+```bash
+docker build -t ec-issuer .
+docker run -p 8080:8080 ec-issuer
 ```
 
 ## Roadmap
 
-### Milestone 1: Scaffold
+### Milestone 1: Basic Flask Setup
+- [x] Flask application structure
+- [x] Health endpoint
+- [x] Basic testing setup
+- [x] Configuration management
+- [x] CI/CD pipeline
 
-As a developer, I can document, test, build, and deploy the service.
+### Milestone 2: Credential Issuance
+- [ ] Create credential endpoint (Issue credential)
+- [ ] Open Badges 3.0 support
+- [ ] European Learner Model support
+- [ ] Statuslist support
+- [ ] Create credential with metadata (Cijfer, Persoonlijke Boodschap, Naam, Beschrijving)
+- [ ] Create Credential with evidence metadata (Evidence URL)
 
-- [ ] CI/CD with linting, testing, container builds on GitHub Actions
-- [ ] Hosting and deployment on ???
-- [ ] Documentation builds on ???
-- [ ] Event Sourcing and CQRS setup
-- [ ] E2E testing setup
-- [ ] Unit testing setup
-- [ ] /health, /metrics and /info endpoints
+### Milestone 3: Authorization Code Flow
+- [ ] Implement full OIDC4VCI flow for OBv3.0
+- [ ] Use, link or mock an openid service that supports OIDC4VCI and wraps surfconext
+- [ ] On return, callback to "achievement" endpoint to fetch the final achievement
 
-### Milestone 2: Create Offer
+### Milestone 4: Signing
+- [ ] Signing service integration
+- [ ] eseal signature support
 
-As a teacher, I can issue an achievement assertion to a student.
+## License
 
-- [ ] A create offer endpoint, driven by queries, aggregates, commands and events
-- [ ] Authentication and authorization with errors and events
-- [ ] Fetch achievement from mock ec-achievement
-- [ ] Fetch student data from mock ec-user
-- [ ] Notify student via mock ec-notifications
-
-### Milestone 3: Issue Credential
-
-As a student with a selected wallet, and an offer for an assertion, I can accept the assertion.
-See [OBv3 Use Case 3.1](https://www.imsglobal.org/spec/ob/v3p0/#assertion-issuance-to-wallet)
-
-- [ ] Select a preferred wallet
-- [ ] Integrate ssi-agent in project
-- [ ] Use mock ec-key service with one hardcoded key for signing. Use only one signing algorithm.
-- [ ] Integrate authentication service
-- [ ] Implement (OID4VCI)[https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID2.html] with [Authorization Code flow](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID2.html#name-authorization-code-flow) endpoints with aggregates, events etc
-- [ ] Implement [deferred credential endpoint](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID2.html#name-deferred-credential-endpoin).
-- [ ] Store credential in mock ec-award
-- [ ] Notify issuing-teacher via mock ec-notifications
-
-### Milestone 4: signing service
-
-As an institute admin, I can provide my own keys for signing credentials.
-
-- [ ] Replace the mock ec-key service with a real one. Location and details to be determined.
-- [ ] Integrate the signing service with the credential issuance process.
-- [ ] Implement all DIIPv4 signing algorithms in the ec-key service and issuer
-- [ ] Implement ELM signing with eSeal.
-- [ ] Store signed credentials in obv3 and elm format in mock ec-award
-
-### Milestone 5: Revocation
-
-As a teacher, I can revoke any assertion that I issued.
-As an institution admin, I can revoke any assertion within my institution.
-
-- [ ] Push issuance events via mock ec-event
-- [ ] Implement mock ec-status service
-- [ ] Implement revocation endpoint with aggregates, events etc. via mock ec-event
+MIT
