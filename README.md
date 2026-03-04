@@ -2,6 +2,8 @@
 
 Flask-based credential service that issues and signs **Open Badges 3.0** and **European Learner Model (ELM)** credentials.
 
+[![Python CI/CD](https://github.com/educredentials/ec-issuer/actions/workflows/python-ci.yml/badge.svg)](https://github.com/educredentials/ec-issuer/actions/workflows/python-ci.yml)
+
 ## Features
 
 - **Issue Credentials**: Create and sign verifiable credentials
