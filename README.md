@@ -11,53 +11,34 @@ Flask-based credential service that issues and signs **Open Badges 3.0** and **E
 - **Revocation**: Revoke credentials with reason tracking
 - **Expiration**: Automatic status updates for expired credentials
 - **Digital Signatures**: Integration with signing service
-- **REST API**: Clean HTTP API with Flask
-- **Type Safety**: Python type annotations for correctness
 
 ## Technology Stack
 
 - **Flask**: Lightweight HTTP server
-- **SQLAlchemy**: ORM for database interactions
-- **Pydantic**: Data validation and settings management
-- **Uvicorn**: ASGI server for production
-- **Python 3.10+**: Modern Python features
+- **UV, Ruff, TY**: Runtime, dependency manager, linter, typechecker
+- **Pytest**: Run tests
+- **Docker or Podman**: Building and running images
+- **Github Actions**: Test, Lint, Typecheck, Build and push images
 
-## Getting Started
+## Getting Startede
 
 ### Prerequisites
 
 - Python 3.10+
-- UV (for dependency management)
-- PostgreSQL 14+ (for production)
-- SQLite (for development)
+- UV
 
 ### Environment Variables
 
 ```bash
-# Server configuration
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8080
-
-# Database configuration (SQLite for development)
-DATABASE_URL=sqlite:///credentials.db
-
-# Signing service configuration
-SIGNING_USE_GRPC=false
-SIGNING_SERVICE_URL=http://localhost:50051
+ISSUER_AGENT_BASE_URL="https://issuer.example.com"
 ```
 
 ### Running the Service
 
 ```bash
-# Create and activate virtual environment
-uv venv
-source .venv/bin/activate
-
-# Install dependencies
-uv pip install -e .
-
-# Run the application
-flask run --host=0.0.0.0 --port=8080
+just develop
 ```
 
 The service will start on `http://localhost:8080`
@@ -65,11 +46,7 @@ The service will start on `http://localhost:8080`
 ### Running Tests
 
 ```bash
-# Install test dependencies
-uv pip install pytest requests
-
-# Run tests
-pytest tests/
+just test
 ```
 
 ## Development
