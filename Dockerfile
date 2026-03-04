@@ -1,4 +1,3 @@
-# Use Python 3.10 slim as base image
 FROM python:3.10-slim
 
 WORKDIR /app
@@ -19,18 +18,10 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY . .
 
 # Create virtual environment and install dependencies
-RUN uv venv --clear && \
-    . .venv/bin/activate && \
-    uv pip install --system --no-deps flask
-
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV PATH="/app/.venv/bin:$PATH"
-ENV SERVER_HOST=0.0.0.0
-ENV SERVER_PORT=8080
+RUN uv python install && uv sync --frozen
 
 # Expose the port the service runs on
 EXPOSE 8080
 
 # Run the application
-CMD ["python", "src/main.py"]
+CMD ["uv", "run", "python", "-m", "src.main"]

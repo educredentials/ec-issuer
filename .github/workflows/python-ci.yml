@@ -14,30 +14,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          python-version: "3.10"
-          cache: "pip"
-          cache-dependency-path: "pyproject.toml"
+          version: 0.9.26
 
-      - name: Install UV
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Set up Python
+        run: uv python install
 
-      - name: Set up virtual environment
-        run: uv venv
 
       - name: Install dependencies
-        run: . .venv/bin/activate && uv pip install -e .
+        run: uv sync --locked --all-extras --dev
 
       - name: Run linting
-        run: . .venv/bin/activate && ruff check .
+        run: uv run ruff check .
 
       - name: Run type checking
-        run: . .venv/bin/activate && ruff ty .
+        run: uv run ty check .
 
       - name: Run tests
-        run: . .venv/bin/activate && pytest tests/ -v
+        run: uv run pytest tests
 
   build:
     name: Build Docker image
