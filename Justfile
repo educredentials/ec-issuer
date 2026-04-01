@@ -1,6 +1,9 @@
 # Justfile for EC Issuer - Modern Make alternative
 # Install: https://github.com/casey/just#readme
 
+# Annoying "tip" that flask prints, but we cannot and should not implement
+export FLASK_SKIP_DOTENV := "true"
+
 # Default target
 default:
     @just --list
@@ -12,7 +15,7 @@ develop:
 # Run all quality checks (linting + type checking)
 lint:
     uv run ruff check .
-    uv run ty check .
+    uv run basedpyright check .
 
 # Run all tests
 test:
