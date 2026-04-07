@@ -1,31 +1,22 @@
-"""Global pytest configuration and fixtures for the EC Issuer project."""
+import os
 
 import pytest
-
-from src.issuer_agent_adapter.hardcoded_adapter import HardcodedIssuerAgentAdapter
-from src.main import create_app
+from requests import request
 
 
-@pytest.fixture(scope="session")
-def app():
-    """Create and configure the Flask app for testing."""
-    # Use the hardcoded adapter for testing
-    app = create_app(HardcodedIssuerAgentAdapter())
-    app.config.update(
-        {
-            "TESTING": True,
-        }
-    )
-    return app
+class TestClient:
+    server_host: str = os.environ["SERVER_HOST"]
+    server_port: int = int(os.environ["SERVER_PORT"])
+
+    def get(self, path: str):
+        return self._request("GET", path)
+
+    def _request(self, method: str, path: str):
+        url = f"http://{self.server_host}:{self.server_port}/{path}"
+        return request(method, url)
 
 
 @pytest.fixture(scope="session")
-def client(app):
-    """Create a test client for the Flask app."""
-    return app.test_client()
-
-
-@pytest.fixture(scope="session")
-def runner(app):
-    """Create a test runner for the Flask app."""
-    return app.test_cli_runner()
+def e2e_client() -> TestClient:
+    """Create a generic HTTP client with request"""
+    return TestClient()

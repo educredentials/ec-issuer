@@ -6,6 +6,7 @@ authors = [{ name = "Bèr Kessels", email = "ber@berk.es" }]
 requires-python = ">=3.10"
 dependencies = [
     "flask>=3.0.0",
+    "msgspec>=0.20.0",
     "requests>=2.32.5",
 ]
 
@@ -20,6 +21,9 @@ dev = [
 
 [tool.ruff.lint]
 select = ["E", "F"]
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

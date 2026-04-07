@@ -102,32 +102,6 @@ docker build -t ec-issuer .
 docker run -p 8080:8080 ec-issuer
 ```
 
-## Roadmap
-
-### Milestone 1: Basic Flask Setup
-- [x] Flask application structure
-- [x] Health endpoint
-- [x] Basic testing setup
-- [x] Configuration management
-- [x] CI/CD pipeline
-
-### Milestone 2: Credential Issuance
-- [ ] Create credential endpoint (Issue credential)
-- [ ] Open Badges 3.0 support
-- [ ] European Learner Model support
-- [ ] Statuslist support
-- [ ] Create credential with metadata (Cijfer, Persoonlijke Boodschap, Naam, Beschrijving)
-- [ ] Create Credential with evidence metadata (Evidence URL)
-
-### Milestone 3: Authorization Code Flow
-- [ ] Implement full OIDC4VCI flow for OBv3.0
-- [ ] Use, link or mock an openid service that supports OIDC4VCI and wraps surfconext
-- [ ] On return, callback to "achievement" endpoint to fetch the final achievement
-
-### Milestone 4: Signing
-- [ ] Signing service integration
-- [ ] eseal signature support
-
 ## License
 
 MIT

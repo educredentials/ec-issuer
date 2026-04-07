@@ -1,0 +1,34 @@
+"""Hardcoded adapter for Credential Issuer Metadata."""
+
+from typing import override
+from src.metadata import CredentialIssuerMetadata
+
+
+from src.metadata import IssuerAgentPort
+
+
+class HardcodedIssuerAgentAdapter(IssuerAgentPort):
+    """Hardcoded adapter for Credential Issuer Metadata."""
+
+    @override
+    def credential_issuer_metadata(self) -> CredentialIssuerMetadata:
+        """Return hardcoded Credential Issuer Metadata.
+
+        Args:
+            request: The Flask request object (unused).
+
+        Returns:
+            A ResponseProtocol object containing the hardcoded metadata.
+        """
+        return HardcodedResponse()
+
+
+class HardcodedResponse(CredentialIssuerMetadata):
+    """Response object for hardcoded metadata."""
+
+    def __init__(self):
+        super().__init__(
+            credential_issuer="https://issuer.example.com",
+            credential_endpoint="https://example.com/credential",
+            credential_configurations_supported={},
+        )

@@ -1,0 +1,13 @@
+---
+endpoints:
+- path: "/.well-known/openid-credential-issuer"
+  get:
+    responses:
+    - code: 200
+      body: |
+        {
+            "credential_issuer": "https://issuer.example.com",
+            "credential_endpoint": "https://issuer.example.com/credential",
+            "authorization_servers": ["https://authn.example.com"],
+            "credential_configurations_supported": {}
+        }

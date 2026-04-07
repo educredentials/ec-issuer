@@ -15,7 +15,7 @@ develop:
 # Run all quality checks (linting + type checking)
 lint:
     uv run ruff check .
-    uv run basedpyright check .
+    uv run basedpyright .
 
 # Run all tests
 test:
@@ -27,6 +27,9 @@ test-unit:
 
 # Run only e2e tests
 test-e2e:
+    podman compose up --detach --timeout 4
+    # Wait for ec-issuer to be healthy because podman-compose lacks a wait-for-healthy option
+    @sh -c "until curl -sf http://localhost:8000/health; do echo 'Waiting for ec-issuer to be healthy...'; sleep 1; done"
     uv run pytest tests/e2e/ -v
 
 # Run everything (lint + test)

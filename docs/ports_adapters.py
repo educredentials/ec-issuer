@@ -11,10 +11,12 @@ Terminology:
 - Outbound Adapters: Concrete implementations of outbound ports (repositories, etc.)
 """
 
+import json
 import sys
 import uuid
 from abc import ABC, abstractmethod
-
+from pathlib import Path
+from typing import TypedDict, override
 
 
 def main() -> None:
@@ -26,21 +28,21 @@ def main() -> None:
         print("  create <joke> - Create a new joke")
         print("  update <id> <joke> - Update a joke")
         return
-    
+
     command = sys.argv[1]
     joke_repository = FileStorageRepository()
     joke_service = JokeService(joke_repository)
     jokes_interaction = CommandlineJokesInteraction(joke_service)
-    
+
     if command == "list":
         jokes_interaction.list_jokes()
     elif command == "create" and len(sys.argv) > 2:
         joke_content = " ".join(sys.argv[2:])
-        jokes_interaction.create_joke(joke_content)
+        _ = jokes_interaction.create_joke(joke_content)
     elif command == "update" and len(sys.argv) > 3:
         joke_id = sys.argv[2]
         joke_content = " ".join(sys.argv[3:])
-        jokes_interaction.update_joke(joke_id, joke_content)
+        _ = jokes_interaction.update_joke(joke_id, joke_content)
     else:
         print(f"Unknown command or missing arguments: {sys.argv[1:]}")
         print("Use 'python ports_adapters.py' for usage.")
@@ -85,12 +87,12 @@ class Joke:
         if period_pos != -1 and (question_pos == -1 or period_pos < question_pos):
             split_pos = period_pos
             # Title includes punctuation, body is text after
-            title = content[:split_pos + 1].strip()
+            title = content[: split_pos + 1].strip()
             body = content[split_pos + 1 :].strip()
         else:
             split_pos = question_pos
             # Title includes punctuation, body is text after
-            title = content[:split_pos + 1].strip()
+            title = content[: split_pos + 1].strip()
             body = content[split_pos + 1 :].strip()
 
         # Handle empty body case
@@ -104,9 +106,11 @@ class Joke:
         self.title = title
         self.body = body
 
+    @override
     def __repr__(self) -> str:
         return f"Joke(id={self.id}, title={self.title}, body={self.body})"
 
+    @override
     def __str__(self) -> str:
         return f"{self.title}\n{self.body}"
 
@@ -119,6 +123,8 @@ class JokeService:
     This enables static type checking of dependencies while allowing runtime
     flexibility to swap implementations (e.g., InMemory vs Hardcoded repositories).
     """
+
+    joke_repository: "JokesRepositoryPort"
 
     def __init__(self, joke_repository: "JokesRepositoryPort") -> None:
         self.joke_repository = joke_repository
@@ -160,9 +166,6 @@ class JokesInterationPort(ABC):
     def update_joke(self, id: str, content: str) -> Joke: ...
 
 
-
-
-
 class CommandlineJokesInteraction(JokesInterationPort):
     """
     Inbound Adapter: CLI implementation of the inbound port.
@@ -177,6 +180,7 @@ class CommandlineJokesInteraction(JokesInterationPort):
     def __init__(self, joke_service: JokeService):
         self.joke_service = joke_service
 
+    @override
     def run(self) -> None:
         """Run the CLI application. Called by main() with parsed arguments."""
         # This method is called by main() after parsing arguments
@@ -194,6 +198,7 @@ class CommandlineJokesInteraction(JokesInterationPort):
         for i, joke in enumerate(jokes, 1):
             print(f"{i}. {joke}")
 
+    @override
     def create_joke(self, content: str) -> Joke:
         """Create a new joke - implements 'create' command"""
         try:
@@ -204,6 +209,7 @@ class CommandlineJokesInteraction(JokesInterationPort):
             print(f"Error creating joke: {e}")
             exit(1)
 
+    @override
     def update_joke(self, id: str, content: str) -> Joke:
         """Update a joke - implements 'update' command"""
         try:
@@ -214,6 +220,7 @@ class CommandlineJokesInteraction(JokesInterationPort):
             print(f"Error updating joke: {e}")
             exit(1)
 
+    @override
     def get_jokes(self) -> list[Joke]:
         """Get all jokes from service layer"""
         return self.joke_service.get_jokes()
@@ -245,16 +252,21 @@ class InMemoryJokesRepository(JokesRepositoryPort):
     other implementations without changing JokeService or domain logic.
     """
 
+    jokes: list[Joke]
+
     def __init__(self) -> None:
         self.jokes = []
 
+    @override
     def get_jokes(self) -> list[Joke]:
         return self.jokes
 
+    @override
     def create_joke(self, joke: Joke) -> Joke:
         self.jokes.append(joke)
         return joke
 
+    @override
     def update_joke(self, joke: Joke) -> Joke:
         for i, j in enumerate(self.jokes):
             if j.id == joke.id:
@@ -263,21 +275,23 @@ class InMemoryJokesRepository(JokesRepositoryPort):
         raise StorageError("Joke not found")
 
 
+class JokeData(TypedDict):
+    id: str
+    title: str
+    body: str
+
+
 class FileStorageRepository(JokesRepositoryPort):
     """
     Outbound Adapter: File-based implementation of the outbound port.
-    
+
     Persists jokes as JSON files in a temporary directory. This provides
     real persistence across command executions, enabling proper end-to-end testing.
     """
 
-    def __init__(self, storage_dir="/tmp/jokes_db"):
-        import json
-        from pathlib import Path
-        
-        self.storage_dir = Path(storage_dir)
-        self.json = json
-        
+    def __init__(self, storage_dir: str = "/tmp/jokes_db") -> None:
+        self.storage_dir: Path = Path(storage_dir)
+
         # Create storage directory if it doesn't exist
         self.storage_dir.mkdir(exist_ok=True)
 
@@ -290,23 +304,19 @@ class FileStorageRepository(JokesRepositoryPort):
         joke_path = self._get_joke_path(joke_id)
         if not joke_path.exists():
             raise StorageError(f"Joke {joke_id} not found")
-        
-        with open(joke_path, 'r') as f:
-            data = self.json.load(f)
-        
-        return Joke(id=data['id'], title=data['title'], body=data['body'])
+
+        with open(joke_path, "r") as f:
+            data: JokeData = json.load(f)  # pyright: ignore[reportAny] We don't want to override json.load's type
+
+        return Joke(id=data["id"], title=data["title"], body=data["body"])
 
     def _write_joke(self, joke: Joke) -> None:
         """Write a joke to file"""
         joke_path = self._get_joke_path(joke.id)
-        data = {
-            'id': joke.id,
-            'title': joke.title,
-            'body': joke.body
-        }
-        
-        with open(joke_path, 'w') as f:
-            self.json.dump(data, f, indent=2)
+        data = {"id": joke.id, "title": joke.title, "body": joke.body}
+
+        with open(joke_path, "w") as f:
+            json.dump(data, f, indent=2)
 
     def _delete_joke(self, joke_id: str) -> None:
         """Delete a joke file"""
@@ -314,34 +324,37 @@ class FileStorageRepository(JokesRepositoryPort):
         if joke_path.exists():
             joke_path.unlink()
 
+    @override
     def get_jokes(self) -> list[Joke]:
         """Get all jokes from file storage"""
         if not self.storage_dir.exists():
             return []
-        
-        jokes = []
+
+        jokes: list[Joke] = []
         for json_file in self.storage_dir.glob("*.json"):
             try:
-                with open(json_file, 'r') as f:
-                    data = self.json.load(f)
-                joke = Joke(id=data['id'], title=data['title'], body=data['body'])
+                with open(json_file, "r") as f:
+                    data: JokeData = json.load(f)  # pyright: ignore[reportAny] We don't want to override json
+                joke = Joke(id=data["id"], title=data["title"], body=data["body"])
                 jokes.append(joke)
-            except (self.json.JSONDecodeError, KeyError, IOError):
+            except (json.JSONDecodeError, KeyError, IOError):
                 # Skip corrupted files
                 continue
-        
+
         return jokes
 
+    @override
     def create_joke(self, joke: Joke) -> Joke:
         """Create a new joke in file storage"""
         self._write_joke(joke)
         return joke
 
+    @override
     def update_joke(self, joke: Joke) -> Joke:
         """Update a joke in file storage"""
         if not self._get_joke_path(joke.id).exists():
             raise StorageError(f"Joke {joke.id} not found")
-        
+
         self._write_joke(joke)
         return joke
 

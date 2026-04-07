@@ -11,15 +11,18 @@ This module shows three levels of testing for hexagonal architecture:
 import subprocess
 
 import pytest
-from ports_adapters import (
+
+from .ports_adapters import (
     InMemoryJokesRepository,
     Joke,
     JokeService,
 )
 
+# INTEGRATION TESTS
+# Test (parts of) the domain in isolation, replacing external dependencies with
+# other adapters
 # END-TO-END TESTS
 # Test complete user journeys through the entire application
-# ============================================================================
 
 
 class TestEndToEnd:
@@ -37,14 +40,14 @@ class TestEndToEnd:
         Tests the complete flow of listing jokes, including repository
         interaction and service layer processing.
         """
-        import shutil
         import os
-        
+        import shutil
+
         # Clean up any existing storage files to start with clean state
         storage_dir = "/tmp/jokes_db"
         if os.path.exists(storage_dir):
             shutil.rmtree(storage_dir)
-        
+
         # Run the app by executing ports_adapters.py on the commandline
         output = subprocess.check_output(
             [
@@ -58,10 +61,16 @@ class TestEndToEnd:
 
         output = subprocess.check_output(["python", "docs/ports_adapters.py", "list"])
         assert "Why did the chicken cross the road?" in output.decode("utf-8")
-        
+
         # Clean up after test
         if os.path.exists(storage_dir):
             shutil.rmtree(storage_dir)
+
+
+# ============================================================================
+# INTEGRATION TESTS
+# Test interaction between components
+# ============================================================================
 
 
 class TestIntegration:
@@ -191,7 +200,7 @@ class TestJokeDomain:
         content = "No punctuation here"
 
         with pytest.raises(ValueError) as exc_info:
-            Joke.from_content(content)
+            _ = Joke.from_content(content)
 
         assert "period or question mark" in str(exc_info.value)
 
@@ -225,4 +234,4 @@ class TestJokeDomain:
 
 if __name__ == "__main__":
     # Run tests
-    pytest.main([__file__, "-v"])
+    _ = pytest.main([__file__, "-v"])

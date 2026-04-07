@@ -11,7 +11,7 @@ class TestEnvConfigRepo:
     def test_missing_env_vars(self):
         """Test that missing environment variables raise KeyError."""
         with pytest.raises(KeyError):
-            EnvConfigRepo(env={})
+            _ = EnvConfigRepo(env={})
 
     def test_valid_env_vars(self):
         """Test that valid environment variables are parsed correctly."""
@@ -34,9 +34,9 @@ class TestEnvConfigRepo:
             "ISSUER_AGENT_BASE_URL": "http://issuer.example.com",
         }
         with pytest.raises(ValueError):
-            EnvConfigRepo(env=env)
+            _ = EnvConfigRepo(env=env)
 
-    def test_default_behavior_uses_os_environ(self, monkeypatch):
+    def test_default_behavior_uses_os_environ(self, monkeypatch: pytest.MonkeyPatch):
         """Test that default behavior uses os.environ."""
         monkeypatch.setenv("SERVER_HOST", "localhost")
         monkeypatch.setenv("SERVER_PORT", "8080")
