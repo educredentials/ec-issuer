@@ -5,7 +5,7 @@ from typing import override
 import pytest
 from requests.exceptions import HTTPError, ReadTimeout
 
-from src.config import ConfigRepo
+from src.config.config_port import ConfigRepoPort
 from src.issuer_agent.ssi_agent_adapter import (
     MetadataError,
     SsiAgentAdapter,
@@ -14,7 +14,7 @@ from src.issuer_agent.ssi_agent_adapter import (
 )
 
 
-class MockConfigRepo(ConfigRepo):
+class MockConfigRepo(ConfigRepoPort):
     """Mock configuration repository for testing."""
 
     def __init__(self, issuer_agent_base_url: str = "http://example.com"):

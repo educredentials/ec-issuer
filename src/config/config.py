@@ -2,19 +2,10 @@
 
 from collections.abc import Mapping
 from os import environ
-from typing import Protocol
 
+from src.config.config_port import ConfigRepoPort
 
-class ConfigRepo(Protocol):
-    """Port: Configuration repository interface."""
-
-    server_host: str
-    server_port: int
-    issuer_agent_base_url: str
-    debug: bool
-
-
-class EnvConfigRepo:
+class EnvConfigRepo(ConfigRepoPort):
     """Adapter: Configuration repository using environment variables."""
 
     server_host: str

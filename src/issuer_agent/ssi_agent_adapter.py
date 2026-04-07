@@ -5,9 +5,8 @@ from typing import Protocol, override
 import msgspec
 import requests
 
-from src.metadata import CredentialIssuerMetadata, IssuerAgentPort
-
-from ..config import ConfigRepo
+from src.metadata.metadata import CredentialIssuerMetadata, IssuerAgentPort
+from src.config.config_port import ConfigRepoPort
 
 
 class SsiAgentHttpResponse(Protocol):
@@ -93,7 +92,7 @@ class SsiAgentAdapter(IssuerAgentPort):
     def __init__(
         self,
         *,
-        config: ConfigRepo,
+        config: ConfigRepoPort,
         requests_client: SsiAgentHttpClient | None = None,
     ) -> None:
         """Initialize the proxy adapter.

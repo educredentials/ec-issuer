@@ -1,10 +1,8 @@
 """Hardcoded adapter for Credential Issuer Metadata."""
 
 from typing import override
-from src.metadata import CredentialIssuerMetadata
 
-
-from src.metadata import IssuerAgentPort
+from src.metadata.metadata import CredentialIssuerMetadata, IssuerAgentPort
 
 
 class HardcodedIssuerAgentAdapter(IssuerAgentPort):

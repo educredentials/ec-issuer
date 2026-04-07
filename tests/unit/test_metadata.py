@@ -3,7 +3,7 @@
 import msgspec
 import pytest
 
-from src.metadata import CredentialConfiguration, CredentialIssuerMetadata
+from src.metadata.metadata import CredentialConfiguration, CredentialIssuerMetadata
 
 
 class TestDeserializeMetadata:

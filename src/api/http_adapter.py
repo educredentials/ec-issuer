@@ -5,10 +5,10 @@ from typing import override
 
 from flask import Flask
 
-from src.config import ConfigRepo
-from src.metadata import HealthStatus, MetadataService
+from src.config.config_port import ConfigRepoPort
+from src.metadata.metadata import HealthStatus, MetadataService
 
-from . import ApiPort
+from .api_port import ApiPort
 
 
 class HttpApiAdapter(ApiPort):
@@ -16,9 +16,9 @@ class HttpApiAdapter(ApiPort):
 
     flask_app: Flask
     metadata_service: MetadataService
-    config: ConfigRepo
+    config: ConfigRepoPort
 
-    def __init__(self, config: ConfigRepo, metadata_service: MetadataService):
+    def __init__(self, config: ConfigRepoPort, metadata_service: MetadataService):
         self.metadata_service = metadata_service
         self.config = config
         self.flask_app = self._flask_app()

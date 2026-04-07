@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Main application entry point for the EC Issuer."""
 
-from src.api import ApiPort
+from src.api.api_port import ApiPort
 from src.api.http_adapter import HttpApiAdapter
-from src.config import ConfigRepo, EnvConfigRepo
+from src.config.config import EnvConfigRepo
+from src.config.config_port import ConfigRepoPort
 from src.issuer_agent.ssi_agent_adapter import SsiAgentAdapter
-from src.metadata import MetadataService
+from src.metadata.metadata import MetadataService
 
 
 class App:
-    config: ConfigRepo
+    config: ConfigRepoPort
     _api_port: ApiPort
 
     def __init__(self):

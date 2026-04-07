@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.config import EnvConfigRepo
+from src.config.config import EnvConfigRepo
 
 
 class TestEnvConfigRepo:
