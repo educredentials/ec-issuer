@@ -1,9 +1,10 @@
 """End-to-end tests for the EC Issuer."""
 
 import unittest
+
 import pytest
 
-from tests.conftest import TestClient
+from tests.e2e.conftest import TestClient
 
 
 @pytest.mark.e2e
@@ -40,9 +41,12 @@ class TestCredentialIssuerMetadataEndpoint:
         assert response.status_code == 200, (
             f"Expected 200, got {response.status_code}, {response.text[:200]}"
         )
-        unittest.TestCase().assertDictEqual(response.json(), {  # pyright: ignore[reportAny], json can be any type by design here
-            "authorization_servers": ["https://authn.example.com"],
-            "credential_configurations_supported": {},
-            "credential_endpoint": "https://issuer.example.com/credential",
-            "credential_issuer": "https://issuer.example.com",
-        })
+        unittest.TestCase().assertDictEqual(
+            response.json(),  # pyright: ignore[reportAny], json can be any type by design here
+            {
+                "authorization_servers": ["https://authn.example.com"],
+                "credential_configurations_supported": {},
+                "credential_endpoint": "https://issuer.example.com/credential",
+                "credential_issuer": "https://issuer.example.com",
+            },
+        )

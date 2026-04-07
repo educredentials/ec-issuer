@@ -27,7 +27,7 @@ class HttpApiAdapter(ApiPort):
         app = Flask("HttpApi")
 
         @app.route("/health")
-        def health() -> str:
+        def health() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Health check endpoint."""
             health = self.metadata_service.get_health()
             if health == HealthStatus.HEALTHY:
@@ -36,19 +36,15 @@ class HttpApiAdapter(ApiPort):
                 return "NOT OK"
 
         @app.route("/")
-        def root() -> str:
+        def root() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Root endpoint."""
             return "Hello, World!"
 
         @app.route("/.well-known/openid-credential-issuer")
-        def credential_issuer_metadata() -> str:
+        def credential_issuer_metadata() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Credential Issuer Metadata endpoint."""
             metadata = self.metadata_service.get_credential_issuer_metadata()
             return json.dumps(metadata.__dict__)
-
-        _ = health()
-        _ = root()
-        _ = credential_issuer_metadata()
 
         return app
 
