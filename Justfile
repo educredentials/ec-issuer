@@ -1,6 +1,9 @@
 # Justfile for EC Issuer - Modern Make alternative
 # Install: https://github.com/casey/just#readme
 
+# Annoying "tip" that flask prints, but we cannot and should not implement
+export FLASK_SKIP_DOTENV := "true"
+
 # Default target
 default:
     @just --list
@@ -12,7 +15,7 @@ develop:
 # Run all quality checks (linting + type checking)
 lint:
     uv run ruff check .
-    uv run ty check .
+    uv run basedpyright .
 
 # Run all tests
 test:
@@ -24,6 +27,9 @@ test-unit:
 
 # Run only e2e tests
 test-e2e:
+    podman compose up --detach --timeout 4
+    # Wait for ec-issuer to be healthy because podman-compose lacks a wait-for-healthy option
+    @sh -c "until curl -sf http://localhost:8000/health; do echo 'Waiting for ec-issuer to be healthy...'; sleep 1; done"
     uv run pytest tests/e2e/ -v
 
 # Run everything (lint + test)

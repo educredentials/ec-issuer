@@ -1,45 +1,32 @@
 #!/usr/bin/env python3
 """Main application entry point for the EC Issuer."""
 
-from flask import Flask, Response, jsonify, request
+from src.api import ApiPort
+from src.api.http_adapter import HttpApiAdapter
+from src.config import ConfigRepo, EnvConfigRepo
+from src.issuer_agent.ssi_agent_adapter import SsiAgentAdapter
+from src.metadata import MetadataService
 
-from src.config import EnvConfigRepo
-from src.issuer_agent_adapter import IssuerAgentAdapter
-from src.issuer_agent_adapter.proxy_adapter import ProxyIssuerAgentAdapter
 
+class App:
+    config: ConfigRepo
+    _api_port: ApiPort
 
-def create_app(issuer_agent_adapter: IssuerAgentAdapter) -> Flask:
-    """Create and configure the Flask application.
+    def __init__(self):
+        self.config = EnvConfigRepo()
 
-    Args:
-        issuer_agent_adapter: The adapter to use for the issuer agent.
-    """
-    app = Flask(__name__)
+        issuer_agent = SsiAgentAdapter(config=self.config)
+        metadata_service = MetadataService(issuer_agent=issuer_agent)
 
-    @app.route("/health")
-    def health() -> str:
-        """Health check endpoint."""
-        return "OK"
-
-    @app.route("/")
-    def root() -> str:
-        """Root endpoint."""
-        return "Hello, World!"
-
-    @app.route("/.well-known/openid-credential-issuer")
-    def credential_issuer_metadata() -> Response:
-        """Credential Issuer Metadata endpoint."""
-        response = issuer_agent_adapter.credential_issuer_metadata(
-            request  # type: ignore[arg-type]
+        self._api_port = HttpApiAdapter(
+            config=self.config,
+            metadata_service=metadata_service,
         )
-        flask_response = jsonify(response.json())
-        flask_response.status_code = response.status_code
-        return flask_response
 
-    return app
+    def run(self):
+        self._api_port.run()
 
 
 if __name__ == "__main__":
-    config = EnvConfigRepo()
-    app = create_app(ProxyIssuerAgentAdapter(config=config))
-    app.run(host=config.server_host, port=config.server_port, debug=True)
+    app = App()
+    app.run()

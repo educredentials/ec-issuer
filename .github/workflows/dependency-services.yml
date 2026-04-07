@@ -1,0 +1,46 @@
+name: Build third party services containers on github container registry
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+    paths:
+      - "tests/e2e/Dockerfile.platypus"
+      - "tests/e2e/ssi-agent-mock.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/e2e/Dockerfile.platypus"
+      - "tests/e2e/ssi-agent-mock.yaml"
+
+# Set permissions for GITHUB_TOKEN
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-platypus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: tests/e2e
+          file: tests/e2e/Dockerfile.platypus
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ github.repository }}-platypus:latest

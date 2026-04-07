@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  ec-issuer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8000
+      - ISSUER_AGENT_BASE_URL=http://mock-ssi-agent:8001
+    volumes:
+      - ./src:/app/src/
+    working_dir: /app
+
+  mock-ssi-agent:
+    image: ghcr.io/depado/platypus:latest
+    ports:
+      - "8001:8001"
+    command: --server.port 8001 --server.host 0.0.0.0 --mock mock.yaml
+    volumes:
+      - ./tests/e2e/ssi-agent-mock.yaml:/app/mock.yaml
+    working_dir: /app
