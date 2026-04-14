@@ -1,0 +1,65 @@
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+
+## Git
+.git
+.github
+
+# Environment variables
+.env
+.env.*
+
+# IDE
+.idea/
+.vscode/
+.zed/
+.vibe/
+AGENTS.md
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Coverage
+.htmlcov/
+.coverage
+
+# Build
+build/
+dist/
+
+# Database
+*.db
+*.sqlite
+
+# Docker
+.env.docker
+Dockerfile
+compose.yaml
+
+# Tests
+.hypothesis/
+
+# Python cache
+.pytest_cache/
+
+# UV
+.uv/
+
+# Ruff cache
+.ruff_cache/
+
+# Mypy cache
+.mypy_cache/
+
+# Docs, mdbook
+docs/book

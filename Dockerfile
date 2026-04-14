@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY . .
 
 # Create virtual environment and install dependencies
-RUN uv python install && uv sync --frozen
+RUN uv sync --frozen
 
 # Expose the port the service runs on
 EXPOSE 8080
