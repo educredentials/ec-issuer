@@ -4,7 +4,7 @@
 
 This credential service implements **Hexagonal Architecture** (Ports and Adapters pattern), which provides clear separation between business logic and infrastructure concerns.
 
-**Practical Example**: See [`docs/ports_adapters.py`](ports_adapters.py) for a complete working example demonstrating all key concepts with a simple jokes application.
+**Practical Example**: See [`ports_adapters.py`](ports_adapters.md) for a complete working example demonstrating all key concepts with a simple jokes application. The accompanying [`ports_adapters_test.py`](ports_adapters_test.md) shows how the ports and adapters can be leveraged to test the application on several levels.
 
 ## Core Principles
 
@@ -403,6 +403,6 @@ Hexagonal architecture provides:
 - **Maintainable** codebase
 - **Technology independence**
 
-**Getting Started**: See [`docs/ports_adapters.py`](ports_adapters.py) for a complete, working example you can run and experiment with.
+**Getting Started**: See [`ports_adapters.py`](ports_adapters.py) for a complete, working example you can run and experiment with.
 
 The initial setup cost is higher, but the long-term benefits are significant for complex domains and evolving requirements. Start small and grow the architecture as needed.

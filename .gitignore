@@ -50,3 +50,6 @@ dist/
 
 # Mypy cache
 .mypy_cache/
+
+# Docs, mdbook
+docs/book

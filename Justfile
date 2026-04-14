@@ -32,6 +32,10 @@ test-e2e:
     @sh -c "until curl -sf http://localhost:8000/health; do echo 'Waiting for ec-issuer to be healthy...'; sleep 1; done"
     uv run pytest tests/e2e/ -v
 
+# Run mdbook to preview the docs. See https://rust-lang.github.io/mdBook/
+docs:
+    mdbook serve docs
+
 # Run everything (lint + test)
 all:
     just lint

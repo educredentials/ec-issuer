@@ -6,9 +6,13 @@ These user stories describe **the whole** platform of EduCredentials, not just t
 
 For each such story, one or more features for the issuer are derived.
 
-## As a learner, I want to store the credential in my personal mobile wallet.
+## Wallet
 
-### As a student, when I have a badge in my backpack, and I have the unime app, then I want to be able to import the badge into this app as Verifiable Credential. So that I am the true owner of my badge credential. And so that I can use it to prove that I have met the requirements of the achievent the badge represents.
+As a learner, I want to store the credential in my personal mobile wallet.
+
+### Import in wallet
+
+As a student, when I have a badge in my backpack, and I have the unime app, then I want to be able to import the badge into this app as Verifiable Credential. So that I am the true owner of my badge credential. And so that I can use it to prove that I have met the requirements of the achievent the badge represents.
 
 Features:
 
@@ -19,7 +23,9 @@ Features:
   - [ ] Credential Request with autorization token and proof of possesion
   - [ ] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
 
-### As a student, when I have a badge in my backpack, and I do not have, nor want to use the unime app, then I can choose to use Paradyme or Sphereon app. Then I will be able to import the badge into this app as Verifiable Credential, but without guarantee that the app will be able to import, show, and verify the badge. So that I am the true owner of my badge credential in an app of my choice.
+### Alternative wallets
+
+As a student, when I have a badge in my backpack, and I do not have, nor want to use the unime app, then I can choose to use Paradyme or Sphereon app. Then I will be able to import the badge into this app as Verifiable Credential, but without guarantee that the app will be able to import, show, and verify the badge. So that I am the true owner of my badge credential in an app of my choice.
 
 Features:
 
@@ -32,36 +38,57 @@ Features:
   - Presentation protocol 	OpenID for Verifiable Presentations (OID4VP) (Draft 28)
   - Revocation mechanism 	IETF Token Status List (Draft 10, 2025-04-16)
   
-### As a student, when I have a badge in my backpack, and I want to download a ELM (Europass) version of the badge, then I want to be able to upload this file in the the euro-pass environment so that this environment can veriify the badge and show that the verification is valid.
+## ELM and Europass
+
+As a student, when I have a badge in my backpack, and I want to download a ELM (Europass) version of the badge, then I want to be able to upload this file in the the euro-pass environment so that this environment can veriify the badge and show that the verification is valid.
 
 Features: 
 - [ ] Download signed Verifiable Credential file in ELM format.
 - [ ] File can be uploaded in euro-pass environment and shows as partially verified. Our eSeal signature is not valid and is allowed to show as invalid in the euro-pass environment.
 
-### As an institution, when I issue a badge to a user, then I want to be able to provide whether this badge will be available for importing in the unime app, and/or in the euro-pass environment, so that we can provide the appropriate attributes to comply with the standards for the unime app and/or euro-pass.
+
+## Instition
+
+As an institution, I want to hand a badge to a user, so that I can provide digital versions of certificates, diplomas and other achievements.
+
+Such an institution is now an _issuer_.
+
+### ELM and OBV3 compliance
+
+As an institution, when I issue a badge to a user, then I want to be able to provide whether this badge will be available for importing in the unime app, and/or in the euro-pass environment, so that we can provide the appropriate attributes to comply with the standards for the unime app and/or euro-pass.
 
 Features:
 - [ ] Add an endpoint where services (e.g. issuance portal) can provide an achievement and see if this complies with OBV3 and/or ELM standards.
 
-## As an issuer, I want to edit or archive an achievement when no credentials are issued of this achievement.
+### Edit existing achievements
+
+As an issuer, I want to edit or archive an achievement when no credentials are issued of this achievement.
 
 TODO: Note, this seems a non-story. As this is not something the issuer *wants* but merely describes the current implementation.
 
-## As an issuer, I want to issue a digital credential to learners who are entitled to receive it.
+### Digital credentials
+
+As an issuer, I want to issue a digital credential to learners who are entitled to receive it.
 
  - [ ] [3.2 Assertion Issuance Without a Wallet](https://www.imsglobal.org/spec/ob/v3p0/#assertion-issuance-without-a-wallet)
     - [ ]  Implement Badge Connect API to deliver assertions to a backpack
     
-## As an issuer, I want to be able to revoke credentials, so that they cannot be verified any more.
+### Revocation
+
+As an issuer, I want to be able to revoke credentials, so that they cannot be verified any more.
   
 TODO: research if, and how an [IETF-TOKEN-STATUS-LIST](https://fidescommunity.github.io/DIIP/v4#term:ietf-token-status-list) can be implemented as separate microservice from the issuance.
       research potential candidates for such a status list service.
 
-## As an issuer, I want to see the status and history of the issuing and revoking of a credential.
+### Status log
+
+As an issuer, I want to see the status and history of the issuing and revoking of a credential.
 
 TODO: Define the statuses of a credential
 TODO: Define what events are needed for this "history"
 
-##  As an issuer, I want to see statistics about the credentials that have been issued from my organisation.
+### Usage Statistics
+
+As an issuer, I want to see statistics about the credentials that have been issued from my organisation.
 
 TODO: Define KPIs for issuers and consequently the events that need to be stored for this.
