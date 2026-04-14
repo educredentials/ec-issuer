@@ -4,7 +4,7 @@ import json
 from typing import override
 
 from flask import Flask
-from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_flask_exporter import PrometheusMetrics  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
 
 from src.config.config_port import ConfigRepoPort
 from src.metadata.metadata import HealthStatus, MetadataService
@@ -29,8 +29,8 @@ class HttpApiAdapter(ApiPort):
 
         # Metrics endpoint is only relevant to HttpAdapter
         # no need for service/domain models
-        metrics = PrometheusMetrics(app)
-        _ = metrics.info('app_info', 'Application info', version='1.0.3')
+        metrics: PrometheusMetrics = PrometheusMetrics(app)
+        _ = metrics.info('app_info', 'Application info', version='1.0.3')  # pyright: ignore[reportUnknownMemberType] PrometheusMetrics has no typing
 
         @app.route("/health")
         @metrics.do_not_track()
