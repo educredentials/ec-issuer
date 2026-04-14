@@ -20,7 +20,7 @@ jobs:
           mdbook_tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
           mdbook_url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
           mermaid_tag=$(curl 'https://api.github.com/repos/badboy/mdbook-mermaid/releases/latest' | jq -r '.tag_name')
-          mermaid_url="https://github.com/badboy/mdbook-mermaid/releases/download/${mermaid_tag}/mdbook-mermaid-${mermaid_tag}-x86_64-unknown-linux-musl.tar.gz
+          mermaid_url="https://github.com/badboy/mdbook-mermaid/releases/download/${mermaid_tag}/mdbook-mermaid-${mermaid_tag}-x86_64-unknown-linux-musl.tar.gz"
           mkdir mdbook
           curl -sSL $mdbook_url | tar -xz --directory=./mdbook
           curl -sSL $mermaid_url | tar -xz --directory=./mdbook
