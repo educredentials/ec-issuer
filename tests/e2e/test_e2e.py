@@ -50,3 +50,29 @@ class TestCredentialIssuerMetadataEndpoint:
                 "credential_issuer": "https://issuer.example.com",
             },
         )
+
+
+@pytest.mark.e2e
+class TestMetricsEndpoint:
+    """Test the Prometheus metrics endpoint."""
+
+    def test_metrics_endpoint_returns_prometheus_metrics(self, e2e_client: TestClient):
+        """Test that /metrics endpoint returns Prometheus metrics after requesting /."""
+        # First request the root endpoint to generate metrics
+        response = e2e_client.get("/")
+        assert response.status_code == 200
+
+        # Then request the metrics endpoint
+        response = e2e_client.get("/metrics")
+        assert response.status_code == 200
+
+        # Verify it contains Prometheus-style metrics
+        text = response.text
+        assert 'flask_http_request_total{method="GET",status="200"}' in text
+        assert (
+            "TYPE" in text
+            or "COUNTER" in text
+            or "GAUGE" in text
+            or "HISTOGRAM" in text
+            or "SUMMARY" in text
+        )

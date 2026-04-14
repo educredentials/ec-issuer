@@ -4,6 +4,7 @@ import json
 from typing import override
 
 from flask import Flask
+from prometheus_flask_exporter import PrometheusMetrics
 
 from src.config.config_port import ConfigRepoPort
 from src.metadata.metadata import HealthStatus, MetadataService
@@ -26,7 +27,13 @@ class HttpApiAdapter(ApiPort):
     def _flask_app(self) -> Flask:
         app = Flask("HttpApi")
 
+        # Metrics endpoint is only relevant to HttpAdapter
+        # no need for service/domain models
+        metrics = PrometheusMetrics(app)
+        _ = metrics.info('app_info', 'Application info', version='1.0.3')
+
         @app.route("/health")
+        @metrics.do_not_track()
         def health() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Health check endpoint."""
             health = self.metadata_service.get_health()

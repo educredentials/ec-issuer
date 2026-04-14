@@ -9,7 +9,8 @@ default:
     @just --list
 
 # Start development server
-develop:
+# Metrics are default disabled in dev mode. ENV enables it, but makes dev slower
+develop $DEBUG_METRICS="1":
     uv run python -m src.main
 
 # Run all quality checks (linting + type checking)

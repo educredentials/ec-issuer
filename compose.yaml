@@ -12,6 +12,7 @@ services:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8000
       - ISSUER_AGENT_BASE_URL=http://mock-ssi-agent:8001
+      - DEBUG_METRICS=1
     volumes:
       - ./src:/app/src/
     working_dir: /app
