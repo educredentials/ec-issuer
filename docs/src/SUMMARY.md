@@ -1,7 +1,10 @@
 # Summary
 
+- [README](./README.md)
+
 # Domain and business
 - [Features and user stories](./features.md)
+  - [Import in Wallet](./import_in_wallet.md)
 - [HTTP API](./api.md)
 
 # Technical setup

@@ -10,6 +10,8 @@ For each such story, one or more features for the issuer are derived.
 
 As a learner, I want to store the credential in my personal mobile wallet.
 
+Refer to [dedicated Import In Wallet](./import_in_wallet.md) for technical details.
+
 ### Import in wallet
 
 As a student, when I have a badge in my backpack, and I have the unime app, then I want to be able to import the badge into this app as Verifiable Credential. So that I am the true owner of my badge credential. And so that I can use it to prove that I have met the requirements of the achievent the badge represents.
