@@ -13,6 +13,7 @@ venv/
 # IDE
 .idea/
 .vscode/
+CLAUDE.md
 
 # macOS
 .DS_Store
