@@ -204,10 +204,11 @@ class CommandlineJokesInteraction(JokesInterationPort):
         try:
             joke = self.joke_service.create_joke(content)
             print(f"Created joke: {joke}")
-            return joke
         except ValueError as e:
             print(f"Error creating joke: {e}")
             exit(1)
+
+        return joke
 
     @override
     def update_joke(self, id: str, content: str) -> Joke:
@@ -215,10 +216,11 @@ class CommandlineJokesInteraction(JokesInterationPort):
         try:
             joke = self.joke_service.update_joke(id, content)
             print(f"Updated joke: {joke}")
-            return joke
         except Exception as e:
             print(f"Error updating joke: {e}")
             exit(1)
+
+        return joke
 
     @override
     def get_jokes(self) -> list[Joke]:
