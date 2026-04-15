@@ -10,12 +10,12 @@ sequenceDiagram
 
     box
       participant RecipientPortal
+      participant ec-issuer
       participant ec-award
       participant ec-authentication
       participant ec-access-control
       participant ec-achievement
       participant ec-user
-      participant ec-issuer
 
       participant ec-key
       participant ec-status
@@ -23,18 +23,17 @@ sequenceDiagram
     end
 
     EndUser->>RecipientPortal: Import in Wallet (AwardId)
-    RecipientPortal->>ec-award: Create Offer(AwardId)
-    ec-award->>ec-issuer: Create Offer(AwardId)
-    ec-issuer->>ec-issuer: Store Offer
+    RecipientPortal->>ec-issuer: Create Offer(AwardId)
+    ec-issuer->>ec-access-control: May import(AwardId)
+    ec-access-control->>ec-issuer: Yes
+    ec-issuer->>ec-issuer: Create and Store Offer(OfferId, AwardId)
     ec-issuer-->>ec-notification: Publish OfferCreated event
-    ec-issuer-->>ec-award: Offer
-    ec-award-->>ec-award: Store Offer(OfferId, AwardId)
-    ec-award->>RecipientPortal: Offer
+    ec-issuer->>RecipientPortal: Offer
     RecipientPortal->>EndUser: Offer as QR
 
     rect rgba(0, 0, 255, .05)
         EndUser->>Wallet: Scan Offer QR
-       note Right of Wallet: OID4VCI Authorization Code flow<br/>with defered Credential endpoint
+        note Right of Wallet: OID4VCI Authorization Code flow<br/>with defered Credential endpoint
 
         Wallet->>ec-issuer: Obtain Credential Issuer Metadata
         Wallet->>ec-authentication: Authentication Request (OfferId)
@@ -48,9 +47,7 @@ sequenceDiagram
         ec-issuer->>Wallet: Credential Response (TransactionId)
     end
 
-    ec-issuer->>ec-award: Get Award(Format, OfferId, UserInfo, HolderDID, IssuerDID)
-
-    ec-award->>ec-award: Get Award via Offer (OfferId)
+    ec-issuer->>ec-award: Get Award(AwardId)
     ec-award->>ec-issuer: Award
     ec-issuer->>ec-status: Get Unused Index
     ec-status->>ec-issuer: index
@@ -71,13 +68,12 @@ sequenceDiagram
 In this diagram, the following actions take place:
 
 1. *EndUser* requests to import award in wallet via *RecipientPortal*
-1. *RecipientPortal* creates offer for the award on *ec-award*
-1. *ec-award* requests *ec-issuer* to create offer
-1. *ec-issuer* stores the offer
-1. *ec-issuer* publishes offer created event on *Notification Service*
-1. *ec-issuer* returns offer to *ec-award*
-1. *ec-award* stores the offer
-1. *ec-award* returns offer to *RecipientPortal*
+1. *RecipientPortal* creates offer for the award on *Issuer*
+1. *Issuer* checks permission on *Access Control*
+1. *Access Control* returns Yes when permission is allowed
+1. *Issuer* creates and stores the offer
+1. *Issuer* publishes offer created event on *Notification Service*
+1. *Issuer* returns offer to *RecipientPortal*
 1. *RecipientPortal* presents offer as QR code to *EndUser*
 1. *EndUser* scans QR code with *Wallet*
 1. *Wallet* obtains credential issuer metadata from *ec-issuer*
@@ -86,12 +82,11 @@ In this diagram, the following actions take place:
 1. *Wallet* requests token with code from *ec-authentication*
 1. *ec-authentication* returns access token and state to *Wallet*
 1. *Wallet* sends credential request with access token and proofs to *ec-issuer*
-1. *ec-issuer* retrieves offer
+1. *ec-issuer* retrieves offer from its storage
 1. *ec-issuer* authenticates token and offer on *ec-authentication*
 1. *ec-authentication* confirms authentication to *ec-issuer*
 1. *ec-issuer* sends credential response with transaction ID to *Wallet*
 1. *ec-issuer* requests award details from *ec-award*
-1. *ec-award* retrieves award via offer
 1. *ec-award* returns award to *ec-issuer*
 1. *ec-issuer* gets unused index from *ec-status*
 1. *ec-status* returns index to *ec-issuer*

@@ -33,8 +33,6 @@ curl -X POST http://localhost:3000/api/v1/offers  \
   -H "Content-Type: application/json" \
   -d '{
     "achievement_id": "achievement-1",
-    "issuer_id": "issuer-1",
-    "expires_at": "2025-12-31T23:59:59Z"
   }'
 ```
 
