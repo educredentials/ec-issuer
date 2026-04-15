@@ -7,4 +7,5 @@ class ConfigRepoPort(ABC):
     server_host: str
     server_port: int
     issuer_agent_base_url: str
+    public_url: str
     debug: bool

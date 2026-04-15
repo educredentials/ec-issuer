@@ -18,20 +18,23 @@ class TestEnvConfigRepo:
         env = {
             "SERVER_HOST": "localhost",
             "SERVER_PORT": "8080",
-            "ISSUER_AGENT_BASE_URL": "http://issuer.example.com",
+            "ISSUER_AGENT_BASE_URL": "http://issuer-agent.example.com",
+            "PUBLIC_URL": "https://issuer.example.com",
         }
         config = EnvConfigRepo(env=env)
 
         assert config.server_host == "localhost"
         assert config.server_port == 8080
-        assert config.issuer_agent_base_url == "http://issuer.example.com"
+        assert config.issuer_agent_base_url == "http://issuer-agent.example.com"
+        assert config.public_url == "https://issuer.example.com"
 
     def test_invalid_server_port(self):
         """Test that invalid server port raises ValueError."""
         env = {
             "SERVER_HOST": "localhost",
             "SERVER_PORT": "invalid",
-            "ISSUER_AGENT_BASE_URL": "http://issuer.example.com",
+            "ISSUER_AGENT_BASE_URL": "http://issuer-agent.example.com",
+            "PUBLIC_URL": "https://issuer.example.com",
         }
         with pytest.raises(ValueError):
             _ = EnvConfigRepo(env=env)
@@ -40,10 +43,12 @@ class TestEnvConfigRepo:
         """Test that default behavior uses os.environ."""
         monkeypatch.setenv("SERVER_HOST", "localhost")
         monkeypatch.setenv("SERVER_PORT", "8080")
-        monkeypatch.setenv("ISSUER_AGENT_BASE_URL", "http://issuer.example.com")
+        monkeypatch.setenv("ISSUER_AGENT_BASE_URL", "http://issuer-agent.example.com")
+        monkeypatch.setenv("PUBLIC_URL", "https://issuer.example.com")
 
         config = EnvConfigRepo()
 
         assert config.server_host == "localhost"
         assert config.server_port == 8080
-        assert config.issuer_agent_base_url == "http://issuer.example.com"
+        assert config.issuer_agent_base_url == "http://issuer-agent.example.com"
+        assert config.public_url == "https://issuer.example.com"

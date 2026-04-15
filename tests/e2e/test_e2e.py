@@ -53,6 +53,29 @@ class TestCredentialIssuerMetadataEndpoint:
 
 
 @pytest.mark.e2e
+class TestCreateOffer:
+    """Test the create offer endpoint."""
+
+    def test_create_offer_happy_path(self, e2e_client: TestClient):
+        """Test that POST /api/v1/offers creates an offer and returns URI + offer_id."""
+        response = e2e_client.post(
+            "api/v1/offers",
+            json={"achievement_id": "award-123"},
+            headers={"Authorization": "Bearer test-token"},
+        )
+        assert response.status_code == 201, (
+            f"Expected 201, got {response.status_code}: {response.text[:200]}"
+        )
+        body: dict[str, str] = response.json()  # pyright: ignore[reportAny] json can be any type by design here
+        assert "offer_id" in body
+        assert "uri" in body
+        offer_id: str = body["offer_id"]
+        assert body["uri"] == (
+            f"openid-credential-offer://?credential_offer_uri=https://issuer.example.com/api/v1/offers/{offer_id}"
+        )
+
+
+@pytest.mark.e2e
 class TestMetricsEndpoint:
     """Test the Prometheus metrics endpoint."""
 

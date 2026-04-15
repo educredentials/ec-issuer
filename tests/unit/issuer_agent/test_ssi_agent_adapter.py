@@ -21,6 +21,7 @@ class MockConfigRepo(ConfigRepoPort):
         self.server_host: str = "localhost"
         self.server_port: int = 8080
         self.issuer_agent_base_url: str = issuer_agent_base_url
+        self.public_url: str = "https://issuer.example.com"
         self.debug: bool = False
 
 

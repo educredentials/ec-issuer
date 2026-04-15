@@ -90,6 +90,16 @@ class IssuerAgentPort(ABC):
         """
         ...
 
+    @abstractmethod
+    def create_offer(self, offer_id: str, achievement_id: str) -> None:
+        """Create an offer in the issuer agent.
+
+        Args:
+            offer_id: The unique identifier for the offer.
+            achievement_id: The achievement/award identifier to issue.
+        """
+        ...
+
 
 class MetadataService:
     issuer_agent: IssuerAgentPort

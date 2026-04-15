@@ -9,6 +9,10 @@ class HardcodedIssuerAgentAdapter(IssuerAgentPort):
     """Hardcoded adapter for Credential Issuer Metadata."""
 
     @override
+    def create_offer(self, offer_id: str, achievement_id: str) -> None:
+        """No-op stub: offer creation is handled entirely by OfferService for now."""
+
+    @override
     def credential_issuer_metadata(self) -> CredentialIssuerMetadata:
         """Return hardcoded Credential Issuer Metadata.
 
