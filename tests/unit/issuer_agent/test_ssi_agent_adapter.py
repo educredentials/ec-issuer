@@ -5,28 +5,17 @@ from typing import override
 import pytest
 from requests.exceptions import HTTPError, ReadTimeout
 
-from src.config.config_port import ConfigRepoPort
 from src.issuer_agent.ssi_agent_adapter import (
     MetadataError,
     SsiAgentAdapter,
     SsiAgentHttpClient,
     SsiAgentHttpResponse,
 )
+from tests.unit.test_doubles import ConfigRepoStub
 
 
-class MockConfigRepo(ConfigRepoPort):
-    """Mock configuration repository for testing."""
-
-    def __init__(self, issuer_agent_base_url: str = "http://example.com"):
-        self.server_host: str = "localhost"
-        self.server_port: int = 8080
-        self.issuer_agent_base_url: str = issuer_agent_base_url
-        self.public_url: str = "https://issuer.example.com"
-        self.debug: bool = False
-
-
-class MockResponse(SsiAgentHttpResponse):
-    """Mock response for testing."""
+class SsiAgentResponseStub(SsiAgentHttpResponse):
+    """Stub: returns a 200 response with hardcoded credential issuer metadata."""
 
     @property
     @override
@@ -43,7 +32,9 @@ class MockResponse(SsiAgentHttpResponse):
         }"""
 
 
-class MockResponseRedirect(SsiAgentHttpResponse):
+class SsiAgentResponseRedirectStub(SsiAgentHttpResponse):
+    """Stub: returns a 302 redirect response."""
+
     @property
     @override
     def status_code(self) -> int:
@@ -55,36 +46,40 @@ class MockResponseRedirect(SsiAgentHttpResponse):
         return "".encode()
 
 
-class MockRequestsClient(SsiAgentHttpClient):
-    """Simple POPO mock for HTTP client that implements RequestsClientProtocol."""
+class SsiAgentClientStub(SsiAgentHttpClient):
+    """Stub: always returns a successful 200 response."""
 
     @override
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
-        return MockResponse()
+        """Return a successful response stub."""
+        return SsiAgentResponseStub()
 
 
-class MockRequestsClientError(SsiAgentHttpClient):
-    """Simple POPO mock for HTTP client that implements RequestsClientProtocol."""
+class SsiAgentClientErrorStub(SsiAgentHttpClient):
+    """Stub: always raises HTTPError."""
 
     @override
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
+        """Raise an HTTP error."""
         raise HTTPError
 
 
-class MockRequestsClientTimeout(SsiAgentHttpClient):
-    """Simple POPO mock for HTTP client that implements RequestsClientProtocol."""
+class SsiAgentClientTimeoutStub(SsiAgentHttpClient):
+    """Stub: always raises ReadTimeout."""
 
     @override
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
+        """Raise a timeout error."""
         raise ReadTimeout
 
 
-class MockRequestsClientRedirect(SsiAgentHttpClient):
-    """Simple POPO mock for HTTP client that implements RequestsClientProtocol."""
+class SsiAgentClientRedirectStub(SsiAgentHttpClient):
+    """Stub: always returns a 302 redirect response."""
 
     @override
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
-        return MockResponseRedirect()
+        """Return a redirect response stub."""
+        return SsiAgentResponseRedirectStub()
 
 
 class TestSsiAgentAdapterGetCredentialIssuerMetadata:
@@ -92,36 +87,38 @@ class TestSsiAgentAdapterGetCredentialIssuerMetadata:
 
     def test_credential_issuer_metadata_timeout(self):
         """Test that the proxy adapter has a hardcoded timeout."""
-        config = MockConfigRepo()
-        mock_client = MockRequestsClientTimeout()
-        subject = SsiAgentAdapter(config=config, requests_client=mock_client)
+        config = ConfigRepoStub()
+        subject = SsiAgentAdapter(
+            config=config, requests_client=SsiAgentClientTimeoutStub()
+        )
 
         with pytest.raises(ReadTimeout):
             _ = subject.credential_issuer_metadata()
 
     def test_credential_issuer_metadata_error(self):
         """Test that the proxy adapter proxies 4xx errors."""
-        config = MockConfigRepo()
-        mock_client = MockRequestsClientError()
-        subject = SsiAgentAdapter(config=config, requests_client=mock_client)
+        config = ConfigRepoStub()
+        subject = SsiAgentAdapter(
+            config=config, requests_client=SsiAgentClientErrorStub()
+        )
 
         with pytest.raises(HTTPError):
             _ = subject.credential_issuer_metadata()
 
     def test_credential_issuer_metadata_3xx_redirect(self):
         """Test proxy adapter handles 3xx redirects with not supported response."""
-        config = MockConfigRepo()
-        mock_client = MockRequestsClientRedirect()
-        subject = SsiAgentAdapter(config=config, requests_client=mock_client)
+        config = ConfigRepoStub()
+        subject = SsiAgentAdapter(
+            config=config, requests_client=SsiAgentClientRedirectStub()
+        )
 
         with pytest.raises(MetadataError):
             _ = subject.credential_issuer_metadata()
 
     def test_credential_issuer_metadata_200_success(self):
         """Test that the proxy adapter returns successful responses."""
-        config = MockConfigRepo()
-        mock_client = MockRequestsClient()
-        subject = SsiAgentAdapter(config=config, requests_client=mock_client)
+        config = ConfigRepoStub()
+        subject = SsiAgentAdapter(config=config, requests_client=SsiAgentClientStub())
 
         metadata = subject.credential_issuer_metadata()
         assert metadata.credential_issuer == "http://example.com/issuer"

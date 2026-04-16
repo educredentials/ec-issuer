@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from typing import override
 
-from flask import Flask, request
+from flask import Flask, Request, request
 from prometheus_flask_exporter import PrometheusMetrics  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
 
 from src.config.config_port import ConfigRepoPort
@@ -12,6 +12,10 @@ from src.metadata.metadata import HealthStatus, MetadataService
 from src.offers.offer_service import OfferService, PermissionDeniedError
 
 from .api_port import ApiPort
+
+
+class MissingTokenError(Exception):
+    """Raised when the Authorization header is absent or contains no token."""
 
 
 @dataclass
@@ -79,8 +83,10 @@ class HttpApiAdapter(ApiPort):
         @app.route("/api/v1/offers", methods=["POST"])
         def create_offer():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Create a credential offer for an achievement."""
-            auth_header = request.headers.get("Authorization", "")
-            bearer_token = auth_header.removeprefix("Bearer ").strip()
+            try:
+                bearer_token = self._bearer_token(request)
+            except MissingTokenError:
+                return json.dumps({"error": "Unauthorized"}), 401
 
             raw: dict[str, str] = request.get_json(silent=True) or {}
             body = CreateOfferBody(achievement_id=raw.get("achievement_id", ""))
@@ -102,3 +108,20 @@ class HttpApiAdapter(ApiPort):
         self.flask_app.run(
             host=self.config.server_host, port=self.config.server_port, debug=True
         )
+
+    def _bearer_token(self, request: Request) -> str:
+        """Extract the bearer token from the Authorization header.
+
+        Args:
+            request: The incoming Flask request.
+
+        Returns:
+            The bearer token string.
+
+        Raises:
+            MissingTokenError: When the header is absent or the token is empty.
+        """
+        auth_header = request.authorization
+        if not auth_header or not auth_header.token:
+            raise MissingTokenError()
+        return auth_header.token
