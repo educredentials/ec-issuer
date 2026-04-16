@@ -19,8 +19,8 @@ As a student, when I have a badge in my backpack, and I have the unime app, then
 Features:
 
 - [ ] OpenID4VCI standards authorization code flow with a mobile wallet
-  - [ ] Credential Issuer Metadata
-  - [ ] Credential Offer creation and delivery to user as QR code
+  - [x] Credential Issuer Metadata
+  - [x] Credential Offer creation and delivery to user as QR code
   - [ ] OpenID connect authentication flow started from wallet
   - [ ] Credential Request with autorization token and proof of possesion
   - [ ] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
