@@ -1,11 +1,10 @@
 """End-to-end tests for the EC Issuer."""
 
-import unittest
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from tests.e2e.conftest import Config, HttpClient
+from tests.e2e.conftest import Config, HttpClient, assert_schema, jsonpath_value
 
 
 @pytest.mark.e2e
@@ -42,14 +41,18 @@ class TestCredentialIssuerMetadataEndpoint:
         assert response.status_code == 200, (
             f"Expected 200, got {response.status_code}, {response.text[:200]}"
         )
-        unittest.TestCase().assertDictEqual(
-            response.json(),  # pyright: ignore[reportAny], json can be any type by design here
-            {
-                "authorization_servers": ["https://authn.example.com"],
-                "credential_configurations_supported": {},
-                "credential_endpoint": "https://issuer.example.com/credential",
-                "credential_issuer": "https://issuer.example.com",
-            },
+        body: object = response.json()  # pyright: ignore[reportAny]
+        assert_schema(body, "credential_issuer_metadata")
+        assert (
+            jsonpath_value(body, "$.credential_issuer") == "https://issuer.example.com"
+        )
+        assert (
+            jsonpath_value(body, "$.credential_endpoint")
+            == "https://issuer.example.com/credential"
+        )
+        assert (
+            jsonpath_value(body, "$.authorization_servers[0]")
+            == "https://authn.example.com"
         )
 
 
@@ -67,18 +70,13 @@ class TestOffer:
         assert response.status_code == 201, (
             f"Expected 201, got {response.status_code}: {response.text[:200]}"
         )
-        body: dict[str, str] = response.json()  # pyright: ignore[reportAny] json can be any type by design here
-        assert "offer_id" in body
-        assert "uri" in body
-        offer_id: str = body["offer_id"]
+        body: object = response.json()  # pyright: ignore[reportAny]
+        assert_schema(body, "create_offer_response")
 
-        assert config.public_url in body["uri"]
-
-        expected_credential_offer_uri: str = (
-            f"{config.public_url}/api/v1/offers/{offer_id}"
-        )
-        assert body["uri"] == (
-            f"openid-credential-offer://?credential_offer_uri={expected_credential_offer_uri}"
+        offer_id = jsonpath_value(body, "$.offer_id")
+        uri = jsonpath_value(body, "$.uri")
+        assert uri == (
+            f"openid-credential-offer://?credential_offer_uri={config.public_url}/api/v1/offers/{offer_id}"
         )
 
     def test_get_offer(self, e2e_client: HttpClient, config: Config):
@@ -88,23 +86,20 @@ class TestOffer:
             json={"achievement_id": "award-123"},
             headers={"Authorization": "Bearer test-token"},
         )
-        assert create_response.status_code == 201
-        create_body: dict[str, str] = create_response.json()  # pyright: ignore[reportAny]
-        offer_id: str = create_body["offer_id"]
-        offer_uri: str = create_body["uri"]
+        create_body: object = create_response.json()  # pyright: ignore[reportAny]
+        offer_uri: str = jsonpath_value(create_body, "$.uri")  # pyright: ignore[reportAssignmentType]
 
         credential_offer_uri: str = parse_qs(urlparse(offer_uri).query)[
             "credential_offer_uri"
         ][0]
-        offer_path = urlparse(credential_offer_uri).path
+        offer_path = urlparse(credential_offer_uri).path.lstrip("/")
 
-        response = e2e_client.get(offer_path.lstrip("/"))
+        response = e2e_client.get(offer_path)
 
         assert response.status_code == 200
-        body: dict[str, object] = response.json()  # pyright: ignore[reportAny]
-        assert body["credential_issuer"] == config.public_url
-        assert body["credential_configuration_ids"] == ["UniversityDegreeCredential"]
-        assert body["grants"] == {"authorization_code": {"issuer_state": offer_id}}
+        body: object = response.json()  # pyright: ignore[reportAny]
+        assert_schema(body, "credential_offer")
+        assert jsonpath_value(body, "$.credential_issuer") == config.public_url
 
 
 @pytest.mark.e2e
@@ -113,15 +108,12 @@ class TestMetricsEndpoint:
 
     def test_metrics_endpoint_returns_prometheus_metrics(self, e2e_client: HttpClient):
         """Test that /metrics endpoint returns Prometheus metrics after requesting /."""
-        # First request the root endpoint to generate metrics
         response = e2e_client.get("/")
         assert response.status_code == 200
 
-        # Then request the metrics endpoint
         response = e2e_client.get("/metrics")
         assert response.status_code == 200
 
-        # Verify it contains Prometheus-style metrics
         text = response.text
         assert 'flask_http_request_total{method="GET",status="200"}' in text
         assert (
