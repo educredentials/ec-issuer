@@ -6,6 +6,7 @@ from src.api.api_port import ApiPort
 from src.api.http_adapter import HttpApiAdapter
 from src.config.config import EnvConfigRepo
 from src.config.config_port import ConfigRepoPort
+from src.credentials.credential_service import CredentialService
 from src.issuer_agent.ssi_agent_adapter import SsiAgentAdapter
 from src.metadata.metadata_service import MetadataService
 from src.offers.in_memory_adapter import InMemoryOffersRepository
@@ -36,10 +37,13 @@ class App:
             public_url=self.config.public_url,
         )
 
+        credential_service = CredentialService(issuer_agent=issuer_agent)
+
         self._api_port = HttpApiAdapter(
             config=self.config,
             metadata_service=metadata_service,
             offer_service=offer_service,
+            credential_service=credential_service,
         )
 
     def run(self):

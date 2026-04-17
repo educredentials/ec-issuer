@@ -5,9 +5,11 @@ import pytest
 from flask.testing import FlaskClient
 
 from src.api.http_adapter import HttpApiAdapter
+from src.credentials.credential_service import CredentialService
 from src.offers.offer_service import OfferService
 from tests.unit.test_doubles import (
     ConfigRepoStub,
+    IssuerAgentStub,
     MetadataServiceStub,
     OfferServiceSpy,
 )
@@ -35,10 +37,12 @@ def http_client(offer_service_spy: OfferService) -> FlaskClient:
 def setup_http_client(offer_service: OfferService) -> FlaskClient:
     """Setup a Flask test client with the given OfferService."""
     prometheus_client.REGISTRY = prometheus_client.CollectorRegistry(auto_describe=True)
+    credential_service = CredentialService(issuer_agent=IssuerAgentStub())
     adapter = HttpApiAdapter(
         config=ConfigRepoStub(),
         metadata_service=MetadataServiceStub(),
         offer_service=offer_service,
+        credential_service=credential_service,
     )
     adapter.flask_app.config.update({"TESTING": True})  # pyright: ignore[reportUnknownMemberType] We lack type stubs for Flask config
     return adapter.flask_app.test_client()

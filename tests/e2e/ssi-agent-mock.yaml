@@ -11,3 +11,13 @@ endpoints:
             "authorization_servers": ["https://authn.example.com"],
             "credential_configurations_supported": {}
         }
+- path: "/credential"
+  post:
+    responses:
+    - code: 200
+      body: |
+        {
+            "credentials": [
+                {"credential": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1Nin0.eyJpYXQiOjE3NzY0MzM3MDIsImNyZWRlbnRpYWwiOiJqb3VybmFsIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}
+            ]
+        }

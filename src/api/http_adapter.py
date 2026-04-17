@@ -9,6 +9,8 @@ from flask import Flask, Request, request
 from prometheus_flask_exporter import PrometheusMetrics  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
 
 from src.config.config_port import ConfigRepoPort
+from src.credentials.credential_service import CredentialService
+from src.issuer_agent.issuer_agent_port import IssuerAgentError
 from src.metadata.metadata_service import HealthStatus, MetadataService
 from src.offers.offer_service import OfferService, PermissionDeniedError
 
@@ -26,12 +28,31 @@ class CreateOfferBody:
     achievement_id: str
 
 
+@dataclass
+class Proof:
+    """Proof object for credential request."""
+
+    proof_type: str
+    jwt: str
+
+
+@dataclass
+class CredentialRequestBody:
+    """Parsed request body for the credential endpoint."""
+
+    format: str
+    credential_configuration_id: str
+    proof: Proof
+    issuer_state: str
+
+
 class HttpApiAdapter(ApiPort):
     """HTTP REST API adapter"""
 
     flask_app: Flask
     metadata_service: MetadataService
     offer_service: OfferService
+    credential_service: CredentialService
     config: ConfigRepoPort
 
     def __init__(
@@ -39,6 +60,7 @@ class HttpApiAdapter(ApiPort):
         config: ConfigRepoPort,
         metadata_service: MetadataService,
         offer_service: OfferService,
+        credential_service: CredentialService,
     ):
         """Initialise the adapter.
 
@@ -46,9 +68,11 @@ class HttpApiAdapter(ApiPort):
             config: Application configuration.
             metadata_service: Service for credential issuer metadata.
             offer_service: Service for creating credential offers.
+            credential_service: Service for requesting credentials.
         """
         self.metadata_service = metadata_service
         self.offer_service = offer_service
+        self.credential_service = credential_service
         self.config = config
         self.flask_app = self._flask_app()
 
@@ -112,6 +136,34 @@ class HttpApiAdapter(ApiPort):
                 return json.dumps({"error": "Forbidden"}), 403
 
             return json.dumps({"offer_id": offer.offer_id, "uri": offer.uri}), 201
+
+        @app.route("/credential", methods=["POST"])
+        def request_credential():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
+            """Request a credential from the issuer."""
+            try:
+                access_token = self._bearer_token(request)
+            except MissingTokenError:
+                return json.dumps({"error": "Unauthorized"}), 401
+
+            raw_json = request.get_data(as_text=True)
+
+            try:
+                body: CredentialRequestBody = msgspec.json.decode(
+                    raw_json, type=CredentialRequestBody
+                )
+                credential_response = self.credential_service.request_credential(
+                    format=body.format,
+                    credential_configuration_id=body.credential_configuration_id,
+                    proof={"proof_type": body.proof.proof_type, "jwt": body.proof.jwt},
+                    issuer_state=body.issuer_state,
+                    access_token=access_token,
+                )
+            except msgspec.ValidationError as e:
+                return json.dumps({"error": str(e)}), 400
+            except IssuerAgentError as e:
+                return json.dumps({"error": str(e)}), 502
+
+            return msgspec.json.encode(credential_response).decode(), 200
 
         return app
 

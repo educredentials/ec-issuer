@@ -10,6 +10,20 @@ from requests import request
 _SCHEMAS_DIR = Path(__file__).parent / "schemas"
 
 
+def load_schema(schema_name: str) -> dict[str, object]:
+    """Load a JSON schema file from the schemas directory.
+
+    Args:
+        schema_name: Filename without extension, e.g. "credential_offer".
+
+    Returns:
+        The parsed schema as a dictionary.
+    """
+    return json.loads(  # pyright: ignore[reportAny]
+        (_SCHEMAS_DIR / f"{schema_name}.json").read_text()
+    )
+
+
 def assert_schema(data: object, schema_name: str) -> None:
     """Validate data against a JSON schema file in the schemas directory.
 
@@ -20,10 +34,7 @@ def assert_schema(data: object, schema_name: str) -> None:
     Raises:
         jsonschema.ValidationError: When data does not match the schema.
     """
-    schema: dict[str, object] = json.loads(  # pyright: ignore[reportAny]
-        (_SCHEMAS_DIR / f"{schema_name}.json").read_text()
-    )
-    jsonschema.validate(data, schema)
+    jsonschema.validate(data, load_schema(schema_name))
 
 
 def jsonpath_value(data: object, expression: str) -> object:

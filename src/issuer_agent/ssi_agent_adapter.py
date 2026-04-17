@@ -6,7 +6,9 @@ import msgspec
 import requests
 
 from src.config.config_port import ConfigRepoPort
-from src.issuer_agent.error import MetadataError
+from src.credentials.credential import CredentialResponse
+from src.issuer_agent.issuer_agent_port import IssuerAgentError
+from src.issuer_agent.issuer_agent_port import MetadataError
 from src.issuer_agent.issuer_agent_port import IssuerAgentPort
 from src.metadata.credential_issuer_metadata import CredentialIssuerMetadata
 
@@ -37,6 +39,26 @@ class SsiAgentHttpClient(Protocol):
 
         Args:
             url: The URL to send the request to.
+            timeout: The timeout in seconds.
+
+        Returns:
+            A response object.
+        """
+        ...
+
+    def post(
+        self,
+        url: str,
+        data: bytes,
+        headers: dict[str, str],
+        timeout: int,
+    ) -> SsiAgentHttpResponse:
+        """Send a POST request.
+
+        Args:
+            url: The URL to send the request to.
+            data: The request body as bytes.
+            headers: The request headers.
             timeout: The timeout in seconds.
 
         Returns:
@@ -86,6 +108,29 @@ class RequestsWrapper(SsiAgentHttpClient):
             A requests.Response object that implements SsiAgentHttpResponse.
         """
         return RequestsWrapperResponse(requests.get(url, timeout=timeout))
+
+    @override
+    def post(
+        self,
+        url: str,
+        data: bytes,
+        headers: dict[str, str],
+        timeout: int,
+    ) -> SsiAgentHttpResponse:
+        """Send a POST request using the requests library.
+
+        Args:
+            url: The URL to send the request to.
+            data: The request body as bytes.
+            headers: The request headers.
+            timeout: The timeout in seconds.
+
+        Returns:
+            A requests.Response object that implements SsiAgentHttpResponse.
+        """
+        return RequestsWrapperResponse(
+            requests.post(url, data=data, headers=headers, timeout=timeout)
+        )
 
 
 class SsiAgentAdapter(IssuerAgentPort):
@@ -138,3 +183,59 @@ class SsiAgentAdapter(IssuerAgentPort):
 
         # Return the response as-is (including 4xx and 5xx errors)
         return credential_issuer_metadata
+
+    @override
+    def credential_request(
+        self,
+        format: str,
+        credential_configuration_id: str,
+        proof: dict[str, object],
+        issuer_state: str,
+        access_token: str,
+    ) -> CredentialResponse:
+        """Proxy the credential request to the SSI agent.
+
+        Args:
+            format: The credential format.
+            credential_configuration_id: The credential configuration identifier.
+            proof: The proof object containing proof_type and jwt.
+            issuer_state: The issuer state from the offer.
+            access_token: The access token for authorization.
+
+        Returns:
+            CredentialResponse containing the issued credential(s).
+
+        Raises:
+            IssuerAgentError: When the upstream request fails.
+        """
+        request_body = {
+            "format": format,
+            "credential_configuration_id": credential_configuration_id,
+            "proof": proof,
+            "issuer_state": issuer_state,
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {access_token}",
+        }
+
+        # Forward the request to the issuer agent
+        response = self.requests_client.post(
+            f"{self.base_url}/credential",
+            data=msgspec.json.encode(request_body),
+            headers=headers,
+            timeout=self.timeout,
+        )
+
+        # Handle HTTP errors from upstream
+        if 400 <= int(response.status_code) < 600:
+            raise IssuerAgentError(
+                f"Upstream error: {response.status_code} - {response.content.decode()}"
+            )
+
+        credential_response: CredentialResponse = msgspec.json.decode(
+            response.content, type=CredentialResponse
+        )
+
+        return credential_response

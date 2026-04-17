@@ -7,11 +7,13 @@ from typing import override
 
 from src.access_control.access_control_port import AccessControlPort
 from src.config.config_port import ConfigRepoPort
+from src.credentials.credential import CredentialResponse
 from src.issuer_agent.issuer_agent_port import IssuerAgentPort
 from src.metadata.credential_issuer_metadata import (
     CredentialConfiguration,
     CredentialIssuerMetadata,
 )
+from src.metadata.metadata_service import MetadataService
 from src.offers.in_memory_adapter import InMemoryOffersRepository
 from src.offers.offer_repository import Offer
 from src.offers.offer_service import OfferService, PermissionDeniedError
@@ -102,6 +104,18 @@ class IssuerAgentStub(IssuerAgentPort):
     def create_offer(self, offer_id: str, achievement_id: str) -> None:
         """No-op stub."""
 
+    @override
+    def credential_request(
+        self,
+        format: str,
+        credential_configuration_id: str,
+        proof: dict[str, object],
+        issuer_state: str,
+        access_token: str,
+    ) -> CredentialResponse:
+        """No-op stub that raises NotImplementedError."""
+        raise NotImplementedError
+
 
 class IssuerAgentSpy(IssuerAgentPort):
     """Spy: records create_offer calls; no-ops the actual operation."""
@@ -121,6 +135,18 @@ class IssuerAgentSpy(IssuerAgentPort):
     def create_offer(self, offer_id: str, achievement_id: str) -> None:
         """Record the call."""
         self.offers.append((offer_id, achievement_id))
+
+    @override
+    def credential_request(
+        self,
+        format: str,
+        credential_configuration_id: str,
+        proof: dict[str, object],
+        issuer_state: str,
+        access_token: str,
+    ) -> CredentialResponse:
+        """Not needed in offer tests."""
+        raise NotImplementedError
 
 
 class MetadataServiceStub(MetadataService):

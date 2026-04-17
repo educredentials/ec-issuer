@@ -54,6 +54,17 @@ class SsiAgentClientStub(SsiAgentHttpClient):
         """Return a successful response stub."""
         return SsiAgentResponseStub()
 
+    @override
+    def post(
+        self,
+        url: str,
+        data: bytes,
+        headers: dict[str, str],
+        timeout: int,
+    ) -> SsiAgentHttpResponse:
+        """Raise NotImplementedError for POST requests."""
+        raise NotImplementedError
+
 
 class SsiAgentClientErrorStub(SsiAgentHttpClient):
     """Stub: always raises HTTPError."""
@@ -62,6 +73,17 @@ class SsiAgentClientErrorStub(SsiAgentHttpClient):
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
         """Raise an HTTP error."""
         raise HTTPError
+
+    @override
+    def post(
+        self,
+        url: str,
+        data: bytes,
+        headers: dict[str, str],
+        timeout: int,
+    ) -> SsiAgentHttpResponse:
+        """Raise NotImplementedError for POST requests."""
+        raise NotImplementedError
 
 
 class SsiAgentClientTimeoutStub(SsiAgentHttpClient):
@@ -72,6 +94,17 @@ class SsiAgentClientTimeoutStub(SsiAgentHttpClient):
         """Raise a timeout error."""
         raise ReadTimeout
 
+    @override
+    def post(
+        self,
+        url: str,
+        data: bytes,
+        headers: dict[str, str],
+        timeout: int,
+    ) -> SsiAgentHttpResponse:
+        """Raise NotImplementedError for POST requests."""
+        raise NotImplementedError
+
 
 class SsiAgentClientRedirectStub(SsiAgentHttpClient):
     """Stub: always returns a 302 redirect response."""
@@ -80,6 +113,17 @@ class SsiAgentClientRedirectStub(SsiAgentHttpClient):
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
         """Return a redirect response stub."""
         return SsiAgentResponseRedirectStub()
+
+    @override
+    def post(
+        self,
+        url: str,
+        data: bytes,
+        headers: dict[str, str],
+        timeout: int,
+    ) -> SsiAgentHttpResponse:
+        """Raise NotImplementedError for POST requests."""
+        raise NotImplementedError
 
 
 class TestSsiAgentAdapterGetCredentialIssuerMetadata:

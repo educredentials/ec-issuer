@@ -51,3 +51,26 @@ class TestOffer:
         body: object = response.json()  # pyright: ignore[reportAny]
         assert_schema(body, "credential_offer")
         assert jsonpath_value(body, "$.credential_issuer") == config.public_url
+
+    def test_offer_is_authorization_code_flow(
+        self, e2e_client: HttpClient
+    ):
+        """Test that a credential offer has attributes for authorization code flow."""
+        create_response = e2e_client.post(
+            "api/v1/offers",
+            json={"achievement_id": "award-123"},
+            headers={"Authorization": "Bearer test-token"},
+        )
+        create_body: object = create_response.json()  # pyright: ignore[reportAny]
+        offer_uri: str = jsonpath_value(create_body, "$.uri")  # pyright: ignore[reportAssignmentType]
+
+        credential_offer_uri: str = parse_qs(urlparse(offer_uri).query)[
+            "credential_offer_uri"
+        ][0]
+        offer_path = urlparse(credential_offer_uri).path.lstrip("/")
+
+        response = e2e_client.get(offer_path)
+        body: object = response.json()  # pyright: ignore[reportAny]
+        assert (
+            jsonpath_value(body, "$.grants.authorization_code.issuer_state") is not None
+        )
