@@ -5,8 +5,8 @@ from typing import override
 import pytest
 from requests.exceptions import HTTPError, ReadTimeout
 
+from src.issuer_agent.issuer_agent_port import MetadataError
 from src.issuer_agent.ssi_agent_adapter import (
-    MetadataError,
     SsiAgentAdapter,
     SsiAgentHttpClient,
     SsiAgentHttpResponse,

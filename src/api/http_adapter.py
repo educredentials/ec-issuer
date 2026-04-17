@@ -9,7 +9,7 @@ from flask import Flask, Request, request
 from prometheus_flask_exporter import PrometheusMetrics  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
 
 from src.config.config_port import ConfigRepoPort
-from src.metadata.metadata import HealthStatus, MetadataService
+from src.metadata.metadata_service import HealthStatus, MetadataService
 from src.offers.offer_service import OfferService, PermissionDeniedError
 
 from .api_port import ApiPort

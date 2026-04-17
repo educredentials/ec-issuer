@@ -7,11 +7,10 @@ from typing import override
 
 from src.access_control.access_control_port import AccessControlPort
 from src.config.config_port import ConfigRepoPort
-from src.metadata.metadata import (
+from src.issuer_agent.issuer_agent_port import IssuerAgentPort
+from src.metadata.credential_issuer_metadata import (
     CredentialConfiguration,
     CredentialIssuerMetadata,
-    IssuerAgentPort,
-    MetadataService,
 )
 from src.offers.in_memory_adapter import InMemoryOffersRepository
 from src.offers.offer_repository import Offer

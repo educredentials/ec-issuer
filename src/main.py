@@ -7,7 +7,7 @@ from src.api.http_adapter import HttpApiAdapter
 from src.config.config import EnvConfigRepo
 from src.config.config_port import ConfigRepoPort
 from src.issuer_agent.ssi_agent_adapter import SsiAgentAdapter
-from src.metadata.metadata import MetadataService
+from src.metadata.metadata_service import MetadataService
 from src.offers.in_memory_adapter import InMemoryOffersRepository
 from src.offers.offer_service import OfferService
 

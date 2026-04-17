@@ -3,11 +3,11 @@
 import msgspec
 import pytest
 
-from src.metadata.metadata import (
+from src.metadata.credential_issuer_metadata import (
     CredentialConfiguration,
     CredentialIssuerMetadata,
-    MetadataService,
 )
+from src.metadata.metadata_service import MetadataService
 from tests.unit.test_doubles import IssuerAgentStub
 
 

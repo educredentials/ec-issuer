@@ -3,7 +3,7 @@
 import uuid
 
 from src.access_control.access_control_port import AccessControlPort
-from src.metadata.metadata import IssuerAgentPort
+from src.issuer_agent.issuer_agent_port import IssuerAgentPort
 from src.offers.offer_repository import Offer, OffersRepositoryPort
 
 

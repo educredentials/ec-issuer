@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 
 from src.config.config_port import ConfigRepoPort
-from src.metadata.metadata import MetadataService
+from src.metadata.metadata_service import MetadataService
 from src.offers.offer_service import OfferService
 
 

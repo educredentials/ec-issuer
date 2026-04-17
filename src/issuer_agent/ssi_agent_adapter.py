@@ -5,8 +5,10 @@ from typing import Protocol, override
 import msgspec
 import requests
 
-from src.metadata.metadata import CredentialIssuerMetadata, IssuerAgentPort
 from src.config.config_port import ConfigRepoPort
+from src.issuer_agent.error import MetadataError
+from src.issuer_agent.issuer_agent_port import IssuerAgentPort
+from src.metadata.credential_issuer_metadata import CredentialIssuerMetadata
 
 
 class SsiAgentHttpResponse(Protocol):
@@ -136,9 +138,3 @@ class SsiAgentAdapter(IssuerAgentPort):
 
         # Return the response as-is (including 4xx and 5xx errors)
         return credential_issuer_metadata
-
-
-class MetadataError(Exception):
-    """Exception raised when there is an error in the metadata."""
-
-    pass
