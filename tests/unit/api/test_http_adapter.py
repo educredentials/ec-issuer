@@ -25,7 +25,7 @@ class TestHttpAdapter:
             json={"achievement_id": "achievement-1"},
         )
         assert response.status_code == 201
-        assert ["create_offer", "achievement-1", "t0k3n"] in offer_service_spy.calls
+        assert ("create_offer", "achievement-1", "t0k3n") in offer_service_spy.calls
 
     def test_offers_missing_authorization_header_returns_401(
         self, http_client: FlaskClient
