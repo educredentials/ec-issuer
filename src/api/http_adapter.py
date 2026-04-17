@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from typing import override
 
+import msgspec
 from flask import Flask, Request, request
 from prometheus_flask_exporter import PrometheusMetrics  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
 
@@ -78,7 +79,8 @@ class HttpApiAdapter(ApiPort):
         def credential_issuer_metadata() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Credential Issuer Metadata endpoint."""
             metadata = self.metadata_service.get_credential_issuer_metadata()
-            return json.dumps(metadata.__dict__)
+            # msgspec encodes the metadata to JSON, as bytes, so we decode to a string
+            return msgspec.json.encode(metadata).decode()
 
         @app.route("/api/v1/offers/<offer_id>", methods=["GET"])
         def get_offer(offer_id: str):  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
