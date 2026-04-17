@@ -102,6 +102,19 @@ docker build -t ec-issuer .
 docker run -p 8080:8080 ec-issuer
 ```
 
+## Deployment
+
+### Version
+
+We use semantic versioning. 
+
+Bump version with `uv version --bump`, see `uv version --help` for all options.
+On git branch `main`, add a git tag with the same version, with `git tag --sign "v$(uv version --short)"`. Add a short message with the main change.
+Push main branch to github. The CI/CD will build a container after all checks and tests pass. 
+
+Deploying this container is not automated yet, due to limitations of the hosting environment (Surf Development Platform, SDP).
+Management of this platform, and therefore deployment, is done via [a separate infrastructure repository](https://git.ia.surfsara.nl/surf-internal/educational-logistics/edubadges/educredentials/).
+
 ## License
 
 MIT
