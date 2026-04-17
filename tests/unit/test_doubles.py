@@ -13,7 +13,8 @@ from src.metadata.metadata import (
     MetadataService,
 )
 from src.offers.in_memory_adapter import InMemoryOffersRepository
-from src.offers.offer_service import Offer, OfferService, PermissionDeniedError
+from src.offers.offer_repository import Offer
+from src.offers.offer_service import OfferService, PermissionDeniedError
 
 
 class ConfigRepoStub(ConfigRepoPort):

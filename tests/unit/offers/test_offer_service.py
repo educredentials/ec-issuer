@@ -4,8 +4,8 @@ from typing import override
 
 import pytest
 
-from src.access_control.access_control_port import AccessControlPort
 from src.offers.in_memory_adapter import InMemoryOffersRepository
+from src.access_control.access_control_port import AccessControlPort
 from src.offers.offer_service import (
     OfferService,
     PermissionDeniedError,
@@ -14,6 +14,7 @@ from tests.unit.test_doubles import (
     AccessControlStub,
     DenyingAccessControlStub,
     IssuerAgentSpy,
+    IssuerAgentStub,
 )
 
 PUBLIC_URL = "https://issuer.example.com"
@@ -33,9 +34,7 @@ class TestOfferServiceCreateOffer:
 
         offer = service.create_offer(achievement_id="award-123", bearer_token="tok")
 
-        expected_prefix = (
-            f"openid-credential-offer://?credential_offer_uri={PUBLIC_URL}/api/v1/offers/"
-        )
+        expected_prefix = f"openid-credential-offer://?credential_offer_uri={PUBLIC_URL}/api/v1/offers/"
         assert offer.uri.startswith(expected_prefix)
         assert offer.offer_id in offer.uri
 
@@ -130,3 +129,35 @@ class TestOfferServiceCreateOffer:
         _ = service.create_offer(achievement_id="award-123", bearer_token="my-token")
 
         assert spy.calls == [("my-token", "award-123", "Award", "import")]
+
+
+class TestOfferServiceGetOffer:
+    """Tests for OfferService.get_offer."""
+
+    def test_get_offer_returns_stored_offer(self):
+        """get_offer returns the offer that was previously created."""
+        service = OfferService(
+            issuer_agent=IssuerAgentSpy(),
+            access_control=AccessControlStub(),
+            offers_repository=InMemoryOffersRepository(),
+            public_url="https://issuer.example.com",
+        )
+        offer = service.create_offer(achievement_id="award-123", bearer_token="tok")
+
+        result = service.get_offer(offer.offer_id)
+
+        assert result.offer_id == offer.offer_id
+        assert result.achievement_id == offer.achievement_id
+        assert result.uri == offer.uri
+
+    def test_get_offer_raises_key_error_for_unknown_id(self):
+        """get_offer raises KeyError when the offer_id does not exist."""
+        service = OfferService(
+            issuer_agent=IssuerAgentStub(),
+            access_control=AccessControlStub(),
+            offers_repository=InMemoryOffersRepository(),
+            public_url="https://issuer.example.com",
+        )
+
+        with pytest.raises(KeyError):
+            _ = service.get_offer("nonexistent-id")

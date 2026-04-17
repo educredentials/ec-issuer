@@ -1,52 +1,14 @@
-"""Offer service, port, and domain model for creating credential offers."""
+"""Offer service for creating and retrieving credential offers."""
 
 import uuid
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 from src.access_control.access_control_port import AccessControlPort
 from src.metadata.metadata import IssuerAgentPort
+from src.offers.offer_repository import Offer, OffersRepositoryPort
 
 
 class PermissionDeniedError(Exception):
     """Raised when access control denies the requested action."""
-
-
-@dataclass
-class Offer:
-    """Domain model representing a credential offer."""
-
-    offer_id: str
-    achievement_id: str
-    uri: str
-
-
-class OffersRepositoryPort(ABC):
-    """Port: repository interface for persisting and retrieving offers."""
-
-    @abstractmethod
-    def store(self, offer: Offer) -> None:
-        """Persist an offer.
-
-        Args:
-            offer: The offer to store.
-        """
-        ...
-
-    @abstractmethod
-    def get(self, offer_id: str) -> Offer:
-        """Retrieve an offer by its identifier.
-
-        Args:
-            offer_id: The unique offer identifier.
-
-        Returns:
-            The matching Offer.
-
-        Raises:
-            KeyError: When no offer with the given id exists.
-        """
-        ...
 
 
 class OfferService:
@@ -104,3 +66,17 @@ class OfferService:
 
         self._offers_repository.store(offer)
         return offer
+
+    def get_offer(self, offer_id: str) -> Offer:
+        """Retrieve an offer by its identifier.
+
+        Args:
+            offer_id: The unique offer identifier.
+
+        Returns:
+            The matching Offer.
+
+        Raises:
+            KeyError: When no offer with the given id exists.
+        """
+        return self._offers_repository.get(offer_id)

@@ -25,7 +25,7 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - Integrates our services with this third party issuance service
 
 ## Testing Instructions
-- Use the TDD skill. Stop and report if you cannot find this skill.
+- Use the test-driven-development skill. Stop and report if you cannot find this skill.
 - End to end tests each get a file/module per business feature in `tests/e2e` no subdirectories
 - Integration and unit tests under test/unit/<module_name>. The files follow the structure of the src/ directory
 - Run tests with `just test`

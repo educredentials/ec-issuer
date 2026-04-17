@@ -3,10 +3,15 @@ import os
 import pytest
 from requests import request
 
+class Config:
+    public_url: str = os.environ["PUBLIC_URL"]
 
-class TestClient:
-    server_host: str = os.environ["SERVER_HOST"]
-    server_port: int = int(os.environ["SERVER_PORT"])
+
+class HttpClient:
+    _service_url: str
+
+    def __init__(self, config: Config):
+        self._service_url = config.public_url
 
     def get(self, path: str):
         return self._request("GET", path)
@@ -23,11 +28,16 @@ class TestClient:
         json: dict[str, str] | None = None,
         headers: dict[str, str] | None = None,
     ):
-        url = f"http://{self.server_host}:{self.server_port}/{path}"
+        url = f"{self._service_url}/{path}"
         return request(method, url, json=json, headers=headers)
 
 
 @pytest.fixture(scope="session")
-def e2e_client() -> TestClient:
+def config() -> Config:
+    return Config()
+
+
+@pytest.fixture(scope="session")
+def e2e_client(config: Config) -> HttpClient:
     """Create a generic HTTP client with request"""
-    return TestClient()
+    return HttpClient(config)

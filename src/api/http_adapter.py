@@ -57,7 +57,7 @@ class HttpApiAdapter(ApiPort):
         # Metrics endpoint is only relevant to HttpAdapter
         # no need for service/domain models
         metrics: PrometheusMetrics = PrometheusMetrics(app)
-        _ = metrics.info('app_info', 'Application info', version='1.0.3')  # pyright: ignore[reportUnknownMemberType] PrometheusMetrics has no typing
+        _ = metrics.info("app_info", "Application info", version="1.0.3")  # pyright: ignore[reportUnknownMemberType] PrometheusMetrics has no typing
 
         @app.route("/health")
         @metrics.do_not_track()
@@ -79,6 +79,22 @@ class HttpApiAdapter(ApiPort):
             """Credential Issuer Metadata endpoint."""
             metadata = self.metadata_service.get_credential_issuer_metadata()
             return json.dumps(metadata.__dict__)
+
+        @app.route("/api/v1/offers/<offer_id>", methods=["GET"])
+        def get_offer(offer_id: str):  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
+            """Return a credential offer by its identifier."""
+            try:
+                offer = self.offer_service.get_offer(offer_id)
+            except KeyError:
+                return json.dumps({"error": "Not Found"}), 404
+
+            return json.dumps(
+                {
+                    "offer_id": offer.offer_id,
+                    "achievement_id": offer.achievement_id,
+                    "uri": offer.uri,
+                }
+            ), 200
 
         @app.route("/api/v1/offers", methods=["POST"])
         def create_offer():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design

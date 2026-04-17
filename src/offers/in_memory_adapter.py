@@ -2,7 +2,7 @@
 
 from typing import override
 
-from src.offers.offer_service import Offer, OffersRepositoryPort
+from src.offers.offer_repository import Offer, OffersRepositoryPort
 
 
 class InMemoryOffersRepository(OffersRepositoryPort):

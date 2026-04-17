@@ -5,6 +5,7 @@ from os import environ
 
 from src.config.config_port import ConfigRepoPort
 
+
 class EnvConfigRepo(ConfigRepoPort):
     """Adapter: Configuration repository using environment variables."""
 
