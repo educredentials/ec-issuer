@@ -81,8 +81,8 @@ class TestOffer:
             f"openid-credential-offer://?credential_offer_uri={expected_credential_offer_uri}"
         )
 
-    def test_get_offer(self, e2e_client: HttpClient):
-        """Test that GET /api/v1/offers/<offer_id> returns the full offer as JSON."""
+    def test_get_offer(self, e2e_client: HttpClient, config: Config):
+        """Test that GET /api/v1/offers/<offer_id> returns a credential offer object."""
         create_response = e2e_client.post(
             "api/v1/offers",
             json={"achievement_id": "award-123"},
@@ -90,6 +90,7 @@ class TestOffer:
         )
         assert create_response.status_code == 201
         create_body: dict[str, str] = create_response.json()  # pyright: ignore[reportAny]
+        offer_id: str = create_body["offer_id"]
         offer_uri: str = create_body["uri"]
 
         credential_offer_uri: str = parse_qs(urlparse(offer_uri).query)[
@@ -100,10 +101,10 @@ class TestOffer:
         response = e2e_client.get(offer_path.lstrip("/"))
 
         assert response.status_code == 200
-        body: dict[str, str] = response.json()  # pyright: ignore[reportAny]
-        assert body["offer_id"] == create_body["offer_id"]
-        assert body["achievement_id"] == "award-123"
-        assert "uri" in body
+        body: dict[str, object] = response.json()  # pyright: ignore[reportAny]
+        assert body["credential_issuer"] == config.public_url
+        assert body["credential_configuration_ids"] == ["UniversityDegreeCredential"]
+        assert body["grants"] == {"authorization_code": {"issuer_state": offer_id}}
 
 
 @pytest.mark.e2e

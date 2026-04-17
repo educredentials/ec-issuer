@@ -88,13 +88,7 @@ class HttpApiAdapter(ApiPort):
             except KeyError:
                 return json.dumps({"error": "Not Found"}), 404
 
-            return json.dumps(
-                {
-                    "offer_id": offer.offer_id,
-                    "achievement_id": offer.achievement_id,
-                    "uri": offer.uri,
-                }
-            ), 200
+            return json.dumps(offer.to_credential_offer()), 200
 
         @app.route("/api/v1/offers", methods=["POST"])
         def create_offer():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design

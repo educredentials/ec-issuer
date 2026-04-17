@@ -3,6 +3,7 @@ import os
 import pytest
 from requests import request
 
+
 class Config:
     public_url: str = os.environ["PUBLIC_URL"]
 

@@ -62,7 +62,12 @@ class OfferService:
         self._issuer_agent.create_offer(offer_id, achievement_id)
 
         uri = f"openid-credential-offer://?credential_offer_uri={self._public_url}/api/v1/offers/{offer_id}"
-        offer = Offer(offer_id=offer_id, achievement_id=achievement_id, uri=uri)
+        offer = Offer(
+            offer_id=offer_id,
+            achievement_id=achievement_id,
+            uri=uri,
+            credential_issuer=self._public_url,
+        )
 
         self._offers_repository.store(offer)
         return offer

@@ -11,6 +11,23 @@ class Offer:
     offer_id: str
     achievement_id: str
     uri: str
+    credential_issuer: str
+
+    def to_credential_offer(self) -> dict[str, object]:
+        """Return the credential offer structure as defined by the OID4VCI spec.
+
+        Returns:
+            A dict with credential_issuer, credential_configuration_ids, and grants.
+        """
+        return {
+            "credential_issuer": self.credential_issuer,
+            "credential_configuration_ids": ["UniversityDegreeCredential"],
+            "grants": {
+                "authorization_code": {
+                    "issuer_state": self.offer_id,
+                }
+            },
+        }
 
 
 class OffersRepositoryPort(ABC):
