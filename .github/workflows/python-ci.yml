@@ -54,9 +54,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          export SERVER_HOST=0.0.0.0
-          export SERVER_PORT=8000
-          export ISSUER_AGENT_BASE_URL=http://localhost:8001
+          export PUBLIC_URL=https://issuer.example.com
           uv run pytest tests/e2e/ -v
 
       - name: Cleanup
