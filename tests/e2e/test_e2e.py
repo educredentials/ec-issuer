@@ -34,7 +34,7 @@ class TestCredentialIssuerMetadataEndpoint:
     """Test the Credential Issuer Metadata endpoint."""
 
     def test_credential_issuer_metadata_returns_correct_json(
-        self, e2e_client: HttpClient
+        self, e2e_client: HttpClient, config: Config
     ):
         """Test Credential Issuer Metadata endpoint returns correct JSON."""
         response = e2e_client.get("/.well-known/openid-credential-issuer")
@@ -44,11 +44,11 @@ class TestCredentialIssuerMetadataEndpoint:
         body: object = response.json()  # pyright: ignore[reportAny]
         assert_schema(body, "credential_issuer_metadata")
         assert (
-            jsonpath_value(body, "$.credential_issuer") == "https://issuer.example.com"
+            jsonpath_value(body, "$.credential_issuer") == config.public_url
         )
         assert (
             jsonpath_value(body, "$.credential_endpoint")
-            == "https://issuer.example.com/credential"
+            == f"{config.public_url}/credential"
         )
         assert (
             jsonpath_value(body, "$.authorization_servers[0]")

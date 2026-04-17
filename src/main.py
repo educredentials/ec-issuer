@@ -23,7 +23,9 @@ class App:
         self.config = EnvConfigRepo()
 
         issuer_agent = SsiAgentAdapter(config=self.config)
-        metadata_service = MetadataService(issuer_agent=issuer_agent)
+        metadata_service = MetadataService(
+            issuer_agent=issuer_agent, public_url=self.config.public_url
+        )
 
         access_control = HardcodedAccessControlAdapter()
         offers_repository = InMemoryOffersRepository()

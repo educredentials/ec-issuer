@@ -8,6 +8,7 @@ from typing import override
 from src.access_control.access_control_port import AccessControlPort
 from src.config.config_port import ConfigRepoPort
 from src.metadata.metadata import (
+    CredentialConfiguration,
     CredentialIssuerMetadata,
     IssuerAgentPort,
     MetadataService,
@@ -60,13 +61,42 @@ class DenyingAccessControlStub(AccessControlPort):
 class IssuerAgentStub(IssuerAgentPort):
     """Stub: returns hardcoded credential issuer metadata; no-ops create_offer."""
 
+    credential_issuer: str
+    credential_endpoint: str
+    credential_configurations_supported: dict[str, CredentialConfiguration]  # noqa: E501
+    authorization_servers: list[str] | None
+
+    def __init__(
+        self,
+        credential_issuer: str = "https://issuer.example.com",
+        credential_endpoint: str = "https://example.com/credential",
+        credential_configurations_supported: dict[str, CredentialConfiguration]
+        | None = None,
+        authorization_servers: list[str] | None = None,
+    ) -> None:
+        """Initialize with configurable metadata.
+
+        Args:
+            credential_issuer: The credential issuer URL.
+            credential_endpoint: The credential endpoint URL.
+            credential_configurations_supported: The credential configurations.
+            authorization_servers: The authorization servers.
+        """
+        self.credential_issuer = credential_issuer
+        self.credential_endpoint = credential_endpoint
+        self.credential_configurations_supported = (
+            credential_configurations_supported or {}
+        )
+        self.authorization_servers = authorization_servers
+
     @override
     def credential_issuer_metadata(self) -> CredentialIssuerMetadata:
         """Return hardcoded metadata."""
         return CredentialIssuerMetadata(
-            credential_issuer="https://issuer.example.com",
-            credential_endpoint="https://example.com/credential",
-            credential_configurations_supported={},
+            credential_issuer=self.credential_issuer,
+            credential_endpoint=self.credential_endpoint,
+            credential_configurations_supported=self.credential_configurations_supported,
+            authorization_servers=self.authorization_servers,
         )
 
     @override
@@ -97,9 +127,13 @@ class IssuerAgentSpy(IssuerAgentPort):
 class MetadataServiceStub(MetadataService):
     """Stub: MetadataService backed by IssuerAgentStub."""
 
-    def __init__(self) -> None:
-        """Initialise with stub issuer agent."""
-        super().__init__(issuer_agent=IssuerAgentStub())
+    def __init__(self, public_url: str = "http://localhost:8888") -> None:
+        """Initialise with stub issuer agent.
+
+        Args:
+            public_url: The public URL to use for the metadata.
+        """
+        super().__init__(issuer_agent=IssuerAgentStub(), public_url=public_url)
 
 
 class DenyingOfferServiceStub(OfferService):

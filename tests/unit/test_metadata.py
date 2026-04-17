@@ -3,7 +3,12 @@
 import msgspec
 import pytest
 
-from src.metadata.metadata import CredentialConfiguration, CredentialIssuerMetadata
+from src.metadata.metadata import (
+    CredentialConfiguration,
+    CredentialIssuerMetadata,
+    MetadataService,
+)
+from tests.unit.test_doubles import IssuerAgentStub
 
 
 class TestDeserializeMetadata:
@@ -150,3 +155,53 @@ class TestDeserializeMetadata:
             match="Object missing required field `credential_issuer`",
         ):
             _ = msgspec.json.decode(b"{}", type=CredentialIssuerMetadata)
+
+
+class TestMetadataService:
+    """Test MetadataService URL replacement."""
+
+    def test_get_credential_issuer_metadata_replaces_credential_issuer(self):
+        """Test that credential_issuer is replaced with public_url."""
+        public_url = "http://localhost:8000"
+        issuer_agent = IssuerAgentStub(
+            credential_issuer="https://upstream.example.com",
+            credential_endpoint="https://upstream.example.com/credential",
+        )
+        metadata_service = MetadataService(
+            issuer_agent=issuer_agent, public_url=public_url
+        )
+
+        metadata = metadata_service.get_credential_issuer_metadata()
+
+        assert metadata.credential_issuer == public_url
+
+    def test_get_credential_issuer_metadata_replaces_credential_endpoint(self):
+        """Test that credential_endpoint is replaced with public_url/credential."""
+        public_url = "http://localhost:8000"
+        issuer_agent = IssuerAgentStub(
+            credential_issuer="https://upstream.example.com",
+            credential_endpoint="https://upstream.example.com/credential",
+        )
+        metadata_service = MetadataService(
+            issuer_agent=issuer_agent, public_url=public_url
+        )
+
+        metadata = metadata_service.get_credential_issuer_metadata()
+
+        assert metadata.credential_endpoint == f"{public_url}/credential"
+
+    def test_get_credential_issuer_metadata_preserves_authorization_servers(self):
+        """Test that authorization_servers from upstream are preserved."""
+        public_url = "http://localhost:8000"
+        issuer_agent = IssuerAgentStub(
+            credential_issuer="https://upstream.example.com",
+            credential_endpoint="https://upstream.example.com/credential",
+            authorization_servers=["https://authn.example.com"],
+        )
+        metadata_service = MetadataService(
+            issuer_agent=issuer_agent, public_url=public_url
+        )
+
+        metadata = metadata_service.get_credential_issuer_metadata()
+
+        assert metadata.authorization_servers == ["https://authn.example.com"]
