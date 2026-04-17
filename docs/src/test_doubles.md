@@ -31,9 +31,20 @@ Use when a dependency is required by a constructor but irrelevant to the behavio
 
 Returns a response based on logic — essentially a lightweight rule engine. Rarely needed; prefer a Spy or Stub instead.
 
+
+## Usage
+
+Say we have a JokeService that relies on JokeRepository and FunnyScoreService.
+When we test JokeService in isolation (unit tests), we **only** want to test JokeService itself, and how it interacts with this JokeRepository and FunnyScoreService. 
+But we **do not** want to test the (inner) working of this JokeRepository or the FunnyScoreService, that's the responsibility of their respective unit tests.
+
+When testing inner working: Pass in a JokeRepositoryStub and FunnyScoreServiceStub.
+When testing the interaction between JokeService and e.g. FunnyScoreService - e.g. that it calls it with the right arguments, use FunnyScoreServiceSpy.
+When the inner working or interaction depends on more complex interaction between its dependencies, for example "when funny score service returns 5 or higher, also check hilariousness at the funny score service". For such interactions, we still do not use the actual FunnyScoreService but a FunnyScoreServiceMock.
+
 ## Rules
 
 - Doubles live in `tests/unit/test_doubles.py`, not scattered across individual test files.
 - Test-specific inline doubles (e.g. a `SpyAccessControl` inside a single test) are acceptable when they are too narrow to share.
-- Do **not** use production hardcoded adapters (e.g. `HardcodedAccessControlAdapter`) as test doubles. They exist for development convenience, not for tests.
+- Never test the doubles themselves, only test the subject under test.
 - If a double is getting complex, it is a sign the collaborator's API should be simplified instead.

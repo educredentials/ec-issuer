@@ -123,7 +123,7 @@ class DenyingOfferServiceStub(OfferService):
 class OfferServiceSpy(OfferService):
     """Spy: records create_offer calls and delegates to the real OfferService."""
 
-    calls: list[list[str]]
+    calls: list[tuple[str, str, str]]
 
     def __init__(self, public_url: str = "http://localhost:8888") -> None:
         """Initialise with stub dependencies and an empty call log.
@@ -150,5 +150,5 @@ class OfferServiceSpy(OfferService):
         Returns:
             The created Offer.
         """
-        self.calls.append(["create_offer", achievement_id, bearer_token])
+        self.calls.append(("create_offer", achievement_id, bearer_token))
         return super().create_offer(achievement_id, bearer_token)
