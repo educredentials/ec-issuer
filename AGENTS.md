@@ -34,7 +34,7 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - For any architectural change, stop and ask the human. Provide alternatives and describe their pros and cons.
 - Exceptions to the guidelines and pitfalls are not allowed without explicit permission from the human. Stop and ask and give context on why we need an exception.
 
-## Common Pitfalls to Aoid
+## Common Pitfalls to Avoid
 
 - DON'T: Create new files unless necessary
 - DON'T: Use print, logging to stdout for debugging. Prefer tests
