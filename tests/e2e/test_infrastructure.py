@@ -9,9 +9,9 @@ from tests.e2e.conftest import HttpClient
 class TestHealthEndpoint:
     """Test the health endpoint."""
 
-    def test_health_success(self, e2e_client: HttpClient):
+    def test_health_success(self, http_client: HttpClient):
         """Test that the health endpoint returns OK."""
-        response = e2e_client.get("/health")
+        response = http_client.get("/health")
         assert response.status_code == 200
         assert response.text == "OK"
 
@@ -20,9 +20,9 @@ class TestHealthEndpoint:
 class TestRootEndpoint:
     """Test the root endpoint."""
 
-    def test_root_endpoint(self, e2e_client: HttpClient):
+    def test_root_endpoint(self, http_client: HttpClient):
         """Test that the root endpoint returns Hello, World!."""
-        response = e2e_client.get("/")
+        response = http_client.get("/")
         assert response.status_code == 200
         assert response.text == "Hello, World!"
 
@@ -31,12 +31,12 @@ class TestRootEndpoint:
 class TestMetricsEndpoint:
     """Test the Prometheus metrics endpoint."""
 
-    def test_metrics_endpoint_returns_prometheus_metrics(self, e2e_client: HttpClient):
+    def test_metrics_endpoint_returns_prometheus_metrics(self, http_client: HttpClient):
         """Test that /metrics endpoint returns Prometheus metrics after requesting /."""
-        response = e2e_client.get("/")
+        response = http_client.get("/")
         assert response.status_code == 200
 
-        response = e2e_client.get("/metrics")
+        response = http_client.get("/metrics")
         assert response.status_code == 200
 
         text = response.text

@@ -7,13 +7,21 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - Justfile and just for common tasks
 
 ## Project Structure
+- run common commands with `just`. `just --list` returns:
+  all                        # Run everything (lint + test)
+  default                    # Default target
+  docs                       # Run mdbook to preview the docs.
+  lint                       # Run all quality checks (linting + type checking)
+  test                       # Run all tests
+  test-e2e                   # Run only e2e tests, Note: starts a test server
+  test-unit                  # Run only unit tests
 - src/ application code. The main entry point is `src/main.py`. Run with `just develop`
-- tests/ test code. Run with `just test`
+- tests/ test code.
 - docs/ documentation, guidelines and ADRs
 
 ## Code Style Guidelines
-- ruff defaults. Check with `uv run ruff check`. Format with `uv run ruff format`
-- basedpyright defaults. Check with `uv run basedpyright`.
+- ruff defaults. Check with `just lint`. Format with `uv run ruff format`
+- basedpyright defaults. Check with `just lint`.
 - Structured in modules, following the Screaming Architecture pattern.
 - Follows Hexagonal Architecture with Ports and Adapters.
 - Do not add comments to code that explain **what** the code does.
@@ -25,10 +33,10 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - Integrates our services with this third party issuance service
 
 ## Testing Instructions
+- Run tests with `just test`
 - Use the test-driven-development skill. Stop and report if you cannot find this skill.
 - End to end tests each get a file/module per business feature in `tests/e2e` no subdirectories
 - Integration and unit tests under test/unit/<module_name>. The files follow the structure of the src/ directory
-- Run tests with `just test`
 
 ## Ask for permission or guidance
 - For any architectural change, stop and ask the human. Provide alternatives and describe their pros and cons.

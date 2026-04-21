@@ -4,19 +4,23 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from tests.e2e.conftest import Config, HttpClient, assert_schema, jsonpath_value
+from tests.e2e.conftest import (
+    AdminHttpClient,
+    Config,
+    HttpClient,
+    assert_schema,
+    jsonpath_value,
+)
 
 
 @pytest.mark.e2e
 class TestOffer:
     """Test the offer endpoint."""
 
-    def test_create_offer(self, e2e_client: HttpClient, config: Config):
+    def test_create_offer(self, admin_client: AdminHttpClient, config: Config):
         """Test that POST /api/v1/offers creates an offer and returns URI + offer_id."""
-        response = e2e_client.post(
-            "api/v1/offers",
-            json={"achievement_id": "award-123"},
-            headers={"Authorization": "Bearer test-token"},
+        response = admin_client.post(
+            "api/v1/offers", json={"achievement_id": "award-123"}
         )
         assert response.status_code == 201, (
             f"Expected 201, got {response.status_code}: {response.text[:200]}"
@@ -30,12 +34,12 @@ class TestOffer:
             f"openid-credential-offer://?credential_offer_uri={config.public_url}/api/v1/offers/{offer_id}"
         )
 
-    def test_get_offer(self, e2e_client: HttpClient, config: Config):
+    def test_get_offer(
+        self, admin_client: AdminHttpClient, http_client: HttpClient, config: Config
+    ):
         """Test that GET /api/v1/offers/<offer_id> returns a credential offer object."""
-        create_response = e2e_client.post(
-            "api/v1/offers",
-            json={"achievement_id": "award-123"},
-            headers={"Authorization": "Bearer test-token"},
+        create_response = admin_client.post(
+            "api/v1/offers", json={"achievement_id": "award-123"}
         )
         create_body: object = create_response.json()  # pyright: ignore[reportAny]
         offer_uri: str = jsonpath_value(create_body, "$.uri")  # pyright: ignore[reportAssignmentType]
@@ -45,7 +49,7 @@ class TestOffer:
         ][0]
         offer_path = urlparse(credential_offer_uri).path.lstrip("/")
 
-        response = e2e_client.get(offer_path)
+        response = http_client.get(offer_path)
 
         assert response.status_code == 200
         body: object = response.json()  # pyright: ignore[reportAny]
@@ -53,13 +57,11 @@ class TestOffer:
         assert jsonpath_value(body, "$.credential_issuer") == config.public_url
 
     def test_offer_is_authorization_code_flow(
-        self, e2e_client: HttpClient
+        self, admin_client: AdminHttpClient, http_client: HttpClient
     ):
         """Test that a credential offer has attributes for authorization code flow."""
-        create_response = e2e_client.post(
-            "api/v1/offers",
-            json={"achievement_id": "award-123"},
-            headers={"Authorization": "Bearer test-token"},
+        create_response = admin_client.post(
+            "api/v1/offers", json={"achievement_id": "award-123"}
         )
         create_body: object = create_response.json()  # pyright: ignore[reportAny]
         offer_uri: str = jsonpath_value(create_body, "$.uri")  # pyright: ignore[reportAssignmentType]
@@ -69,7 +71,7 @@ class TestOffer:
         ][0]
         offer_path = urlparse(credential_offer_uri).path.lstrip("/")
 
-        response = e2e_client.get(offer_path)
+        response = http_client.get(offer_path)
         body: object = response.json()  # pyright: ignore[reportAny]
         assert (
             jsonpath_value(body, "$.grants.authorization_code.issuer_state") is not None
