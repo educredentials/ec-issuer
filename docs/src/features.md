@@ -24,6 +24,7 @@ Features:
   - [ ] OpenID connect authentication flow started from wallet
   - [ ] Credential Request with autorization token and proof of possesion
   - [ ] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
+  - [ ] Deferred Credential response
 
 ### Alternative wallets
 
