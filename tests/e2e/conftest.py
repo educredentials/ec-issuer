@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import json
 import os
 from pathlib import Path
 
 import jsonschema
 import pytest
-from jsonpath_ng import parse as jsonpath_parse  # pyright: ignore[reportMissingTypeStubs,reportUnknownVariableType]
+from jsonpath_ng import (  # pyright: ignore[reportMissingTypeStubs]
+    parse as jsonpath_parse,  # pyright: ignore[reportUnknownVariableType]
+)
 from requests import request
 
 _SCHEMAS_DIR = Path(__file__).parent / "schemas"

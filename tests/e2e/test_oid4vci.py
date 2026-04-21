@@ -180,15 +180,12 @@ class TestOID4VCIFlow:
             },
         )
         assert http_response.status_code == 200
-        # Decode
-        credential_response = json.decode(
-            http_response.text, type=CredentialResponse
-        )
 
         jsonschema.validate(
-            http_response.json(), load_schema("credential_response")  # pyright: ignore[reportAny]
+            json.decode(http_response.text),  # pyright: ignore[reportAny]
+            load_schema("credential_response"),
         )
-        assert isinstance(credential_response.credentials, list)
+        credential_response = json.decode(http_response.text, type=CredentialResponse)
         assert len(credential_response.credentials) == 1
         credential_jwt = credential_response.credentials[0]["credential"]
 
