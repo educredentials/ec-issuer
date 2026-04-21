@@ -15,7 +15,7 @@ Credential service that issues and signs **Open Badges 3.0** and **European Lear
 ## Technology Stack
 
 - **Flask**: Lightweight HTTP server
-- **UV, Ruff, TY**: Runtime, dependency manager, linter, typechecker
+- **UV, Ruff, Basedpyright**: Runtime, dependency manager, linter, typechecker
 - **Pytest**: Run tests
 - **Docker or Podman**: Building and running images
 - **Github Actions**: Test, Lint, Typecheck, Build and push images
