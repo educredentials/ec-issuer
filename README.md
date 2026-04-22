@@ -1,8 +1,10 @@
-# Credential Service - Flask-based EC Issuer
+# Credential Service - EC Issuer
 
 Credential service that issues and signs **Open Badges 3.0** and **European Learner Model (ELM)** credentials.
 
 [![Python CI/CD](https://github.com/educredentials/ec-issuer/actions/workflows/python-ci.yml/badge.svg)](https://github.com/educredentials/ec-issuer/actions/workflows/python-ci.yml)
+
+This service wraps and abstracts existing issuance services.
 
 ## Features
 
@@ -21,7 +23,33 @@ Credential service that issues and signs **Open Badges 3.0** and **European Lear
 - **Github Actions**: Test, Lint, Typecheck, Build and push images
 - **CLI VC Wallet**: At `tests/e2e/cli-vc-wallet`, built from [cli-vc-wallet](https://github.com/educredentials/cli-vc-wallet)
 
-## Getting Startede
+## Goals
+
+- Simple, pragmatic REST API for credential administration: issue, aka create-offers
+- Authorization of issuing actor (may they issue achievement to user?)
+- Validation of data model and prerequisites 
+- Orchestrating the credential creation workflow
+- Publishing events for downstream processing
+- Signing and delivering OpenBadges 3.0 credentials to wallets via OID4VCI
+- Signing and delivering ELM credentials as downloadable credential files
+
+### Out of scope? Unknown if still relevant
+
+- Batching operations for efficient signing
+- Embedding resources (images, evidence) or their resource-integrity hashes in credentials
+- Multitenancy, depends on our criteria around signing -on-behalf-of-, but could be implemented with a dedicated issuer-agent issuer per tenant
+
+## Non Goals
+
+- Revocation. Part of ec-status.
+- BadgeClass (template, achievements) management. Part of ec-achievement.
+- Authorization logic. Part of ec-authorization.
+- Key management. Part of ec-key.
+- Trust anchoring. Part of ec-trust and/or ec-key.
+- Notifications and messaging (emails, push notifications etc). Part of ec-notifications.
+- Storage of claims, users, credentials. Part of resp ec-achievement, ec-user, ec-award(locker).
+
+## Getting Started
 
 ### Prerequisites
 

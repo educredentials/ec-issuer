@@ -2,10 +2,46 @@
 
 With a running instance of the service, you can interact with the API using the following examples.
 
-## Get Metadata
+TODO: differentiate between admin and issuance via subdomains or via paths? admin.example.com and issuer.example.com vs issuer.example.com/admin and issuer.example.com/
+
+## Admin
+
+All administrative endpoints require admin access token.
+All these endpoints fall under /admin/v1/. Versioned in path.
+
+## Issue an Achievement as Credential, aka Create Offer
 
 ```bash
-curl http://localhost:3000/.well-known/openid-credential-issuer
+curl -X POST http://issuer.example.com/admin/v1/offers  \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "achievement_id": "achievement-1",
+  }'
+```
+
+Response:
+
+```json
+{
+  "uri": "openid-credential-offer://?credential_offer_uri=https://issuer.example.com/offers/550e8400-e29b-41d4-a716-446655440000",
+  "offer_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+## Public endpoints
+
+* All endpoints for oid4vci flows are public by default
+* Some allow no authorization as per spec (e.g. well-known)
+* Some require authorization as per spec (e.g. credentials endpoint)
+
+* public endpoints are not versioned in path.
+* public endpoints are not scoped in path (e.g. /public/). Due to requirements in e.g. the oid4vci spec.
+
+### Get Metadata
+
+```bash
+curl http://issuer.example.com/.well-known/openid-credential-issuer
 ```
 
 Other endpoints:
@@ -19,43 +55,27 @@ Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1
 
 ```json
 {
-  "credential_issuer": "https://example.com",
+  "credential_issuer": "https://issuer.example.com",
   "authorization_servers": ["https://authn.example.com"],
   "credential_configurations_supported": {},
 }
 ```
 
-## Issue an Achievement as Credential, aka Create Offer
+### Get an offer 
+
+AKA Dereference offer from credential_offer_uri
+
+Location not specced. But for consistency, under /offers
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/offers  \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "achievement_id": "achievement-1",
-  }'
+curl http://issuer.example.com/offers/550e8400-e29b-41d4-a716-446655440000
 ```
 
-Response:
+[Offer Response](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer-response)
 
 ```json
 {
-  "uri": "openid-credential-offer://?credential_offer_uri=https://example.com/api/v1/offers/550e8400-e29b-41d4-a716-446655440000",
-  "offer_id": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-Get the offer
-
-```bash
-curl http://localhost:3000/api/v1/offers/550e8400-e29b-41d4-a716-446655440000
-```
-
-Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer-response):
-
-```json
-{
-  "credential_issuer": "https://credential-issuer.example.com",
+  "credential_issuer": "https://issuer.example.com",
   "credential_configuration_ids": [
     "UniversityDegreeCredential"
   ],
@@ -67,17 +87,17 @@ Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1
 }
 ```
 
-## Get a credential (OpenId for VCI authorization code flow)
+### Get a credential (OpenId for VCI authorization code flow)
 
-See get Metadata
+Location specced and defaults to /credentials. Will be included in metadata. For
+simplicity and consistency we use this default.
 
 Get the credential. A reference to deferred endpoint is always returned.
 
-Request:
-https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request
+See [OIDvVCI Credential Request](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request)
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/credentials \
+curl -X POST http://issuer.example.com/credentials \
   -H "Authorization: Bearer TokenAsReturnedFromAuthServer" \
   -H "Content-Type: application/json" \
   -d '{
@@ -98,12 +118,13 @@ Response:
 }
 ```
 
+### Get Deferred Credential
 
-Get the credential at the deferred endpoint (https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin)
+Get the credential at the [deferred endpoint](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin).
 
 Request:
 ```bash
-curl -X POST http://localhost:3000/api/v1/deferred_credential
+curl -X POST http://issuer.example.com/deferred_credential
   -H "Authorization: Bearer TokenAsReturnedFromAuthServer" \
   -H "Content-Type: application/json" \
   -d '{ "transaction_id": "8xLOxBtZp8" }'
@@ -123,7 +144,7 @@ Response (once the credential is ready):
 ## Revoke a Credential
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/credentials/550e8400-e29b-41d4-a716-446655440000/revoke \
+curl -X DELETE http://issuer.example.com/admin/v1/credentials/550e8400-e29b-41d4-a716-446655440000 \
   -H "Content-Type: application/json" \
   -d '{
     "reason": "Credential no longer valid"
@@ -148,70 +169,15 @@ Response:
 ## Health Check
 
 ```bash
-curl http://localhost:3000/health
+curl http://issuer.example.com/health
 ```
 
 Response: `200 OK`
 
 ## Error Responses
 
+TODO: design and describe all errors.
+
 See
 * https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-error-response
-*  https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-error-r
-
-### Validation Error
-
-```bash
-curl -X POST http://localhost:3000/api/v1/credentials \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subject_id": "",
-    "achievement_id": "achievement-1",
-    "issuer_id": "issuer-1"
-  }'
-```
-
-Response: `400 Bad Request`
-
-```json
-{
-  "error": "ValidationError",
-  "field": "credentialSubject.id",
-  "message": "Subject ID cannot be empty"
-}
-```
-
-### Not Found Error
-
-```bash
-curl http://localhost:3000/api/v1/credentials/00000000-0000-0000-0000-000000000000
-```
-
-Response: `404 Not Found`
-
-```json
-{
-  "error": "CredentialNotFound",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "message": "Credential not found: 00000000-0000-0000-0000-000000000000"
-}
-```
-
-### Already Revoked Error
-
-```bash
-# Try to revoke an already revoked credential
-curl -X POST http://localhost:3000/api/v1/credentials/{id}/revoke \
-  -H "Content-Type: application/json" \
-  -d '{"reason": "test"}'
-```
-
-Response: `409 Conflict`
-
-```json
-{
-  "error": "CredentialAlreadyRevoked",
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "message": "Credential already revoked: 550e8400-e29b-41d4-a716-446655440000"
-}
-```
+* https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-error-r

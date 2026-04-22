@@ -25,6 +25,8 @@ Features:
   - [ ] Credential Request with autorization token and proof of possesion
   - [ ] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
   - [ ] Deferred Credential response
+  - [ ] Issuance to known users (users known to us in ec-user)
+  - [ ] Issuance to unknown users (email?)
 
 ### Alternative wallets
 
