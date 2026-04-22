@@ -19,6 +19,7 @@ Credential service that issues and signs **Open Badges 3.0** and **European Lear
 - **Pytest**: Run tests
 - **Docker or Podman**: Building and running images
 - **Github Actions**: Test, Lint, Typecheck, Build and push images
+- **CLI VC Wallet**: At `tests/e2e/cli-vc-wallet`, built from [cli-vc-wallet](https://github.com/educredentials/cli-vc-wallet)
 
 ## Getting Startede
 

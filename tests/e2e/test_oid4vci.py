@@ -12,6 +12,7 @@ from tests.e2e.conftest import (
     AdminHttpClient,
     Config,
     HttpClient,
+    VerificationResult,
     WalletClient,
     assert_schema,
     jsonpath_value,
@@ -63,7 +64,9 @@ class TestCredentialIssuerMetadataEndpoint:
 @pytest.mark.e2e
 class TestOID4VCIFlow:
     def test_oid4vci_flow(
-        self, admin_client: AdminHttpClient, wallet_client: WalletClient
+        self,
+        admin_client: AdminHttpClient,
+        wallet_client: WalletClient,
     ):
         """
         Given, an offer is created,
@@ -79,21 +82,16 @@ class TestOID4VCIFlow:
         create_body: object = create_response.json()  # pyright: ignore[reportAny]
         offer_ref: str = jsonpath_value(create_body, "$.uri")  # pyright: ignore[reportAssignmentType]
 
-        # Dereference the offer
         offer = wallet_client.get_offer(offer_ref)
-        # Fetch credential issuer metada from well known
         metadata = wallet_client.get_issuer_metadata(offer.credential_issuer)
 
-        # Grab the authorization server from the metadata
         assert metadata.authorization_servers is not None
         authorization_server_url = metadata.authorization_servers[0]
-
-        # Fetch authorization server metadata
         authorization_server_metadata = wallet_client.get_auth_metadata(
             authorization_server_url
         )
 
-        # User would be redirected to the authorization server to approve the request
+        # User is redirected to the authorization server to approve the request
         auth_attributes: dict[str, str] = {
             "response_type": "code",
             "client_id": wallet_client.client_id,
@@ -111,8 +109,7 @@ class TestOID4VCIFlow:
         ][0]
         access_token = wallet_client.exchange_authorization_code(authorization_code)
 
-        # We only support single credential types for now, otherwise we'd have to
-        # loop through each credential configuration id and make a separate request.
+        # We only support single credential types
         assert offer.credential_configuration_ids.__len__() == 1
 
         http_response = request(
@@ -142,8 +139,10 @@ class TestOID4VCIFlow:
         assert len(credential_response.credentials) == 1
         credential_jwt = credential_response.credentials[0]["credential"]
 
-        # TODO: verify and unpack the credential JWT
-        # assert valid,
-        # assert signed by the issuer,
-        # assert claims.vc is a full blown OBv3 Credential
-        assert credential_jwt.startswith("ey")
+        verification_result: VerificationResult = wallet_client.verify(credential_jwt)
+        assert verification_result.valid is True
+
+        # Turn "http://localhost:8000" into "localhost%3A8000"
+        issuer_domain = urlparse(metadata.credential_issuer).netloc.replace(":", "%3A")
+        assert verification_result.credential_info.issuer == f"did:web:{issuer_domain}"
+        assert verification_result.credential_info.subject == wallet_client.did()
