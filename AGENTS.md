@@ -18,6 +18,7 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - src/ application code. The main entry point is `src/main.py`. Run with `just develop`
 - tests/ test code.
 - docs/ documentation, guidelines and ADRs
+- use uv. Don't cludge together scripts or run python from venv. 
 
 ## Code Style Guidelines
 - ruff defaults. Check with `just lint`. Format with `uv run ruff format`
@@ -47,7 +48,7 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - DON'T: Create new files unless necessary
 - DON'T: Use print, logging to stdout for debugging. Prefer tests
 - DON'T: Ignore linting and type checking errors or warnings
-- DON'T: add pyright ignore comments
+- DON'T: add pyright ignore comments ever. When you cannot solve a typing error, ask the human for instructions instead of adding ignore comments.
 - DON'T: Skip tests for "simple" features
 - DO: Add type hints to all code
 - DO: Add pydocstring to all functions and classes
