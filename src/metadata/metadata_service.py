@@ -39,7 +39,7 @@ class MetadataService:
             credential_endpoint=f"{self.public_url}/credential",
             credential_configurations_supported=metadata.credential_configurations_supported,
             authorization_servers=metadata.authorization_servers,
-            nonce_endpoint=metadata.nonce_endpoint,
+            nonce_endpoint=f"{self.public_url}/nonce",
             deferred_credential_endpoint=metadata.deferred_credential_endpoint,
             notification_endpoint=metadata.notification_endpoint,
             credential_response_encryption=metadata.credential_response_encryption,

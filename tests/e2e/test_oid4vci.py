@@ -1,18 +1,20 @@
 """End-to-end tests for the OID4VCI flow and metadata."""
 
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import jsonschema
+import jwt
 import pytest
 from msgspec import json
 from requests import request
 
 from tests.e2e.conftest import (
+    KEYS_DIR,
     AdminHttpClient,
     Config,
     HttpClient,
-    VerificationResult,
     WalletClient,
     assert_schema,
     jsonpath_value,
@@ -112,6 +114,12 @@ class TestOID4VCIFlow:
         # We only support single credential types
         assert offer.credential_configuration_ids.__len__() == 1
 
+        assert metadata.nonce_endpoint is not None, (
+            "nonce_endpoint is not available in metadata, but we require it"
+        )
+        nonce = wallet_client.get_nonce(metadata.nonce_endpoint)
+        proof = wallet_client.proof(metadata.credential_issuer, nonce)
+
         http_response = request(
             "POST",
             metadata.credential_endpoint,
@@ -120,7 +128,7 @@ class TestOID4VCIFlow:
                 "credential_configuration_id": offer.credential_configuration_ids[0],
                 "proof": {
                     "proof_type": "jwt",
-                    "jwt": wallet_client.proof(),
+                    "jwt": proof,
                 },
                 "issuer_state": offer.issuer_state(),
             },
@@ -139,10 +147,13 @@ class TestOID4VCIFlow:
         assert len(credential_response.credentials) == 1
         credential_jwt = credential_response.credentials[0]["credential"]
 
-        verification_result: VerificationResult = wallet_client.verify(credential_jwt)
-        assert verification_result.valid is True
-
-        # Turn "http://localhost:8000" into "localhost%3A8000"
-        issuer_domain = urlparse(metadata.credential_issuer).netloc.replace(":", "%3A")
-        assert verification_result.credential_info.issuer == f"did:web:{issuer_domain}"
-        assert verification_result.credential_info.subject == wallet_client.did()
+        issuer_did = "did:web:localhost%3A8000"
+        # TODO: A real world scenario does not have the public key available
+        # like this. It must instead resolve the did:web document and extract
+        # the public key
+        issuer_pubkey = Path(KEYS_DIR / "issuer_eddsa.pub").read_text()
+        # Will raise InvalidIssuerError when issuer does not match
+        # Will raise InvalidSignatureError when signature is invalid
+        _ = jwt.decode(
+            credential_jwt, issuer_pubkey, algorithms=["EdDSA"], issuer=issuer_did
+        )

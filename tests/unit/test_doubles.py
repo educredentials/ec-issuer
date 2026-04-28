@@ -64,13 +64,15 @@ class IssuerAgentStub(IssuerAgentPort):
 
     credential_issuer: str
     credential_endpoint: str
+    nonce_endpoint: str | None
     credential_configurations_supported: dict[str, CredentialConfiguration]  # noqa: E501
     authorization_servers: list[str] | None
 
     def __init__(
         self,
         credential_issuer: str = "https://issuer.example.com",
-        credential_endpoint: str = "https://example.com/credential",
+        credential_endpoint: str = "https://issuer.example.com/credential",
+        nonce_endpoint: str = "https://issuer.example.com/nonce",
         credential_configurations_supported: dict[str, CredentialConfiguration]
         | None = None,
         authorization_servers: list[str] | None = None,
@@ -85,6 +87,7 @@ class IssuerAgentStub(IssuerAgentPort):
         """
         self.credential_issuer = credential_issuer
         self.credential_endpoint = credential_endpoint
+        self.nonce_endpoint = nonce_endpoint
         self.credential_configurations_supported = (
             credential_configurations_supported or {}
         )
@@ -96,6 +99,7 @@ class IssuerAgentStub(IssuerAgentPort):
         return CredentialIssuerMetadata(
             credential_issuer=self.credential_issuer,
             credential_endpoint=self.credential_endpoint,
+            nonce_endpoint=self.nonce_endpoint,
             credential_configurations_supported=self.credential_configurations_supported,
             authorization_servers=self.authorization_servers,
         )
@@ -115,6 +119,11 @@ class IssuerAgentStub(IssuerAgentPort):
     ) -> CredentialResponse:
         """No-op stub that raises NotImplementedError."""
         raise NotImplementedError
+
+    @override
+    def request_nonce(self) -> dict[str, str]:
+        """Return a hardcoded nonce response."""
+        return {"c_nonce": "wKI4LT17ac15ES9bw8ac4"}
 
 
 class IssuerAgentSpy(IssuerAgentPort):
@@ -145,6 +154,11 @@ class IssuerAgentSpy(IssuerAgentPort):
         issuer_state: str,
         access_token: str,
     ) -> CredentialResponse:
+        """Not needed in offer tests."""
+        raise NotImplementedError
+
+    @override
+    def request_nonce(self) -> dict[str, str]:
         """Not needed in offer tests."""
         raise NotImplementedError
 

@@ -165,6 +165,16 @@ class HttpApiAdapter(ApiPort):
 
             return msgspec.json.encode(credential_response).decode(), 200
 
+        @app.route("/nonce", methods=["POST"])
+        def request_nonce():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
+            """Request a nonce from the issuer agent."""
+            try:
+                nonce_response = self.credential_service.request_nonce()
+            except IssuerAgentError as e:
+                return json.dumps({"error": str(e)}), 502
+
+            return msgspec.json.encode(nonce_response).decode(), 200
+
         return app
 
     @override

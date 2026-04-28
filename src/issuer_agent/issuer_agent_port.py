@@ -62,3 +62,12 @@ class IssuerAgentPort(ABC):
             CredentialResponse containing the issued credential(s).
         """
         ...
+
+    @abstractmethod
+    def request_nonce(self) -> dict[str, str]:
+        """Request a nonce from the issuer agent.
+
+        Returns:
+            A dictionary containing the c_nonce.
+        """
+        ...

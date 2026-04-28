@@ -239,3 +239,28 @@ class SsiAgentAdapter(IssuerAgentPort):
         )
 
         return credential_response
+
+    @override
+    def request_nonce(self) -> dict[str, str]:
+        """Request a nonce from the issuer agent.
+
+        Returns:
+            A dictionary containing the c_nonce.
+
+        Raises:
+            IssuerAgentError: When the upstream request fails.
+        """
+        response = self.requests_client.post(
+            f"{self.base_url}/nonce",
+            data=b"",
+            headers={},
+            timeout=self.timeout,
+        )
+
+        # Handle HTTP errors from upstream
+        if 400 <= int(response.status_code) < 600:
+            raise IssuerAgentError(
+                f"Upstream error: {response.status_code} - {response.content.decode()}"
+            )
+
+        return msgspec.json.decode(response.content, type=dict[str, str])

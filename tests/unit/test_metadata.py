@@ -166,6 +166,7 @@ class TestMetadataService:
         issuer_agent = IssuerAgentStub(
             credential_issuer="https://upstream.example.com",
             credential_endpoint="https://upstream.example.com/credential",
+            nonce_endpoint="https://upstream.example.com/nonce",
         )
         metadata_service = MetadataService(
             issuer_agent=issuer_agent, public_url=public_url
@@ -174,6 +175,9 @@ class TestMetadataService:
         metadata = metadata_service.get_credential_issuer_metadata()
 
         assert metadata.credential_issuer == public_url
+        assert metadata.nonce_endpoint == f"{public_url}/nonce"
+        assert metadata.credential_endpoint == f"{public_url}/credential"
+
 
     def test_get_credential_issuer_metadata_replaces_credential_endpoint(self):
         """Test that credential_endpoint is replaced with public_url/credential."""

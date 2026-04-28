@@ -44,3 +44,11 @@ class CredentialService:
             issuer_state=issuer_state,
             access_token=access_token,
         )
+
+    def request_nonce(self) -> dict[str, str]:
+        """Request a nonce from the issuer agent.
+
+        Returns:
+            A dictionary containing the c_nonce.
+        """
+        return self._issuer_agent.request_nonce()
