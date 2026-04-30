@@ -17,7 +17,8 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
   test-unit                  # Run only unit tests
 - src/ application code. The main entry point is `src/main.py`. Run with `just develop`
 - tests/ test code.
-- docs/ documentation, guidelines and ADRs
+- docs/ documentation, glossary, overview and backgrounds, uses mdbook structure.
+- docs/src/adr Architecture Decision Records, ADRs.
 - use uv. Don't cludge together scripts or run python from venv. 
 
 ## Code Style Guidelines
