@@ -8,8 +8,8 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # To push a branch
-      pages: write  # To push to a GitHub Pages site
+      contents: write # To push a branch
+      pages: write # To push to a GitHub Pages site
       id-token: write # To update the deployment status
     steps:
       - uses: actions/checkout@v6
@@ -30,15 +30,11 @@ jobs:
           cd docs
           mdbook build
       - name: Setup Pages
-        # uses: actions/configure-pages@v4
-        run: echo "SKIPPED, our educredentials org on github must upgrade to a paid version to allow Github Pages on private repos"
+        uses: actions/configure-pages@v4
       - name: Upload artifact
-        # uses: actions/upload-pages-artifact@v3
-        # with:
-        #  # Upload entire repository
-        #  path: 'docs/book'
-        run: echo "SKIPPED, our educredentials org on github must upgrade to a paid version to allow Github Pages on private repos"
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs/book'
       - name: Deploy to GitHub Pages
         id: deployment
-        # uses: actions/deploy-pages@v4
-        run: echo "SKIPPED, our educredentials org on github must upgrade to a paid version to allow Github Pages on private repos"
+        uses: actions/deploy-pages@v4
