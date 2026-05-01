@@ -14,7 +14,7 @@ Refer to [dedicated Import In Wallet](./import_in_wallet.md) for technical detai
 
 ### Import in wallet
 
-As a student, when I have a badge in my backpack, and I have the unime app, then I want to be able to import the badge into this app as Verifiable Credential. So that I am the true owner of my badge credential. And so that I can use it to prove that I have met the requirements of the achievent the badge represents.
+As a student, when I have a badge in my backpack, and I have the unime app, then I want to be able to import the badge into this app as Verifiable Credential. So that I am the true owner of my badge credential. And so that I can use it to prove that I have met the requirements of the achievement the badge represents.
 
 Features:
 
