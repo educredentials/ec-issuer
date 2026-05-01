@@ -14,7 +14,7 @@ Refer to [dedicated Import In Wallet](./import_in_wallet.md) for technical detai
 
 ### Import in wallet
 
-As a student, when I have a badge in my backpack, and I have the unime app, then I want to be able to import the badge into this app as Verifiable Credential. So that I am the true owner of my badge credential. And so that I can use it to prove that I have met the requirements of the achievent the badge represents.
+As a student, when I have a badge in my backpack, and I have the unime app, then I want to be able to import the badge into this app as Verifiable Credential. So that I am the true owner of my badge credential. And so that I can use it to prove that I have met the requirements of the achievement the badge represents.
 
 Features:
 
@@ -22,7 +22,7 @@ Features:
   - [x] Credential Issuer Metadata
   - [x] Credential Offer creation and delivery to user as QR code
   - [x] OpenID connect authentication flow started from wallet
-  - [x] Credential Request with autorization token and proof of possesion
+  - [x] Credential Request with authorization token and proof of possession
   - [x] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
   - [ ] Deferred Credential response
 
@@ -58,14 +58,14 @@ Features:
   
 ## ELM and Europass
 
-As a student, when I have a badge in my backpack, and I want to download a ELM (Europass) version of the badge, then I want to be able to upload this file in the the euro-pass environment so that this environment can veriify the badge and show that the verification is valid.
+As a student, when I have a badge in my backpack, and I want to download a ELM (Europass) version of the badge, then I want to be able to upload this file in the euro-pass environment so that this environment can verify the badge and show that the verification is valid.
 
 Features: 
 - [ ] Download signed Verifiable Credential file in ELM format.
 - [ ] File can be uploaded in euro-pass environment and shows as partially verified. Our eSeal signature is not valid and is allowed to show as invalid in the euro-pass environment.
 
 
-## Instition
+## Institution
 
 As an institution, I want to hand a badge to a user, so that I can provide digital versions of certificates, diplomas and other achievements.
 
