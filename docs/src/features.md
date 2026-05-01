@@ -22,7 +22,7 @@ Features:
   - [x] Credential Issuer Metadata
   - [x] Credential Offer creation and delivery to user as QR code
   - [x] OpenID connect authentication flow started from wallet
-  - [x] Credential Request with autorization token and proof of possesion
+  - [x] Credential Request with authorization token and proof of possession
   - [x] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
   - [ ] Deferred Credential response
 
