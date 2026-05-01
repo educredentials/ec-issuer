@@ -9,8 +9,6 @@ from .support.http_client import Config, HttpClient
 from .support.verifier import Verifier
 from .support.wallet import WalletClient
 
-_KEYS_DIR = Path(__file__).parent / "keys"
-
 
 @pytest.fixture(scope="session")
 def config() -> Config:

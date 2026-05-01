@@ -4,7 +4,6 @@ import base64
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import jwt as jwt_lib
@@ -94,9 +93,7 @@ class WalletClient:
 
     def get_issuer_metadata(self, issuer_url: str) -> CredentialIssuerMetadata:
         """Fetch credential issuer metadata."""
-        response = request(
-            "GET", f"{issuer_url}/.well-known/openid-credential-issuer"
-        )
+        response = request("GET", f"{issuer_url}/.well-known/openid-credential-issuer")
         assert response.status_code == 200, (
             f"Expected 200, got {response.status_code}, {response.text[:200]}"
         )

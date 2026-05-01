@@ -178,7 +178,6 @@ class TestMetadataService:
         assert metadata.nonce_endpoint == f"{public_url}/nonce"
         assert metadata.credential_endpoint == f"{public_url}/credential"
 
-
     def test_get_credential_issuer_metadata_replaces_credential_endpoint(self):
         """Test that credential_endpoint is replaced with public_url/credential."""
         public_url = "http://localhost:8000"
