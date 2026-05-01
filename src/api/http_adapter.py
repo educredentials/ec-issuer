@@ -3,6 +3,7 @@
 import json
 from dataclasses import dataclass
 from typing import override
+from urllib.parse import urlparse
 
 import msgspec
 from flask import Flask, Request, request
@@ -105,6 +106,43 @@ class HttpApiAdapter(ApiPort):
             metadata = self.metadata_service.get_credential_issuer_metadata()
             # msgspec encodes the metadata to JSON, as bytes, so we decode to a string
             return msgspec.json.encode(metadata).decode()
+
+        @app.route("/.well-known/did.json")
+        def did_document() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
+            """DID document endpoint for the issuer."""
+            # Get the public URL from config
+            public_url = self.config.public_url
+            # Parse the URL to extract host and port
+            parsed = urlparse(public_url)
+            host = parsed.hostname or "localhost"
+            port = parsed.port or (443 if parsed.scheme == "https" else 80)
+            
+            # Create DID from host and port
+            # For DID Web, only the port colon needs to be percent-encoded
+            # did:web: uses literal colons, but the port separator : needs to be %3A
+            did = f"did:web:{host}%3A{port}"
+            
+            # The public key is hardcoded for now
+            # In production this would come from the agent
+            did_document = {
+                "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/ed25519-2020/v1"],
+                "id": did,
+                "verificationMethod": [
+                    {
+                        "id": f"{did}#key-1",
+                        "type": "Ed25519VerificationKey2020",
+                        "controller": did,
+                        "publicKeyPem": (
+                    "-----BEGIN PUBLIC KEY-----\n"
+                    "MCowBQYDK2VwAyEAX4FOGLXPUOD06/9ygJ1wyZX+qreCuuZu3xl/rB4OJXA=\n"
+                    "-----END PUBLIC KEY-----"
+                )
+                    }
+                ],
+                "authentication": [f"{did}#key-1"],
+                "assertionMethod": [f"{did}#key-1"]
+            }
+            return msgspec.json.encode(did_document).decode()
 
         @app.route("/api/v1/offers/<offer_id>", methods=["GET"])
         def get_offer(offer_id: str):  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design

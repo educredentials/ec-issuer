@@ -4,13 +4,9 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from tests.e2e.conftest import (
-    AdminHttpClient,
-    Config,
-    HttpClient,
-    assert_schema,
-    jsonpath_value,
-)
+from tests.e2e.support.admin_client import AdminHttpClient
+from tests.e2e.support.http_client import Config, HttpClient
+from tests.e2e.support.utilities import assert_schema, jsonpath_value
 
 
 @pytest.mark.e2e

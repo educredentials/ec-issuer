@@ -2,7 +2,7 @@
 
 import pytest
 
-from tests.e2e.conftest import HttpClient
+from tests.e2e.support.http_client import HttpClient
 
 
 @pytest.mark.e2e
