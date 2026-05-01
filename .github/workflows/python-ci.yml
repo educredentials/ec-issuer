@@ -20,7 +20,7 @@ jobs:
           POSTGRES_DB: ecissuer
         ports:
           - "5432:5432"
-        options: --health-cmd pg_isready -U ecissuer -d ecissuer --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd="pg_isready -U ecissuer -d ecissuer" --health-interval=10s --health-timeout=5s --health-retries=5
       mock-ssi-agent: # built using ./dependency-services.yaml
         image: ghcr.io/${{ github.repository }}-platypus:latest
         ports:
