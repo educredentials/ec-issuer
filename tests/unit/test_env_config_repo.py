@@ -20,6 +20,7 @@ class TestEnvConfigRepo:
             "SERVER_PORT": "8080",
             "ISSUER_AGENT_BASE_URL": "http://issuer-agent.example.com",
             "PUBLIC_URL": "https://issuer.example.com",
+            "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
         }
         config = EnvConfigRepo(env=env)
 
@@ -27,6 +28,9 @@ class TestEnvConfigRepo:
         assert config.server_port == 8080
         assert config.issuer_agent_base_url == "http://issuer-agent.example.com"
         assert config.public_url == "https://issuer.example.com"
+        assert config.postgresql_connection_string == (
+            "postgresql://test:test@localhost:5432/test"
+        )
 
     def test_invalid_server_port(self):
         """Test that invalid server port raises ValueError."""
@@ -35,6 +39,9 @@ class TestEnvConfigRepo:
             "SERVER_PORT": "invalid",
             "ISSUER_AGENT_BASE_URL": "http://issuer-agent.example.com",
             "PUBLIC_URL": "https://issuer.example.com",
+            "POSTGRES_CONNECTION_STRING": (
+                "postgresql://test:test@localhost:5432/test"
+            ),
         }
         with pytest.raises(ValueError):
             _ = EnvConfigRepo(env=env)
@@ -45,6 +52,10 @@ class TestEnvConfigRepo:
         monkeypatch.setenv("SERVER_PORT", "8080")
         monkeypatch.setenv("ISSUER_AGENT_BASE_URL", "http://issuer-agent.example.com")
         monkeypatch.setenv("PUBLIC_URL", "https://issuer.example.com")
+        monkeypatch.setenv(
+            "POSTGRES_CONNECTION_STRING",
+            "postgresql://test:test@localhost:5432/test",
+        )
 
         config = EnvConfigRepo()
 
@@ -52,3 +63,6 @@ class TestEnvConfigRepo:
         assert config.server_port == 8080
         assert config.issuer_agent_base_url == "http://issuer-agent.example.com"
         assert config.public_url == "https://issuer.example.com"
+        assert config.postgresql_connection_string == (
+            "postgresql://test:test@localhost:5432/test"
+        )

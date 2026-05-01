@@ -26,11 +26,12 @@ test:
 test-unit:
     uv run pytest tests/unit/ -v
 
+# Run only integration tests
+test-integration:
+    uv run pytest tests/integration/ -v
+
 # Run only e2e tests
 test-e2e:
-    podman compose up --detach --timeout 4
-    # Wait for ec-issuer to be healthy because podman-compose lacks a wait-for-healthy option
-    @sh -c "until curl -sf http://localhost:8000/health; do echo 'Waiting for ec-issuer to be healthy...'; sleep 1; done"
     uv run pytest tests/e2e/ -v
 
 # Generate Python code documentation with pdoc

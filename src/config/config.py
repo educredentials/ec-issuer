@@ -14,6 +14,7 @@ class EnvConfigRepo(ConfigRepoPort):
     issuer_agent_base_url: str
     public_url: str
     debug: bool
+    postgresql_connection_string: str
 
     def __init__(self, env: Mapping[str, str] = environ):
         """Initialize with optional environment mapping.
@@ -26,3 +27,4 @@ class EnvConfigRepo(ConfigRepoPort):
         self.issuer_agent_base_url = env["ISSUER_AGENT_BASE_URL"]
         self.public_url = env["PUBLIC_URL"]
         self.debug = False
+        self.postgresql_connection_string = env["POSTGRES_CONNECTION_STRING"]

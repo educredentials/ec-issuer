@@ -4,7 +4,6 @@ from typing import override
 
 import pytest
 
-from src.offers.in_memory_adapter import InMemoryOffersRepository
 from src.access_control.access_control_port import AccessControlPort
 from src.offers.offer_service import (
     OfferService,
@@ -13,6 +12,7 @@ from src.offers.offer_service import (
 from tests.unit.test_doubles import (
     AccessControlStub,
     DenyingAccessControlStub,
+    InMemoryOffersRepositoryStub,
     IssuerAgentSpy,
     IssuerAgentStub,
 )
@@ -28,7 +28,7 @@ class TestOfferServiceCreateOffer:
         service = OfferService(
             issuer_agent=IssuerAgentSpy(),
             access_control=AccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url=PUBLIC_URL,
         )
 
@@ -43,7 +43,7 @@ class TestOfferServiceCreateOffer:
         service = OfferService(
             issuer_agent=IssuerAgentSpy(),
             access_control=AccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url=PUBLIC_URL,
         )
 
@@ -53,7 +53,7 @@ class TestOfferServiceCreateOffer:
 
     def test_stores_offer_in_repository(self):
         """create_offer persists the offer so it can be retrieved later."""
-        repo = InMemoryOffersRepository()
+        repo = InMemoryOffersRepositoryStub()
         service = OfferService(
             issuer_agent=IssuerAgentSpy(),
             access_control=AccessControlStub(),
@@ -71,7 +71,7 @@ class TestOfferServiceCreateOffer:
         service = OfferService(
             issuer_agent=agent,
             access_control=AccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url=PUBLIC_URL,
         )
 
@@ -85,7 +85,7 @@ class TestOfferServiceCreateOffer:
         service = OfferService(
             issuer_agent=IssuerAgentSpy(),
             access_control=DenyingAccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url=PUBLIC_URL,
         )
 
@@ -122,7 +122,7 @@ class TestOfferServiceCreateOffer:
         service = OfferService(
             issuer_agent=IssuerAgentSpy(),
             access_control=spy,
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url=PUBLIC_URL,
         )
 
@@ -139,7 +139,7 @@ class TestOfferServiceGetOffer:
         service = OfferService(
             issuer_agent=IssuerAgentSpy(),
             access_control=AccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url="https://issuer.example.com",
         )
         offer = service.create_offer(achievement_id="award-123", bearer_token="tok")
@@ -155,7 +155,7 @@ class TestOfferServiceGetOffer:
         service = OfferService(
             issuer_agent=IssuerAgentStub(),
             access_control=AccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url="https://issuer.example.com",
         )
 

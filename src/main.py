@@ -9,8 +9,8 @@ from src.config.config_port import ConfigRepoPort
 from src.credentials.credential_service import CredentialService
 from src.issuer_agent.ssi_agent_adapter import SsiAgentAdapter
 from src.metadata.metadata_service import MetadataService
-from src.offers.in_memory_adapter import InMemoryOffersRepository
 from src.offers.offer_service import OfferService
+from src.offers.postgresql_adapter import PostgreSQLOffersRepository
 
 
 class App:
@@ -29,7 +29,9 @@ class App:
         )
 
         access_control = HardcodedAccessControlAdapter()
-        offers_repository = InMemoryOffersRepository()
+        offers_repository = PostgreSQLOffersRepository(
+            self.config.postgresql_connection_string
+        )
         offer_service = OfferService(
             issuer_agent=issuer_agent,
             access_control=access_control,

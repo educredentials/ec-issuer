@@ -1,10 +1,25 @@
-# End-to-End Testing with JSON Schemas
+# End-to-End Testing
 
-This document describes how we use JSON schemas to validate JSON responses in our end-to-end tests.
+This document describes end-to-end testing for the EC Issuer service.
 
 ## Overview
 
-End-to-end tests verify the complete system behavior by making real HTTP requests to the running service. To ensure the responses have the correct structure, we validate them against JSON schemas.
+End-to-end tests verify the complete system behavior by making real HTTP requests to the running service. The `just test-e2e` command uses Podman Compose to start the required service containers.
+
+## Prerequisites
+
+- Podman installed and running
+- Docker Compose compatible with podman-compose
+
+## Running Tests
+
+```bash
+just test-e2e
+```
+
+The `just test-e2e` command starts all services defined in `compose.yaml` and waits for them to be healthy before running tests.
+
+**Note:** Test fixtures themselves never start or stop services. They only return connection strings. If services are not running when tests execute, they will fail with clear connection errors (KISS principle).
 
 ## Schema Validation
 

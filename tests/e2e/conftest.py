@@ -14,7 +14,10 @@ _KEYS_DIR = Path(__file__).parent / "keys"
 
 @pytest.fixture(scope="session")
 def config() -> Config:
-    """Provide test configuration."""
+    """Provide test configuration.
+
+    The ec-issuer service must be running before tests are executed.
+    """
     return Config()
 
 

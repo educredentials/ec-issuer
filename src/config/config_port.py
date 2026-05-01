@@ -9,3 +9,4 @@ class ConfigRepoPort(ABC):
     issuer_agent_base_url: str
     public_url: str
     debug: bool
+    postgresql_connection_string: str

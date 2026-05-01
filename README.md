@@ -54,6 +54,7 @@ This service wraps and abstracts existing issuance services.
 
 - Python 3.10+
 - UV
+- Podman (for running tests that require services)
 
 ### Environment Variables
 
@@ -74,12 +75,31 @@ The service will start on `http://localhost:8080`
 ### Running Tests
 
 ```bash
-just test
+just test        # Run unit and integration tests
+just test-unit   # Run only unit tests
+just test-e2e    # Run only e2e tests (requires Podman)
 ```
+
+**Note:** Integration and e2e tests require external services to be running.
+
+To start services for testing:
+```bash
+podman compose up -d
+```
+
+The CI pipeline provides required services via GitHub Actions. Locally, you must start services before running tests that require them. Test fixtures never start or stop services — they only return connection strings.
 
 ## Development
 
 This project uses [Just](https://github.com/casey/just) for common development tasks and has a GitHub Actions CI/CD pipeline.
+
+## Testing
+
+This project follows the [Testing Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html) approach with three test levels:
+
+- **Unit tests**: Fast, isolated tests of individual components using test doubles
+- **Integration tests**: Tests that verify interactions between components, may require external services
+- **End-to-end tests**: Tests that verify complete system behavior through the public API
 
 ### Project Structure
 
@@ -93,6 +113,7 @@ src/
 
 tests/
 ├── e2e/            # End-to-end tests
+├── integration/    # Integration tests
 └── unit/           # Unit tests
 ```
 

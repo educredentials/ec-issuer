@@ -14,9 +14,40 @@ from src.metadata.credential_issuer_metadata import (
     CredentialIssuerMetadata,
 )
 from src.metadata.metadata_service import MetadataService
-from src.offers.in_memory_adapter import InMemoryOffersRepository
-from src.offers.offer_repository import Offer
+from src.offers.offer_repository import Offer, OffersRepositoryPort
 from src.offers.offer_service import OfferService, PermissionDeniedError
+
+
+class InMemoryOffersRepositoryStub(OffersRepositoryPort):
+    """Stub: In-memory repository for offers, for use in unit tests only."""
+
+    def __init__(self) -> None:
+        """Initialise with an empty store."""
+        self._store: dict[str, Offer] = {}
+
+    @override
+    def store(self, offer: Offer) -> None:
+        """Persist an offer in memory.
+
+        Args:
+            offer: The offer to store.
+        """
+        self._store[offer.offer_id] = offer
+
+    @override
+    def get(self, offer_id: str) -> Offer:
+        """Retrieve an offer by its identifier.
+
+        Args:
+            offer_id: The unique offer identifier.
+
+        Returns:
+            The matching Offer.
+
+        Raises:
+            KeyError: When no offer with the given id exists.
+        """
+        return self._store[offer_id]
 
 
 class ConfigRepoStub(ConfigRepoPort):
@@ -27,6 +58,7 @@ class ConfigRepoStub(ConfigRepoPort):
     issuer_agent_base_url: str = "https://issuer-agent.example.com"
     public_url: str = "http://localhost:8888"
     debug: bool = False
+    postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
 
 
 class AccessControlStub(AccessControlPort):
@@ -183,7 +215,7 @@ class DenyingOfferServiceStub(OfferService):
         super().__init__(
             issuer_agent=IssuerAgentStub(),
             access_control=DenyingAccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url="http://localhost:8888",
         )
 
@@ -208,7 +240,7 @@ class OfferServiceSpy(OfferService):
         super().__init__(
             issuer_agent=IssuerAgentStub(),
             access_control=AccessControlStub(),
-            offers_repository=InMemoryOffersRepository(),
+            offers_repository=InMemoryOffersRepositoryStub(),
             public_url=public_url,
         )
 
