@@ -1,6 +1,6 @@
 # Features
 
-User stories taken from [SURF confluence](https://confluence.ia.surf.nl/spaces/EDUCRED/pages/297338250/Epics+and+user+stories+eduCredentials#EpicsanduserstorieseduCredentials-IssuanceOBv3andELM). The confluence versions are leading and we should update, remove, change this document accordingly.
+User stories taken from [SURF Confluence](https://confluence.ia.surf.nl/spaces/EDUCRED/pages/297338250/Epics+and+user+stories+eduCredentials#EpicsanduserstorieseduCredentials-IssuanceOBv3andELM). The Confluence versions are leading and we should update, remove, change this document accordingly.
 
 These user stories describe **the whole** platform of EduCredentials, not just the issuer part. We only show the stories that are relevant.
 
@@ -23,7 +23,7 @@ Features:
   - [x] Credential Offer creation and delivery to user as QR code
   - [x] OpenID connect authentication flow started from wallet
   - [x] Credential Request with authorization token and proof of possession
-  - [x] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
+  - [x] Credential Response with signed Verifiable Credential in Open Badges 3.0 format
   - [ ] Deferred Credential response
 
 #### Edge Cases

@@ -19,7 +19,7 @@
 - [Python Code Reference](./python_reference.md)
   
 # Workflow
-- [Defintion of Done](./definition_of_done.md)
+- [Definition of Done](./definition_of_done.md)
 
 ---
 

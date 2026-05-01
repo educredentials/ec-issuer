@@ -101,22 +101,6 @@ This project follows the [Testing Pyramid](https://martinfowler.com/articles/pra
 - **Integration tests**: Tests that verify interactions between components, may require external services
 - **End-to-end tests**: Tests that verify complete system behavior through the public API
 
-### Project Structure
-
-```
-src/
-├── main.py          # Flask application entry point
-├── config.py        # Configuration management
-├── models.py        # Database models
-├── routes/          # API routes
-└── services/        # Business logic
-
-tests/
-├── e2e/            # End-to-end tests
-├── integration/    # Integration tests
-└── unit/           # Unit tests
-```
-
 ### Available Commands
 
 ```bash
@@ -134,13 +118,6 @@ just test-e2e    # Only e2e tests
 # Run everything
 just all
 ```
-
-### Adding a New Endpoint
-
-1. Create a new route in `src/routes/`
-2. Add the route to the Flask app in `src/main.py`
-3. Write tests in `tests/`
-4. Implement the business logic in `src/services/`
 
 ## Docker
 

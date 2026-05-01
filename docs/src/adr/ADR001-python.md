@@ -1,13 +1,13 @@
 ---
 status: accepted
-date: 2026-04-31 
+date: 2025-04-30
 deciders: Daniel Ostkamp, Thomas Kalverda, Bèr Kessels
 consulted: See deciders
 informed: See deciders
 ---
 # ADR001: Python and Flask for service
 
-After an intial PoC with rust, we decided to build the issuer service in Python, without any framework.
+After an initial PoC with Rust, we decided to build the issuer service in Python, without any framework.
 
 ## Context and Problem Statement
 
@@ -47,7 +47,7 @@ Package-management, version management, linting, formatting, typechecking all go
 
 ### Consequences
 
-* Good: Python is well-known and has many developers avaiable to work on.
+* Good: Python is well-known and has many developers available to work on.
 * Good: Boilerplate is minimal since Python is a high-order language, leaving e.g. memory management to the runtime.
 * Neutral: Python performs poorly compared to rust, but since this service is not performance-critical, the extra cost is minimal.
 * Bad: Runtime management-, building and setup requires additional, complex tooling like Containers to maintain parity and allow easy on-boarding.

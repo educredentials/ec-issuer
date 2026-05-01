@@ -57,7 +57,7 @@ Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1
 {
   "credential_issuer": "https://issuer.example.com",
   "authorization_servers": ["https://authn.example.com"],
-  "credential_configurations_supported": {},
+  "credential_configurations_supported": {}
 }
 ```
 
@@ -65,7 +65,7 @@ Response (see https://openid.net/specs/openid-4-verifiable-credential-issuance-1
 
 AKA Dereference offer from credential_offer_uri
 
-Location not specced. But for consistency, under /offers
+Location not specified by the spec. But for consistency, under /offers
 
 ```bash
 curl http://issuer.example.com/offers/550e8400-e29b-41d4-a716-446655440000
@@ -89,7 +89,7 @@ curl http://issuer.example.com/offers/550e8400-e29b-41d4-a716-446655440000
 
 ### Get a credential (OpenId for VCI authorization code flow)
 
-Location specced and defaults to /credentials. Will be included in metadata. For
+Location specified by the spec and defaults to /credentials. Will be included in metadata. For
 simplicity and consistency we use this default.
 
 Get the credential. A reference to deferred endpoint is always returned.
@@ -111,16 +111,16 @@ curl -X POST http://issuer.example.com/credentials \
 ```
 
 Response:
-```
+```json
 {
   "transaction_id": "8xLOxBtZp8",
-  "interval" : 3600
+  "interval": 3600
 }
 ```
 
 ### Get Deferred Credential
 
-Get the credential at the [deferred endpoint](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoin).
+Get the credential at the [deferred endpoint](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoint).
 
 Request:
 ```bash
@@ -138,7 +138,7 @@ Response (once the credential is ready):
       "credential": "LUpixVCWJk0eOt4CXQe1NXK....WZwmhmn9OQp6YxX0a2L"
     }
   ]
-} 
+}
 ```
 
 ## Revoke a Credential

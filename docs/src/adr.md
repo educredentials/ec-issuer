@@ -1,12 +1,12 @@
 # Architecture Decision Records ADR. 
 
-All important technical decisions are recorded in an ADR. The [ADR github organisation](https://adr.github.io/) has introductionary and other resources.
+All important technical decisions are recorded in an ADR. The [ADR github organisation](https://adr.github.io/) has introductory and other resources.
 
 Higher level ADRs, like business- or domain logic, requirements and other team-wide decisions are kept in [EduCredentials ADRs on Confluence](https://confluence.ia.surf.nl/pages/viewpage.action?pageId=260738661&spaceKey=EDUCRED&title=EduCredentials%2BADRs).
 
-## Developers: Template 
+## Developers: Template
 
-When adding an ADR here, use the following template, but keep it simple: remove anything but the bare nessecary parts.
+When adding an ADR here, use the following template, but keep it simple: remove anything but the bare necessary parts.
 
 ```
 ---

@@ -33,7 +33,7 @@ sequenceDiagram
 
     rect rgba(0, 0, 255, .05)
         EndUser->>Wallet: Scan Offer QR
-        note Right of Wallet: OID4VCI Authorization Code flow<br/>with defered Credential endpoint
+        note Right of Wallet: OID4VCI Authorization Code flow<br/>with deferred Credential endpoint
 
         Wallet->>ec-issuer: Obtain Credential Issuer Metadata
         Wallet->>ec-authentication: Authentication Request (OfferId)
@@ -98,4 +98,4 @@ In this diagram, the following actions take place:
 1. *Wallet* notifies *EndUser* of success with verifiable credential
 1. *ec-issuer* publishes credential issued event on *Notification Service*
 
-[Diagram taken from backstage docs](https://backstage.sdp.surf.nl/docs/default/component/educredentials-service/educredentials_services_architecture/#sequence-diagrams-work-in-progress)
+[Diagram taken from Backstage docs](https://backstage.sdp.surf.nl/docs/default/component/educredentials-service/educredentials_services_architecture/#sequence-diagrams-work-in-progress)
