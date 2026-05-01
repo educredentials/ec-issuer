@@ -23,11 +23,23 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 
 ## Code Style Guidelines
 - ruff defaults. Check with `just lint`. Format with `uv run ruff format`
-- basedpyright defaults. Check with `just lint`.
+- basedpyright defaults. Check with `just lint`. Some general guidelines to adhere to these basedpyright defaults:
+  - never use Any
+  - never use Unknown or partially Unknown
 - Structured in modules, following the Screaming Architecture pattern.
 - Follows Hexagonal Architecture with Ports and Adapters.
-- Do not add comments to code that explain **what** the code does.
+- Do not add comments to code that explain **what** the code does. Only add
+  comments **why** we do it this way, if that is unclear, unexpected or uncommon.
 - Make the code self-documenting by using good naming and structure.
+
+## Lower level code guidelines
+
+- response.json() from `request` lib is Any or Partially unknown. Avoid this. Use msgspec and Dataclasses instead
+- use ABC for adapters. Python lacks interfaces, ABC is how we mimic interfaces.
+- use `_UnderScore`, `_UNDERSCORE`, `_under_score()` etc to mark internals in
+  modules as private. Python lacks visibility scoping, we mimic that with the
+  underscore convention. Ruff and BasedPyright use that convention.
+- 
 
 ## Project Context
 - Wrapper around third party issuance service that holds our
@@ -54,5 +66,6 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - DO: Add type hints to all code
 - DO: Add pydocstring to all functions and classes
 - DO: Check existing components before creating new ones
+- DO: Remove existing pyright-ignore comments and replace then with proper type hints, typing or other solutions
 - DO: Follow established patterns in the codebase
 - DO: Keep functions small and focused

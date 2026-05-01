@@ -5,8 +5,14 @@ Words, terms and acronyms used in context of the project. Domain language, or ub
 ## A
 
 Achievement
-  : An achievement is a credential that is issued by an issuer and can be verified by a verifier. It is a special type of credential that is used to represent a achievement of a person.
+	: A collection of information about the accomplishment recognized by the Assertion. Formerly known as _BadgeClass_
 
+AchievementCredential
+  : Specific variation of a Credential. A Credential that follows the OpenBadge specification for its content.
+  
+Actor
+  : The entity performing an action. This is currently either a _Subject_ or an _Issuer_.
+  
 ## B
 
 ## C
@@ -18,6 +24,18 @@ Credential
 
 ## E
 
+EC
+  : _E_du_C_redentials. Prefix used in the EduCredentials project, services, and products.
+
+EC-achievements
+  : Service that manages and provides Achievements
+
+EC-authorization
+  : Service that manages access to resources. In context of Educredentials Issuer, it allows us to check what _Actor_ may _Issue_ what _Achievement_ to what _Subject_.
+
+EC-issuer, Educredentials Issuer
+  : This service. The software in this repo.
+
 ## F
 
 ## G
@@ -27,10 +45,10 @@ Credential
 ## I
 
 Issuer
-  : The entity (usually a person) that makes and signs a verifiable credential.
+  : The entity (usually a person) that signs a verifiable credential. In practice this is either a staff, teacher or other person when a _Credential_ is issued to a _Subject_. Or it is a student who issues a previously received Credential into their wallet. TODO: Differentiate between the Issuer whose signature is used, and the Person who initialized the Issuance in terminology
 
-Issuer Service (aka Issuer-agent)
-  : The software that is used by an issuer to create and sign a verifiable credential.
+Issuer Agent (aka Issuer-agent)
+  : The software that is used by an issuer to create and sign a verifiable credential. Current implementation uses the ssi-agent, also known as _Unime-Core_ for this.
 
 ## J
 
@@ -63,7 +81,15 @@ Revocation
 Subject
   : The entity (usually a person) that receives a verifiable credential.
 
+Staff
+  : Deprecated, see _Issuer_ instead.
+Student
+  : Deprecated, see _Subject_ instead.
+
 ## T
+
+Teacher
+  : Deprecated, see _Issuer_ instead.
 
 ## U
 
