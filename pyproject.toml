@@ -17,6 +17,7 @@ dev = [
     "basedpyright>=1.38.4",
     "jsonpath-ng>=1.8.0",
     "jsonschema>=4.26.0",
+    "pdoc>=16.0.0",
     "pyjwt[crypto]>=2.12.1",
     "pytest>=9.0.3",
     "pytest-cov>=4.0.0",

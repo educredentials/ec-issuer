@@ -33,6 +33,11 @@ test-e2e:
     @sh -c "until curl -sf http://localhost:8000/health; do echo 'Waiting for ec-issuer to be healthy...'; sleep 1; done"
     uv run pytest tests/e2e/ -v
 
+# Generate Python code documentation with pdoc
+docs-code:
+    uv sync
+    uv run pdoc -o docs/book/pydoc src/
+
 # Run mdbook to preview the docs. See https://rust-lang.github.io/mdBook/
 docs:
     mdbook serve docs
