@@ -58,7 +58,7 @@ Features:
   
 ## ELM and Europass
 
-As a student, when I have a badge in my backpack, and I want to download a ELM (Europass) version of the badge, then I want to be able to upload this file in the the euro-pass environment so that this environment can veriify the badge and show that the verification is valid.
+As a student, when I have a badge in my backpack, and I want to download a ELM (Europass) version of the badge, then I want to be able to upload this file in the euro-pass environment so that this environment can verify the badge and show that the verification is valid.
 
 Features: 
 - [ ] Download signed Verifiable Credential file in ELM format.
