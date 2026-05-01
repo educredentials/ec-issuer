@@ -65,6 +65,9 @@ Issuer Agent (aka Issuer-agent)
 Open Badges (aka OpenBadgeCredential, OBv3)
   : Open Badges is an [open standard](https://www.imsglobal.org/spec/ob/v3p0) for digital badges. It is a specification for the issuance and verification of digital badges.
 
+OpenID for Verifiable Credential
+  : OpenID for Verifiable Credentials (OID4VC) is a specification for the issuance and verification of verifiable credentials. It is based on the OpenID Connect protocol. See [OID4VC](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) for more information.
+
 ## P
 
 ## P

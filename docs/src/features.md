@@ -18,15 +18,28 @@ As a student, when I have a badge in my backpack, and I have the unime app, then
 
 Features:
 
-- [ ] OpenID4VCI standards authorization code flow with a mobile wallet
+- [ ] OpenID for Verifiable Credential Issuance (OID4VCI) standards authorization code flow with a mobile wallet
   - [x] Credential Issuer Metadata
   - [x] Credential Offer creation and delivery to user as QR code
-  - [ ] OpenID connect authentication flow started from wallet
-  - [ ] Credential Request with autorization token and proof of possesion
-  - [ ] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
+  - [x] OpenID connect authentication flow started from wallet
+  - [x] Credential Request with autorization token and proof of possesion
+  - [x] Credential Response with signed Verifiable Credential in OpenBadges v2.0 format
   - [ ] Deferred Credential response
-  - [ ] Issuance to known users (users known to us in ec-user)
-  - [ ] Issuance to unknown users (email?)
+
+#### Edge Cases
+
+As student Anna, when I have a badge in my backpack, and I import that in my wallet, then the device that has this wallet will 
+require me to authenticate again. And when I authenticate there as Anna as well, I receive the credential in my wallet.
+
+As student Anna, when I have a badge in my backpack, and Mallory scans this QR code, then the device that has his wallet will 
+require him to authenticate again. And when he authenticate there as Mallory, he will receive an error instead of the wallet.
+Or when he fails to authenticate there, the flow stops there and no request is made at all.
+
+- [ ] In addition to the above-mentioned OID4VCI flow, the authorization token is checked to determine if the person logged in on their phone is the person that was logged in on backpack.
+- [ ] Determine if we, the EC-issuer, handle the authorization, or if we defer it to the upstream issuer.
+- [ ] Determine what attributes to match equivalence on - considering federative nature of eduids: the uuid for Anna-in-backpack may not be the uuid for Anna-on-the-phone.
+- [ ] Consider if an authentication proxy is needed to handle the oidc flow around surfconext and eduid.
+
 
 ### Alternative wallets
 
