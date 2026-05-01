@@ -46,10 +46,9 @@ dist/
 # UV
 .uv/
 
-# Ruff cache
+# Temp files, cache
+tmp/
 .ruff_cache/
-
-# Mypy cache
 .mypy_cache/
 
 # Docs, mdbook
