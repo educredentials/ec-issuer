@@ -65,7 +65,7 @@ Features:
 - [ ] File can be uploaded in euro-pass environment and shows as partially verified. Our eSeal signature is not valid and is allowed to show as invalid in the euro-pass environment.
 
 
-## Instition
+## Institution
 
 As an institution, I want to hand a badge to a user, so that I can provide digital versions of certificates, diplomas and other achievements.
 
