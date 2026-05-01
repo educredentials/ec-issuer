@@ -12,7 +12,7 @@ jobs:
     name: Lint, Typecheck, Unit Test, Integration Test
     runs-on: ubuntu-latest
     services:
-      mock-ssi-agent:
+      mock-ssi-agent: # built using ./dependency-services.yaml
         image: ghcr.io/${{ github.repository }}-platypus:latest
         ports:
           - "8001:8001"

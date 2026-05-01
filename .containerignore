@@ -63,3 +63,5 @@ compose.yaml
 
 # Docs, mdbook
 docs/book
+
+containers/

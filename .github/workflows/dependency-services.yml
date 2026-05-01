@@ -5,13 +5,13 @@ on:
     branches: [main]
     tags: ["*"]
     paths:
-      - "tests/e2e/Dockerfile.platypus"
-      - "tests/e2e/ssi-agent-mock.yaml"
+      - "containers/Dockerfile.platypus"
+      - "containers/ssi-agent-mock.yaml"
   pull_request:
     branches: [main]
     paths:
-      - "tests/e2e/Dockerfile.platypus"
-      - "tests/e2e/ssi-agent-mock.yaml"
+      - "containers/Dockerfile.platypus"
+      - "containers/ssi-agent-mock.yaml"
 
 # Set permissions for GITHUB_TOKEN
 permissions:
@@ -37,8 +37,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: tests/e2e
-          file: tests/e2e/Dockerfile.platypus
+          context: containers
+          file: containers/Dockerfile.platypus
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max

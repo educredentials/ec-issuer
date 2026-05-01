@@ -42,5 +42,5 @@ services:
       - "8001:8001"
     command: --server.port 8001 --server.host 0.0.0.0 --mock mock.yaml
     volumes:
-      - ./tests/e2e/ssi-agent-mock.yaml:/app/mock.yaml
+      - ./containers/ssi-agent-mock.yaml:/app/mock.yaml
     working_dir: /app
