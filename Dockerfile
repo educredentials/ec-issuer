@@ -28,6 +28,9 @@ FROM python:3.14-slim-bookworm
 # Python executable must be the same, e.g., using `python:3.11-slim-bookworm`
 # will fail.
 
+# Install system updates
+RUN apt-get update && apt-get upgrade -y && apt-get autoremove -y && apt-get clean
+
 # Setup a non-root user
 RUN groupadd --system --gid 999 nonroot \
  && useradd --system --gid 999 --uid 999 --create-home nonroot
