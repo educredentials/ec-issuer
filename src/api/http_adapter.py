@@ -6,8 +6,10 @@ from typing import override
 from urllib.parse import urlparse
 
 import msgspec
-from flask import Flask, Request, request
-from prometheus_flask_exporter import PrometheusMetrics  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
+from flask import Flask, Request, Response, request
+from prometheus_flask_exporter import (
+    PrometheusMetrics,  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
+)
 
 from src.config.config_port import ConfigRepoPort
 from src.credentials.credential_service import CredentialService
@@ -101,11 +103,14 @@ class HttpApiAdapter(ApiPort):
             return "Hello, World!"
 
         @app.route("/.well-known/openid-credential-issuer")
-        def credential_issuer_metadata() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
+        def credential_issuer_metadata() -> Response:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Credential Issuer Metadata endpoint."""
             metadata = self.metadata_service.get_credential_issuer_metadata()
-            # msgspec encodes the metadata to JSON, as bytes, so we decode to a string
-            return msgspec.json.encode(metadata).decode()
+            return Response(
+                response=msgspec.json.encode(metadata).decode(),
+                mimetype="application/json",
+                status=200,
+            )
 
         @app.route("/.well-known/did.json")
         def did_document() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design

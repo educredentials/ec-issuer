@@ -22,6 +22,7 @@ class TestCredentialIssuerMetadataEndpoint:
         assert response.status_code == 200, (
             f"Expected 200, got {response.status_code}, {response.text[:200]}"
         )
+        assert response.headers["content-type"] == "application/json"
         body: object = response.json()  # pyright: ignore[reportAny]
         assert_schema(body, "credential_issuer_metadata")
 
