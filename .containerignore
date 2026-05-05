@@ -3,7 +3,12 @@ __pycache__
 *.py[cod]
 *$py.class
 
-# Virtual environment
+# Python building and caching
+.hypothesis/
+.pytest_cache/
+.uv/
+.ruff_cache/
+.mypy_c
 .venv/
 venv/
 
@@ -29,7 +34,8 @@ AGENTS.md
 logs/
 *.log
 
-# Coverage
+# Tests and coverage
+tests/
 .htmlcov/
 .coverage
 
@@ -41,27 +47,10 @@ dist/
 *.db
 *.sqlite
 
-# Docker
+# Docker, Containers
 .env.docker
 Dockerfile
 compose.yaml
 
-# Tests
-.hypothesis/
-
-# Python cache
-.pytest_cache/
-
-# UV
-.uv/
-
-# Ruff cache
-.ruff_cache/
-
-# Mypy cache
-.mypy_cache/
-
 # Docs, mdbook
-docs/book
-
-containers/
+docs/

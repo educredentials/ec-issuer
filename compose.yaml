@@ -21,7 +21,7 @@ services:
     working_dir: /app
 
   real-ssi-agent:
-    image: cr.surf.nl/edubadges-edubadges/edubadges/ssi-agent:latest
+    image: cr.surf.nl/edubadges-educredentials/ssi-agent:latest
     profiles:
       - real-ssi-agent
     ports:
@@ -44,7 +44,7 @@ services:
       - "8001:8001"
     command: --server.port 8001 --server.host 0.0.0.0 --mock mock.yaml
     volumes:
-      - ./containers/ssi-agent-mock.yaml:/app/mock.yaml
+      - ./dependencies/platypus/ssi-agent-mock.yaml:/app/mock.yaml
     working_dir: /app
 
   postgresql:
