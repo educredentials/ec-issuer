@@ -115,9 +115,7 @@ class HttpApiAdapter(ApiPort):
         @app.route("/.well-known/did.json")
         def did_document() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """DID document endpoint for the issuer."""
-            # Get the public URL from config
             public_url = self.config.public_url
-            # Parse the URL to extract host and port
             parsed = urlparse(public_url)
             host = parsed.hostname or "localhost"
             port = parsed.port or (443 if parsed.scheme == "https" else 80)

@@ -6,8 +6,8 @@ from tests.e2e.support.admin_client import AdminHttpClient
 from tests.e2e.support.browser import Browser
 from tests.e2e.support.http_client import Config, HttpClient
 from tests.e2e.support.utilities import assert_schema
-from tests.e2e.support.wallet import WalletClient
 from tests.e2e.support.verifier import Verifier
+from tests.e2e.support.wallet import WalletClient
 
 
 @pytest.mark.e2e
