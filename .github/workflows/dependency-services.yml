@@ -9,14 +9,6 @@ on:
   push:
     branches: [main]
     tags: ["*"]
-    paths:
-      - "containers/Dockerfile.platypus"
-      - "containers/ssi-agent-mock.yaml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "containers/Dockerfile.platypus"
-      - "containers/ssi-agent-mock.yaml"
 
 # Set permissions for GITHUB_TOKEN
 permissions:
@@ -24,9 +16,10 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  build-ssi-agent:
     name: "Build Impierce SSI Agent BETA. The actual ssi-agent used in the cluster"
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -71,6 +64,7 @@ jobs:
   build-platypus:
     name: "Build Platypus, the mock ssi-agent used in CI and tests"
     runs-on: ubuntu-latest
+    if: contains(github.event.paths, 'containers/Dockerfile.platypus') || contains(github.event.paths, 'containers/ssi-agent-mock.yaml')
     steps:
       - uses: actions/checkout@v6
 
