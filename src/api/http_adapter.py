@@ -7,8 +7,8 @@ from urllib.parse import urlparse
 
 import msgspec
 from flask import Flask, Request, Response, request
-from prometheus_flask_exporter import (
-    PrometheusMetrics,  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
+from prometheus_flask_exporter import (  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
+    PrometheusMetrics,
 )
 
 from src.config.config_port import ConfigRepoPort
@@ -113,7 +113,7 @@ class HttpApiAdapter(ApiPort):
             )
 
         @app.route("/.well-known/did.json")
-        def did_document() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
+        def did_document() -> Response:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """DID document endpoint for the issuer."""
             public_url = self.config.public_url
             parsed = urlparse(public_url)
@@ -148,7 +148,11 @@ class HttpApiAdapter(ApiPort):
                 "authentication": [f"{did}#key-1"],
                 "assertionMethod": [f"{did}#key-1"],
             }
-            return msgspec.json.encode(did_document).decode()
+            return Response(
+                response = msgspec.json.encode(did_document),
+                status = 200,
+                mimetype = "application/json"
+            )
 
         @app.route("/api/v1/offers/<offer_id>", methods=["GET"])
         def get_offer(offer_id: str):  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design

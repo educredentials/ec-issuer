@@ -30,6 +30,16 @@ class TestCredentialIssuerMetadataEndpoint:
         metadata = wallet_client.get_issuer_metadata(config.public_url)
         assert metadata.credential_issuer == config.public_url
 
+    def test_did_document_returns_correct_json(self, http_client: HttpClient):
+        """Test DID Document endpoint returns correct JSON."""
+        response = http_client.get("/.well-known/did.json")
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}, {response.text[:200]}"
+        )
+        assert response.headers["content-type"] == "application/json"
+        body: object = response.json()  # pyright: ignore[reportAny]
+        assert_schema(body, "did_document")
+
 
 @pytest.mark.e2e
 class TestOID4VCIFlow:
