@@ -29,3 +29,6 @@ USER nonroot
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:$PATH"
+
+ENV PYTHONPATH="/app/src"
+CMD ["python", "-m", "src.main"]
