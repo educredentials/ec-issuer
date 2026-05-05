@@ -1,3 +1,8 @@
+# Required secrets:
+#   - CR_SURF_USERNAME: Username for cr.surf.nl registry
+#   - CR_SURF_PASSWORD: Password for cr.surf.nl registry
+#
+
 name: Build third party services containers on github container registry
 
 on:
@@ -19,7 +24,52 @@ permissions:
   packages: write
 
 jobs:
+  build:
+    name: "Build Impierce SSI Agent BETA. The actual ssi-agent used in the cluster"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: https://github.com/impierce/ssi-agent.git
+          ref: beta
+
+      - name: Log in to SDP Container Registry "Harbor"
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        with:
+          registry: cr.surf.nl
+          username: ${{ secrets.CR_SURF_USERNAME }}
+          password: ${{ secrets.CR_SURF_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker image (development)
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          file: ./agent_application/docker/Dockerfile.dev
+          tags: |
+            cr.surf.nl/edubadges-educredentials/ssi-agent:develop
+            cr.surf.nl/edubadges-educredentials/ssi-agent:develop-beta
+
+      - name: Build and push Docker image (release)
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          file: ./agent_application/docker/Dockerfile  # This Dockerfile uses --release for builds
+          tags: |
+            cr.surf.nl/edubadges-educredentials/ssi-agent:latest
+            cr.surf.nl/edubadges-educredentials/ssi-agent:release-beta
+
   build-platypus:
+    name: "Build Platypus, the mock ssi-agent used in CI and tests"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
