@@ -13,7 +13,8 @@ services:
     environment:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8000
-      - ISSUER_AGENT_BASE_URL=http://mock-ssi-agent:8001
+      # Complicated ENV magic, to allow running the ec-issuer with the real-ssi-agent. See justfile
+      - ISSUER_AGENT_BASE_URL=${ISSUER_AGENT_BASE_URL:-http://mock-ssi-agent:8001}
       - PUBLIC_URL=http://localhost:8000
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
     depends_on:
