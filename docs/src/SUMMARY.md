@@ -16,6 +16,16 @@
 - [Architecture Decision Records (ADRs)](./adr.md)
   - [Python and Flask for service](./adr/ADR001-python.md)
   - [Use ABC instead of Protocol for Interface Definition](./adr/ADR002-abc-over-protocol.md)
+- [AI Agent context](./agent_context.md)
+  - [AGENTS.md](./agents/AGENTS.md)
+  - [Skill adr SKILL.md](./agents/skills/adr/SKILL.md)
+  - [Skill python-tdd deep-modules.md](./agents/skills/python-tdd/deep-modules.md)
+  - [Skill python-tdd interface-design.md](./agents/skills/python-tdd/interface-design.md)
+  - [Skill python-tdd mocking.md](./agents/skills/python-tdd/mocking.md)
+  - [Skill python-tdd refactoring.md](./agents/skills/python-tdd/refactoring.md)
+  - [Skill python-tdd SKILL.md](./agents/skills/python-tdd/SKILL.md)
+  - [Skill python-tdd tests.md](./agents/skills/python-tdd/tests.md)
+
 - [Python Code Reference](./python_reference.md)
   
 # Workflow

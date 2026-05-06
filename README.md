@@ -103,30 +103,7 @@ This project follows the [Testing Pyramid](https://martinfowler.com/articles/pra
 
 ### Available Commands
 
-```bash
-# Start development server
-just develop
-
-# Run quality checks (linting + type checking)
-just lint
-
-# Run tests
-just test        # All tests
-just test-unit   # Only unit tests
-just test-e2e    # Only e2e tests
-
-# Run everything
-just all
-```
-
-## Docker
-
-Build and run the service using Docker:
-
-```bash
-docker build -t ec-issuer .
-docker run -p 8080:8080 ec-issuer
-```
+Run `just --list` for all commands, including starting services, linting, running tests, building and so on.
 
 ## Deployment
 
