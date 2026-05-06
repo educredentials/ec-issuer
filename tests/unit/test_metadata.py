@@ -8,7 +8,7 @@ from src.metadata.credential_issuer_metadata import (
     CredentialIssuerMetadata,
 )
 from src.metadata.metadata_service import MetadataService
-from tests.unit.test_doubles import IssuerAgentStub
+from tests.unit.test_doubles import InMemoryMetadataRepositoryStub
 
 
 class TestDeserializeMetadata:
@@ -163,13 +163,17 @@ class TestMetadataService:
     def test_get_credential_issuer_metadata_replaces_credential_issuer(self):
         """Test that credential_issuer is replaced with public_url."""
         public_url = "http://localhost:8000"
-        issuer_agent = IssuerAgentStub(
-            credential_issuer="https://upstream.example.com",
-            credential_endpoint="https://upstream.example.com/credential",
-            nonce_endpoint="https://upstream.example.com/nonce",
+        repo = InMemoryMetadataRepositoryStub()
+        repo.store(
+            CredentialIssuerMetadata(
+                credential_issuer="https://upstream.example.com",
+                credential_endpoint="https://upstream.example.com/credential",
+                credential_configurations_supported={},
+                nonce_endpoint="https://upstream.example.com/nonce",
+            )
         )
         metadata_service = MetadataService(
-            issuer_agent=issuer_agent, public_url=public_url
+            metadata_repository=repo, public_url=public_url
         )
 
         metadata = metadata_service.get_credential_issuer_metadata()
@@ -181,12 +185,16 @@ class TestMetadataService:
     def test_get_credential_issuer_metadata_replaces_credential_endpoint(self):
         """Test that credential_endpoint is replaced with public_url/credential."""
         public_url = "http://localhost:8000"
-        issuer_agent = IssuerAgentStub(
-            credential_issuer="https://upstream.example.com",
-            credential_endpoint="https://upstream.example.com/credential",
+        repo = InMemoryMetadataRepositoryStub()
+        repo.store(
+            CredentialIssuerMetadata(
+                credential_issuer="https://upstream.example.com",
+                credential_endpoint="https://upstream.example.com/credential",
+                credential_configurations_supported={},
+            )
         )
         metadata_service = MetadataService(
-            issuer_agent=issuer_agent, public_url=public_url
+            metadata_repository=repo, public_url=public_url
         )
 
         metadata = metadata_service.get_credential_issuer_metadata()
@@ -196,13 +204,17 @@ class TestMetadataService:
     def test_get_credential_issuer_metadata_preserves_authorization_servers(self):
         """Test that authorization_servers from upstream are preserved."""
         public_url = "http://localhost:8000"
-        issuer_agent = IssuerAgentStub(
-            credential_issuer="https://upstream.example.com",
-            credential_endpoint="https://upstream.example.com/credential",
-            authorization_servers=["https://authn.example.com"],
+        repo = InMemoryMetadataRepositoryStub()
+        repo.store(
+            CredentialIssuerMetadata(
+                credential_issuer="https://upstream.example.com",
+                credential_endpoint="https://upstream.example.com/credential",
+                credential_configurations_supported={},
+                authorization_servers=["https://authn.example.com"],
+            )
         )
         metadata_service = MetadataService(
-            issuer_agent=issuer_agent, public_url=public_url
+            metadata_repository=repo, public_url=public_url
         )
 
         metadata = metadata_service.get_credential_issuer_metadata()

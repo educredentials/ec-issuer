@@ -13,6 +13,8 @@ from src.metadata.credential_issuer_metadata import (
     CredentialConfiguration,
     CredentialIssuerMetadata,
 )
+from src.metadata.metadata_repository import MetadataNotFoundError
+from src.metadata.metadata_repository import MetadataRepositoryPort
 from src.metadata.metadata_service import MetadataService
 from src.offers.offer_repository import Offer, OffersRepositoryPort
 from src.offers.offer_service import OfferService, PermissionDeniedError
@@ -195,18 +197,6 @@ class IssuerAgentSpy(IssuerAgentPort):
         raise NotImplementedError
 
 
-class MetadataServiceStub(MetadataService):
-    """Stub: MetadataService backed by IssuerAgentStub."""
-
-    def __init__(self, public_url: str = "http://localhost:8888") -> None:
-        """Initialise with stub issuer agent.
-
-        Args:
-            public_url: The public URL to use for the metadata.
-        """
-        super().__init__(issuer_agent=IssuerAgentStub(), public_url=public_url)
-
-
 class DenyingOfferServiceStub(OfferService):
     """Stub: always raises PermissionDeniedError from create_offer."""
 
@@ -257,3 +247,48 @@ class OfferServiceSpy(OfferService):
         """
         self.calls.append(("create_offer", achievement_id, bearer_token))
         return super().create_offer(achievement_id, bearer_token)
+
+
+class InMemoryMetadataRepositoryStub(MetadataRepositoryPort):
+    """Stub: In-memory repository for metadata, for use in unit tests only."""
+
+    def __init__(self) -> None:
+        """Initialise with an empty store."""
+        self._store: list[CredentialIssuerMetadata] = []
+
+    @override
+    def store(self, metadata: CredentialIssuerMetadata) -> None:
+        """Persist metadata in memory.
+
+        Args:
+            metadata: The CredentialIssuerMetadata to store.
+        """
+        self._store.append(metadata)
+
+    @override
+    def get(self) -> CredentialIssuerMetadata:
+        """Retrieve the latest metadata entry.
+
+        Returns:
+            The latest CredentialIssuerMetadata.
+
+        Raises:
+            MetadataNotFoundError: When no metadata entry exists.
+        """
+        if not self._store:
+            raise MetadataNotFoundError("No metadata entry found")
+        return self._store[-1]
+
+
+class MetadataServiceStub(MetadataService):
+    """Stub: MetadataService backed by InMemoryMetadataRepositoryStub."""
+
+    def __init__(self, public_url: str = "http://localhost:8888") -> None:
+        """Initialise with stub metadata repository.
+
+        Args:
+            public_url: The public URL to use for the metadata.
+        """
+        super().__init__(
+            metadata_repository=InMemoryMetadataRepositoryStub(), public_url=public_url
+        )

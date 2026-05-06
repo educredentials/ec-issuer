@@ -1,11 +1,12 @@
-"""Unit tests for the Proxyrequests.IssuerAgentAdapter."""
+"""Unit tests for SsiAgentAdapter (offer/credential operations)."""
 
+import msgspec
 from typing import override
 
 import pytest
-from requests.exceptions import HTTPError, ReadTimeout
 
-from src.issuer_agent.issuer_agent_port import MetadataError
+from src.credentials.credential import Credential, CredentialResponse
+from src.issuer_agent.issuer_agent_port import IssuerAgentError
 from src.issuer_agent.ssi_agent_adapter import (
     SsiAgentAdapter,
     SsiAgentHttpClient,
@@ -15,7 +16,7 @@ from tests.unit.test_doubles import ConfigRepoStub
 
 
 class SsiAgentResponseStub(SsiAgentHttpResponse):
-    """Stub: returns a 200 response with hardcoded credential issuer metadata."""
+    """Stub: returns a 200 response with valid CredentialResponse."""
 
     @property
     @override
@@ -25,34 +26,45 @@ class SsiAgentResponseStub(SsiAgentHttpResponse):
     @property
     @override
     def content(self) -> bytes:
-        return b"""{
-        "credential_issuer": "http://example.com/issuer",
-        "credential_endpoint": "http://example.com/credential",
-        "credential_configurations_supported": {}
-        }"""
+        response = CredentialResponse(credentials=[Credential(credential="test")])
+        return msgspec.json.encode(response)
 
 
-class SsiAgentResponseRedirectStub(SsiAgentHttpResponse):
-    """Stub: returns a 302 redirect response."""
+class SsiAgentResponseErrorStub(SsiAgentHttpResponse):
+    """Stub: returns a 500 error response."""
 
     @property
     @override
     def status_code(self) -> int:
-        return 302
+        return 500
 
     @property
     @override
     def content(self) -> bytes:
-        return "".encode()
+        return b"Internal Server Error"
+
+
+class SsiAgentResponseNonceStub(SsiAgentHttpResponse):
+    """Stub: returns a 200 response with nonce."""
+
+    @property
+    @override
+    def status_code(self) -> int:
+        return 200
+
+    @property
+    @override
+    def content(self) -> bytes:
+        return b'{"c_nonce": "test-nonce-123"}'
 
 
 class SsiAgentClientStub(SsiAgentHttpClient):
-    """Stub: always returns a successful 200 response."""
+    """Stub: returns successful responses for POST requests."""
 
     @override
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
-        """Return a successful response stub."""
-        return SsiAgentResponseStub()
+        """Raise NotImplementedError - SsiAgentAdapter doesn't use GET."""
+        raise NotImplementedError
 
     @override
     def post(
@@ -62,17 +74,19 @@ class SsiAgentClientStub(SsiAgentHttpClient):
         headers: dict[str, str],
         timeout: int,
     ) -> SsiAgentHttpResponse:
-        """Raise NotImplementedError for POST requests."""
-        raise NotImplementedError
+        """Return a successful response stub."""
+        if "/nonce" in url:
+            return SsiAgentResponseNonceStub()
+        return SsiAgentResponseStub()
 
 
 class SsiAgentClientErrorStub(SsiAgentHttpClient):
-    """Stub: always raises HTTPError."""
+    """Stub: returns error responses for POST requests."""
 
     @override
     def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
-        """Raise an HTTP error."""
-        raise HTTPError
+        """Raise NotImplementedError."""
+        raise NotImplementedError
 
     @override
     def post(
@@ -82,87 +96,64 @@ class SsiAgentClientErrorStub(SsiAgentHttpClient):
         headers: dict[str, str],
         timeout: int,
     ) -> SsiAgentHttpResponse:
-        """Raise NotImplementedError for POST requests."""
-        raise NotImplementedError
+        """Return an error response stub."""
+        return SsiAgentResponseErrorStub()
 
 
-class SsiAgentClientTimeoutStub(SsiAgentHttpClient):
-    """Stub: always raises ReadTimeout."""
+class TestSsiAgentAdapterCredentialRequest:
+    """Test the SsiAgentAdapter credential request operations."""
 
-    @override
-    def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
-        """Raise a timeout error."""
-        raise ReadTimeout
-
-    @override
-    def post(
-        self,
-        url: str,
-        data: bytes,
-        headers: dict[str, str],
-        timeout: int,
-    ) -> SsiAgentHttpResponse:
-        """Raise NotImplementedError for POST requests."""
-        raise NotImplementedError
-
-
-class SsiAgentClientRedirectStub(SsiAgentHttpClient):
-    """Stub: always returns a 302 redirect response."""
-
-    @override
-    def get(self, url: str, timeout: int) -> SsiAgentHttpResponse:
-        """Return a redirect response stub."""
-        return SsiAgentResponseRedirectStub()
-
-    @override
-    def post(
-        self,
-        url: str,
-        data: bytes,
-        headers: dict[str, str],
-        timeout: int,
-    ) -> SsiAgentHttpResponse:
-        """Raise NotImplementedError for POST requests."""
-        raise NotImplementedError
-
-
-class TestSsiAgentAdapterGetCredentialIssuerMetadata:
-    """Test the ProxyIssuerAgentAdapter."""
-
-    def test_credential_issuer_metadata_timeout(self):
-        """Test that the proxy adapter has a hardcoded timeout."""
+    def test_credential_request_success(self):
+        """Test that credential_request proxies to the SSI agent."""
         config = ConfigRepoStub()
-        subject = SsiAgentAdapter(
-            config=config, requests_client=SsiAgentClientTimeoutStub()
+        subject = SsiAgentAdapter(config=config, requests_client=SsiAgentClientStub())
+
+        # This should not raise - it proxies to the agent
+        _ = subject.credential_request(
+            format="test",
+            credential_configuration_id="test",
+            proof={},
+            issuer_state="test",
+            access_token="test",
         )
 
-        with pytest.raises(ReadTimeout):
-            _ = subject.credential_issuer_metadata()
-
-    def test_credential_issuer_metadata_error(self):
-        """Test that the proxy adapter proxies 4xx errors."""
+    def test_credential_request_upstream_error(self):
+        """Test that credential_request propagates upstream errors."""
         config = ConfigRepoStub()
         subject = SsiAgentAdapter(
             config=config, requests_client=SsiAgentClientErrorStub()
         )
 
-        with pytest.raises(HTTPError):
-            _ = subject.credential_issuer_metadata()
+        with pytest.raises(IssuerAgentError):
+            _ = subject.credential_request(
+                format="test",
+                credential_configuration_id="test",
+                proof={},
+                issuer_state="test",
+                access_token="test",
+            )
 
-    def test_credential_issuer_metadata_3xx_redirect(self):
-        """Test proxy adapter handles 3xx redirects with not supported response."""
-        config = ConfigRepoStub()
-        subject = SsiAgentAdapter(
-            config=config, requests_client=SsiAgentClientRedirectStub()
-        )
-
-        with pytest.raises(MetadataError):
-            _ = subject.credential_issuer_metadata()
-
-    def test_credential_issuer_metadata_200_success(self):
-        """Test that the proxy adapter returns successful responses."""
+    def test_request_nonce_success(self):
+        """Test that request_nonce proxies to the SSI agent."""
         config = ConfigRepoStub()
         subject = SsiAgentAdapter(config=config, requests_client=SsiAgentClientStub())
 
-        metadata = subject.credential_issuer_metadata()
-        assert metadata.credential_issuer == "http://example.com/issuer"
+        _ = subject.request_nonce()
+
+    def test_request_nonce_upstream_error(self):
+        """Test that request_nonce propagates upstream errors."""
+        config = ConfigRepoStub()
+        subject = SsiAgentAdapter(
+            config=config, requests_client=SsiAgentClientErrorStub()
+        )
+
+        with pytest.raises(IssuerAgentError):
+            _ = subject.request_nonce()
+
+    def test_credential_issuer_metadata_not_supported(self):
+        """Test that credential_issuer_metadata raises NotImplementedError."""
+        config = ConfigRepoStub()
+        subject = SsiAgentAdapter(config=config)
+
+        with pytest.raises(NotImplementedError):
+            _ = subject.credential_issuer_metadata()

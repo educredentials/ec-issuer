@@ -13,10 +13,8 @@ class TestPostgreSQLOffersRepository:
         """PostgreSQLOffersRepository implements OffersRepositoryPort."""
         assert issubclass(PostgreSQLOffersRepository, OffersRepositoryPort)
 
-    def test_store_and_get_offer(self, postgresql_connection_string: str):
+    def test_store_and_get_offer(self, offers_repo: PostgreSQLOffersRepository):
         """store persists an offer and get retrieves it by id."""
-        repo = PostgreSQLOffersRepository(postgresql_connection_string)
-
         offer = Offer(
             offer_id="test-offer-123",
             achievement_id="award-456",
@@ -24,8 +22,8 @@ class TestPostgreSQLOffersRepository:
             credential_issuer="https://issuer.example.com",
         )
 
-        repo.store(offer)
-        result = repo.get("test-offer-123")
+        offers_repo.store(offer)
+        result = offers_repo.get("test-offer-123")
 
         assert result.offer_id == offer.offer_id
         assert result.achievement_id == offer.achievement_id
@@ -33,20 +31,16 @@ class TestPostgreSQLOffersRepository:
         assert result.credential_issuer == offer.credential_issuer
 
     def test_get_raises_key_error_for_unknown_id(
-        self, postgresql_connection_string: str
+        self, offers_repo: PostgreSQLOffersRepository
     ):
         """get raises KeyError when the offer_id does not exist."""
-        repo = PostgreSQLOffersRepository(postgresql_connection_string)
-
         with pytest.raises(KeyError) as exc_info:
-            _ = repo.get("nonexistent-id")
+            _ = offers_repo.get("nonexistent-id")
 
         assert "nonexistent-id" in str(exc_info.value)
 
-    def test_store_multiple_offers(self, postgresql_connection_string: str):
+    def test_store_multiple_offers(self, offers_repo: PostgreSQLOffersRepository):
         """store can persist multiple offers and get retrieves each correctly."""
-        repo = PostgreSQLOffersRepository(postgresql_connection_string)
-
         offer1 = Offer(
             offer_id="offer-1",
             achievement_id="award-1",
@@ -60,19 +54,19 @@ class TestPostgreSQLOffersRepository:
             credential_issuer="issuer-2",
         )
 
-        repo.store(offer1)
-        repo.store(offer2)
+        offers_repo.store(offer1)
+        offers_repo.store(offer2)
 
-        result1 = repo.get("offer-1")
-        result2 = repo.get("offer-2")
+        result1 = offers_repo.get("offer-1")
+        result2 = offers_repo.get("offer-2")
 
         assert result1.offer_id == offer1.offer_id
         assert result2.offer_id == offer2.offer_id
 
-    def test_store_updates_existing_offer(self, postgresql_connection_string: str):
+    def test_store_updates_existing_offer(
+        self, offers_repo: PostgreSQLOffersRepository
+    ):
         """store updates an existing offer with the same id."""
-        repo = PostgreSQLOffersRepository(postgresql_connection_string)
-
         offer1 = Offer(
             offer_id="offer-1",
             achievement_id="award-1",
@@ -86,10 +80,10 @@ class TestPostgreSQLOffersRepository:
             credential_issuer="issuer-updated",
         )
 
-        repo.store(offer1)
-        repo.store(offer2)
+        offers_repo.store(offer1)
+        offers_repo.store(offer2)
 
-        result = repo.get("offer-1")
+        result = offers_repo.get("offer-1")
 
         assert result.offer_id == offer2.offer_id
         assert result.achievement_id == offer2.achievement_id

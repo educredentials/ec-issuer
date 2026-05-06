@@ -24,6 +24,10 @@ class PostgreSQLOffersRepository(OffersRepositoryPort):
         self._conn = psycopg2.connect(connection_string)
         self._init_db()
 
+    def close_db(self) -> None:
+        """Close the database connection."""
+        self._conn.close()
+
     def _init_db(self) -> None:
         """Initialize the database table for offers."""
         with self._conn.cursor() as cursor:
@@ -88,11 +92,13 @@ class PostgreSQLOffersRepository(OffersRepositoryPort):
                 (offer_id,),
             )
             row = cursor.fetchone()
-            if row is None:
-                raise KeyError(f"Offer with id {offer_id} not found")
-            return Offer(
-                offer_id=cast(str, row[0]),
-                achievement_id=cast(str, row[1]),
-                uri=cast(str, row[2]),
-                credential_issuer=cast(str, row[3]),
-            )
+        self._conn.commit()
+
+        if row is None:
+            raise KeyError(f"Offer with id {offer_id} not found")
+        return Offer(
+            offer_id=cast(str, row[0]),
+            achievement_id=cast(str, row[1]),
+            uri=cast(str, row[2]),
+            credential_issuer=cast(str, row[3]),
+        )

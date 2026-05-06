@@ -9,6 +9,7 @@ from src.config.config_port import ConfigRepoPort
 from src.credentials.credential_service import CredentialService
 from src.issuer_agent.ssi_agent_adapter import SsiAgentAdapter
 from src.metadata.metadata_service import MetadataService
+from src.metadata.postgresql_adapter import PostgreSQLMetadataRepository
 from src.offers.offer_service import OfferService
 from src.offers.postgresql_adapter import PostgreSQLOffersRepository
 
@@ -23,9 +24,11 @@ class App:
         """Initialise and wire all application dependencies."""
         self.config = EnvConfigRepo()
 
-        issuer_agent = SsiAgentAdapter(config=self.config)
+        metadata_repository = PostgreSQLMetadataRepository(
+            self.config.postgresql_connection_string
+        )
         metadata_service = MetadataService(
-            issuer_agent=issuer_agent, public_url=self.config.public_url
+            metadata_repository=metadata_repository, public_url=self.config.public_url
         )
 
         access_control = HardcodedAccessControlAdapter()
@@ -33,13 +36,15 @@ class App:
             self.config.postgresql_connection_string
         )
         offer_service = OfferService(
-            issuer_agent=issuer_agent,
+            issuer_agent=SsiAgentAdapter(config=self.config),
             access_control=access_control,
             offers_repository=offers_repository,
             public_url=self.config.public_url,
         )
 
-        credential_service = CredentialService(issuer_agent=issuer_agent)
+        credential_service = CredentialService(
+            issuer_agent=SsiAgentAdapter(config=self.config)
+        )
 
         self._api_port = HttpApiAdapter(
             config=self.config,

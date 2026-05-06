@@ -1,7 +1,7 @@
 from enum import Enum
 
-from src.issuer_agent.issuer_agent_port import IssuerAgentPort
 from src.metadata.credential_issuer_metadata import CredentialIssuerMetadata
+from src.metadata.metadata_repository import MetadataRepositoryPort
 
 
 class HealthStatus(Enum):
@@ -10,17 +10,19 @@ class HealthStatus(Enum):
 
 
 class MetadataService:
-    issuer_agent: IssuerAgentPort
+    _metadata_repository: MetadataRepositoryPort
     public_url: str
 
-    def __init__(self, issuer_agent: IssuerAgentPort, public_url: str) -> None:
+    def __init__(
+        self, metadata_repository: MetadataRepositoryPort, public_url: str
+    ) -> None:
         """Initialize the MetadataService.
 
         Args:
-            issuer_agent: The issuer agent port.
+            metadata_repository: The metadata repository port.
             public_url: The publicly accessible base URL of this issuer service.
         """
-        self.issuer_agent = issuer_agent
+        self._metadata_repository = metadata_repository
         self.public_url = public_url
 
     def get_health(self) -> HealthStatus:
@@ -33,7 +35,7 @@ class MetadataService:
             CredentialIssuerMetadata with credential_issuer and credential_endpoint
             replaced with our public_url.
         """
-        metadata = self.issuer_agent.credential_issuer_metadata()
+        metadata = self._metadata_repository.get()
         return CredentialIssuerMetadata(
             credential_issuer=self.public_url,
             credential_endpoint=f"{self.public_url}/credential",

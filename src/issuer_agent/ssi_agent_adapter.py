@@ -1,4 +1,4 @@
-"""SSI-Agent Adapter"""
+"""SSI-Agent Adapter for offer and credential operations."""
 
 from typing import Protocol, override
 
@@ -8,7 +8,6 @@ import requests
 from src.config.config_port import ConfigRepoPort
 from src.credentials.credential import CredentialResponse
 from src.issuer_agent.issuer_agent_port import IssuerAgentError
-from src.issuer_agent.issuer_agent_port import MetadataError
 from src.issuer_agent.issuer_agent_port import IssuerAgentPort
 from src.metadata.credential_issuer_metadata import CredentialIssuerMetadata
 
@@ -158,31 +157,8 @@ class SsiAgentAdapter(IssuerAgentPort):
 
     @override
     def credential_issuer_metadata(self) -> CredentialIssuerMetadata:
-        """Proxy the Credential Issuer Metadata request.
-
-        Args:
-            request: The Flask request object.
-
-        Returns:
-            A ResponseProtocol object containing the response.
-        """
-        # Forward the request to the issuer agent
-        response = self.requests_client.get(
-            f"{self.base_url}/.well-known/openid-credential-issuer",
-            timeout=self.timeout,
-        )
-
-        # Handle 3xx redirects
-        if 300 <= int(response.status_code) < 400:
-            # Create a response object for the redirect error
-            raise MetadataError("Redirects not supported")
-
-        credential_issuer_metadata: CredentialIssuerMetadata = msgspec.json.decode(
-            response.content, type=CredentialIssuerMetadata
-        )
-
-        # Return the response as-is (including 4xx and 5xx errors)
-        return credential_issuer_metadata
+        """Not supported - use SsiAgentMetadataAdapter for metadata."""
+        raise NotImplementedError("Use SsiAgentMetadataAdapter for metadata")
 
     @override
     def credential_request(
