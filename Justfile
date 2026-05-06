@@ -12,16 +12,15 @@ default:
 runtime := `(command -v podman >/dev/null 2>&1 && echo podman || echo docker)`
 
 # Start development server
-# Metrics are default disabled in dev mode. ENV enables it, but makes dev slower
-develop $DEBUG_METRICS="1":
+develop:
     uv run python -m src.main
 
-# Start services with docker compose (using mock ssi-agent)
+# (re)start services with docker compose (using mock ssi-agent)
 develop-compose:
     {{runtime}} compose down
     {{runtime}} compose up
 
-# Start services with real ssi-agent profile
+# (re)start services with real ssi-agent profile
 develop-real-agent:
     {{runtime}} compose down
     ISSUER_AGENT_BASE_URL=http://real-ssi-agent:3033 {{runtime}} compose --profile real-ssi-agent up
