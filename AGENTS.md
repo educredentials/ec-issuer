@@ -29,9 +29,6 @@ the service itself as well.
 
 - `just dependencies` to (re)start all services except the ec-issuer.
 - `just develop` to start the ec-issuer in development mode.
-- `just develop-podman` to (re)start the services
-- `just develop-real-agent` to (re)start the services with a real, instead of mocked agent.
-
 
 ## Important basic rules you may NEVER violate
 
@@ -76,7 +73,7 @@ If you find yourself running python, custom bash scripts, python scripts, pip, p
 
 - Ensure the dependecies are running. See above, _Running the app_.
 - Ensure the ec-issuer service is running. See above, _Running the app_.
-- Run tests with `just test`.
+- Run tests with `just test`. `just test unit`, `just test ./tests/unit/some_specific_test.py` etc to run specific directories or files.
 - Do not run tests in isolation. Run them all.
 - Do not run tests with `python` or `uv` commands. Only through just.
 - Use the `/python-tdd` skill

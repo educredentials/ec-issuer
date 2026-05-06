@@ -15,36 +15,21 @@ runtime := `(command -v podman >/dev/null 2>&1 && echo podman || echo docker)`
 develop:
     uv run python -m src.main
 
-# (re)start services with docker compose (using mock ssi-agent)
-develop-compose:
+# (re)start all dependency services - everything except the ec-issuer
+dependencies:
     {{runtime}} compose down
-    {{runtime}} compose up
-
-# (re)start services with real ssi-agent profile
-develop-real-agent:
-    {{runtime}} compose down
-    ISSUER_AGENT_BASE_URL=http://real-ssi-agent:3033 {{runtime}} compose --profile real-ssi-agent up
+    {{runtime}} compose --profile real-ssi-agent up --detach --abort-on-container-exit postgresql mock-ssi-agent real-ssi-agent
 
 # Run all quality checks (linting + type checking)
 lint:
     uv run ruff check .
     uv run basedpyright .
 
-# Run all tests
-test:
-    uv run pytest tests/ -v
+test_pattern_default := 'tests/'
 
-# Run only unit tests
-test-unit:
-    uv run pytest tests/unit/ -v
-
-# Run only integration tests
-test-integration:
-    uv run pytest tests/integration/ -v
-
-# Run only e2e tests
-test-e2e:
-    uv run pytest tests/e2e/ -v
+# Run tests
+test test-pattern=test_pattern_default:
+    uv run pytest {{test-pattern}} -v
 
 # Generate Python code documentation with pdoc
 docs-code:

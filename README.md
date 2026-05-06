@@ -76,15 +76,13 @@ The service will start on `http://localhost:8080`
 
 ```bash
 just test        # Run unit and integration tests
-just test-unit   # Run only unit tests
-just test-e2e    # Run only e2e tests (requires Podman)
 ```
 
-**Note:** Integration and e2e tests require external services to be running.
+**Note:** Integration and e2e tests require external services to be running. e2e tests require the service to be running as well.
 
 To start services for testing:
 ```bash
-podman compose up -d
+just dependencies
 ```
 
 The CI pipeline provides required services via GitHub Actions. Locally, you must start services before running tests that require them. Test fixtures never start or stop services — they only return connection strings.
