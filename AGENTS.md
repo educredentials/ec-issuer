@@ -6,20 +6,43 @@ Credential service to issue **Open Badges 3.0** and **European Learner Model (EL
 - Python, using uv, ruff and basedpyright
 - Justfile and just for common tasks
 
+### Just
+run common commands with `just`. See `just --list` for a list of available commands. a few important ones:
+ 
+- develop                    # (stop and) Run the application in development mode.
+- docs                       # Run mdbook to preview the docs.
+- lint                       # Run all quality checks
+- test                       # Run all tests
+
+
+### Podman
+
+podman compose runs the services that this application depends on.
+
+- `just develop-podman` to (re)start the services
+- `just develop-real-agent` to (re)start the services with a real, instead of mocked agent.
+
+Use `podman compose` to restart, stop or check the status of the services.
+
 ## Project Structure
-- run common commands with `just`. `just --list` returns:
-  all                        # Run everything (lint + test)
-  default                    # Default target
-  docs                       # Run mdbook to preview the docs.
-  lint                       # Run all quality checks (linting + type checking)
-  test                       # Run all tests
-  test-e2e                   # Run only e2e tests, Note: starts a test server
-  test-unit                  # Run only unit tests
+
 - src/ application code. The main entry point is `src/main.py`. Run with `just develop`
 - tests/ test code.
 - docs/ documentation, glossary, overview and backgrounds, uses mdbook structure.
 - docs/src/adr Architecture Decision Records, ADRs.
-- use uv. Don't cludge together scripts or run python from venv. 
+- use uv.
+
+## Important basic rules you may NEVER violate
+
+- Use `uv` for dependency management. Never use pip or poetry.
+- Use `just` to run tasks.
+- Use `uv` only when `just` does not have a task for it.
+- Never run `python` directly.
+- Use `podman compose` for containers.
+- Name make bash scripts to run code.
+- If you get stuck, don't violate these rules, instead ask for guidance.
+
+If you find yourself running python, custom bash scripts, python scripts, pip, pyenv or poetry you are vioalting the project rules and probably will severely break the project.
 
 ## Code Style Guidelines
 - ruff defaults. Check with `just lint`. Format with `uv run ruff format`

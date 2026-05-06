@@ -18,10 +18,12 @@ develop $DEBUG_METRICS="1":
 
 # Start services with docker compose (using mock ssi-agent)
 develop-compose:
+    {{runtime}} compose down
     {{runtime}} compose up
 
 # Start services with real ssi-agent profile
 develop-real-agent:
+    {{runtime}} compose down
     ISSUER_AGENT_BASE_URL=http://real-ssi-agent:3033 {{runtime}} compose --profile real-ssi-agent up
 
 # Run all quality checks (linting + type checking)
