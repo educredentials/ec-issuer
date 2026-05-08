@@ -1,0 +1,7 @@
+{
+  "credential_issuer": "http://localhost:8000",
+  "credential_endpoint": "http://localhost:8000/credential",
+  "authorization_servers": ["https://authorization.example.com"],
+  "nonce_endpoint": "http://localhost:8000/nonce",
+  "credential_configurations_supported": {}
+}

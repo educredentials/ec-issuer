@@ -40,6 +40,10 @@ docs-code:
 docs:
     mdbook serve docs
 
+# Seed the database with credential issuer metadata from a JSON file
+update-issuer-metadata file:
+    uv run python -m src.sysadmin.commandline_adapter update-issuer-metadata < {{file}}
+
 # Run everything (lint + test)
 all:
     just lint

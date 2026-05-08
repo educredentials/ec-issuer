@@ -68,9 +68,10 @@ jobs:
           sleep 1
 
       - name: Run e2e tests
-        run: |
-          export PUBLIC_URL=http://localhost:8000
-          uv run pytest tests/e2e/ -v
+        env:
+          PUBLIC_URL: http://localhost:8000
+          POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+        run: uv run pytest tests/e2e/ -v
 
       - name: Cleanup
         if: always()
