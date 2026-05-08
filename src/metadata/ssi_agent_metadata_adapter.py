@@ -9,9 +9,9 @@ from src.config.config_port import ConfigRepoPort
 from src.metadata.credential_issuer_metadata import CredentialIssuerMetadata
 from src.metadata.metadata_repository import (
     MetadataNotFoundError,
+    MetadataRepositoryPort,
     MetadataSerializationError,
 )
-from src.metadata.metadata_repository import MetadataRepositoryPort
 
 
 class SsiAgentMetadataHttpResponse(Protocol):
@@ -91,6 +91,7 @@ class SsiAgentMetadataAdapter(MetadataRepositoryPort):
     """Adapter that fetches metadata from an SSI-Agent."""
 
     _base_url: str
+    _public_url: str
     _requests_client: SsiAgentMetadataHttpClient
     _timeout: int
 
@@ -107,6 +108,7 @@ class SsiAgentMetadataAdapter(MetadataRepositoryPort):
             requests_client: The requests client to use.
         """
         self._base_url = config.issuer_agent_base_url
+        self._public_url = config.public_url
         self._requests_client = requests_client or RequestsWrapper()
         self._timeout = 10  # Hardcoded timeout in seconds
 
@@ -152,8 +154,23 @@ class SsiAgentMetadataAdapter(MetadataRepositoryPort):
             )
 
         try:
-            return msgspec.json.decode(response.content, type=CredentialIssuerMetadata)
+            metadata = msgspec.json.decode(
+                response.content, type=CredentialIssuerMetadata
+            )
         except msgspec.DecodeError as e:
             raise MetadataSerializationError(
                 f"Failed to deserialize metadata from SSI-Agent: {e}"
             ) from e
+
+        return CredentialIssuerMetadata(
+            credential_issuer=self._public_url,
+            credential_endpoint=f"{self._public_url}/credential",
+            credential_configurations_supported=metadata.credential_configurations_supported,
+            authorization_servers=metadata.authorization_servers,
+            nonce_endpoint=f"{self._public_url}/nonce",
+            deferred_credential_endpoint=metadata.deferred_credential_endpoint,
+            notification_endpoint=metadata.notification_endpoint,
+            credential_response_encryption=metadata.credential_response_encryption,
+            batch_credential_issuance=metadata.batch_credential_issuance,
+            display=metadata.display,
+        )

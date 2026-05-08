@@ -156,7 +156,22 @@ class TestSsiAgentMetadataAdapterGetCredentialIssuerMetadata:
         )
 
         metadata = subject.get()
-        assert metadata.credential_issuer == "http://example.com/issuer"
+        assert metadata.credential_issuer is not None
+        assert metadata.credential_endpoint is not None
+
+    def test_replaces_urls_with_own_public_url(self):
+        """Test that adapter replaces urls with our own urls"""
+
+        config = ConfigRepoStub()
+        subject = SsiAgentMetadataAdapter(
+            config=config, requests_client=SsiAgentMetadataClientStub()
+        )
+        metadata = subject.get()
+        assert metadata.credential_issuer == "http://localhost:8888"
+        assert metadata.credential_endpoint == "http://localhost:8888/credential"
+        assert metadata.nonce_endpoint == "http://localhost:8888/nonce"
+        # But other attributes remain
+        assert metadata.credential_configurations_supported == {}
 
     def test_store_not_supported(self):
         """Test that store raises NotImplementedError."""

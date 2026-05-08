@@ -35,16 +35,4 @@ class MetadataService:
             CredentialIssuerMetadata with credential_issuer and credential_endpoint
             replaced with our public_url.
         """
-        metadata = self._metadata_repository.get()
-        return CredentialIssuerMetadata(
-            credential_issuer=self.public_url,
-            credential_endpoint=f"{self.public_url}/credential",
-            credential_configurations_supported=metadata.credential_configurations_supported,
-            authorization_servers=metadata.authorization_servers,
-            nonce_endpoint=f"{self.public_url}/nonce",
-            deferred_credential_endpoint=metadata.deferred_credential_endpoint,
-            notification_endpoint=metadata.notification_endpoint,
-            credential_response_encryption=metadata.credential_response_encryption,
-            batch_credential_issuance=metadata.batch_credential_issuance,
-            display=metadata.display,
-        )
+        return self._metadata_repository.get()
