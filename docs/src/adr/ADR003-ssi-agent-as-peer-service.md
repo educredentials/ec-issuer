@@ -1,11 +1,12 @@
----
-status: accepted
-date: 2025-05-08
-deciders: Daniel Ostkamp, Bèr Kessels
-consulted: See deciders
-informed: See deciders
----
 # ADR003: Expose ssi-agent as peer service alongside ec-issuer
+
+| | |
+|---|---|
+| Status | accepted |
+| Date | 2025-05-08 |
+| Deciders | Daniel Ostkamp, Bèr Kessels |
+| Consulted | See deciders |
+| Informed | See deciders |
 
 ## Context and Problem Statement
 

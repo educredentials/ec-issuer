@@ -1,11 +1,12 @@
----
-status: accepted
-date: 2024-07-15
-deciders: Bèr Kessels, Daniel Ostkamp, Thomas Kalverda
-consulted: See deciders
-informed: See deciders
----
 # ADR002: Use ABC instead of Protocol for Interface Definition
+
+| | |
+|---|---|
+| Status | accepted |
+| Date | 2024-07-15 |
+| Deciders | Bèr Kessels, Daniel Ostkamp, Thomas Kalverda |
+| Consulted | See deciders |
+| Informed | See deciders |
 
 ## Context and Problem Statement
 

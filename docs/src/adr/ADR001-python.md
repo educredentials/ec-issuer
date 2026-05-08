@@ -1,11 +1,12 @@
----
-status: accepted
-date: 2025-04-30
-deciders: Daniel Ostkamp, Thomas Kalverda, Bèr Kessels
-consulted: See deciders
-informed: See deciders
----
 # ADR001: Python and Flask for service
+
+| | |
+|---|---|
+| Status | accepted |
+| Date | 2025-04-30 |
+| Deciders | Daniel Ostkamp, Thomas Kalverda, Bèr Kessels |
+| Consulted | See deciders |
+| Informed | See deciders |
 
 After an initial PoC with Rust, we decided to build the issuer service in Python, without any framework.
 
