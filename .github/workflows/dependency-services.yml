@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     tags: ["*"]
+    paths:
+      - "dependencies/platypus/Dockerfile"
+      - "dependencies/platypus/ssi-agent-mock.yaml"
 
 # Set permissions for GITHUB_TOKEN
 permissions:
@@ -14,7 +17,6 @@ jobs:
   build-platypus:
     name: "Build Platypus, the mock ssi-agent used in CI and tests"
     runs-on: ubuntu-latest
-    if: contains(github.event.paths, 'dependencies/platypus/Dockerfile') || contains(github.event.paths, './dependencies/platypus/Dockerfile') || contains(github.event.paths, 'dependencies/platypus/ssi-agent-mock.yaml') || contains(github.event.paths, './dependencies/platypus/ssi-agent-mock.yaml')
     steps:
       - uses: actions/checkout@v6
 
