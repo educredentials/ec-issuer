@@ -13,9 +13,9 @@ Other common locations to look, are ./docs/adrs?, ./docs/adr, docs/src/adrs, etc
 ADRs have the number and title in their filename. The numbers follow order. 
 ADRs may be superceded, in which case the ADR is no longer valid and replaced by another one. The one replacing it should be linked from the now deprecated ADR, but will also be linked to, from the ADR that supercedes the now-deprecated one.
 
-# Writing ADRs
+## Writing ADRs
 
-## Process
+### Process
 
 1. **Gather requirements** 
    - ask user about:
@@ -43,6 +43,12 @@ ADRs may be superceded, in which case the ADR is no longer valid and replaced by
    - Should any section be more/less detailed?
    - Must we further drill down on the alternatives?
 
+### Integrate
+
+Add the new ADR to the docs, by linkin it in ./docs/src/SUMMARY.md
+
+## Guidelines
+
 DO:
 * Write concise and clear
 * Give concrete examples
@@ -53,7 +59,7 @@ DON't:
 * Put a status to accepted unless explicitly instructed by the user
 * Introduce new terminology that does not already appear in other ADRs or the project wide GLOSSARY. Check AGENT.md for the location of the Glossary
 
-# Updating ADRs
+## Updating ADRs
 
 ADRs can be updated untill they are "final". 
 
@@ -65,7 +71,7 @@ A "final" ADR can only be changed if it is superceded by another ADR, in which
 case the only changes are the change of the status to "superceded" and a link to
 the new ADR.
 
-# Template
+## Template
 
 ```
 ---
