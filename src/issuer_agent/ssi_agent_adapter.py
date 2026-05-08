@@ -147,7 +147,9 @@ class SsiAgentAdapter(IssuerAgentPort):
             config: The configuration repository.
             requests_client: The requests client to use.
         """
-        self.base_url: str = config.issuer_agent_base_url
+        self.ssi_agent_url: str = config.ssi_agent_url
+        self.ssi_agent_nonce_endpoint: str = config.ssi_agent_nonce_endpoint
+        self.ssi_agent_credential_endpoint: str = config.ssi_agent_credential_endpoint
         self.requests_client: SsiAgentHttpClient = requests_client or RequestsWrapper()
         self.timeout: int = 10  # Hardcoded timeout in seconds
 
@@ -198,7 +200,7 @@ class SsiAgentAdapter(IssuerAgentPort):
 
         # Forward the request to the issuer agent
         response = self.requests_client.post(
-            f"{self.base_url}/credential",
+            self.ssi_agent_credential_endpoint,
             data=msgspec.json.encode(request_body),
             headers=headers,
             timeout=self.timeout,
@@ -227,7 +229,7 @@ class SsiAgentAdapter(IssuerAgentPort):
             IssuerAgentError: When the upstream request fails.
         """
         response = self.requests_client.post(
-            f"{self.base_url}/nonce",
+            self.ssi_agent_nonce_endpoint,
             data=b"",
             headers={},
             timeout=self.timeout,

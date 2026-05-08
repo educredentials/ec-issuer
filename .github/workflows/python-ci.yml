@@ -60,7 +60,9 @@ jobs:
           export PYTHONUNBUFFERED=1
           export SERVER_HOST=0.0.0.0
           export SERVER_PORT=8000
-          export ISSUER_AGENT_BASE_URL=http://localhost:8001
+          export SSI_AGENT_URL=http://localhost:8001
+          export SSI_AGENT_NONCE_ENDPOINT=http://localhost:8001/openid4vci/nonce
+          export SSI_AGENT_CREDENTIAL_ENDPOINT=http://localhost:8001/openid4vci/credential
           export PUBLIC_URL=http://localhost:8000
           export DEBUG_METRICS=1
           export POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@localhost:5432/ecissuer

@@ -61,7 +61,9 @@ This service wraps and abstracts existing issuance services.
 ```bash
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8080
-ISSUER_AGENT_BASE_URL="https://issuer.example.com"
+SSI_AGENT_URL="https://issuer.example.com"
+SSI_AGENT_NONCE_ENDPOINT="https://issuer.example.com/openid4vci/nonce"
+SSI_AGENT_CREDENTIAL_ENDPOINT="https://issuer.example.com/openid4vci/credential"
 ```
 
 ### Running the Service

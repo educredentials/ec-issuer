@@ -7,12 +7,12 @@ endpoints:
           body: |
             {
                 "credential_issuer": "https://agent.example.com",
-                "credential_endpoint": "https://agent.example.com/credential",
+                "credential_endpoint": "https://agent.example.com/openid4vci/credential",
                 "authorization_servers": ["https://agent.example.com"],
-                "nonce_endpoint": "https://agent.example.com/nonce",
+                "nonce_endpoint": "https://agent.example.com/openid4vci/nonce",
                 "credential_configurations_supported": {}
             }
-  - path: "/nonce"
+  - path: "/openid4vci/nonce"
     post:
       responses:
         - code: 200
@@ -20,7 +20,7 @@ endpoints:
             {
                 "c_nonce": "obviously-not-nonce-but-should-be"
             }
-  - path: "/credential"
+  - path: "/openid4vci/credential"
     post:
       responses:
         - code: 200

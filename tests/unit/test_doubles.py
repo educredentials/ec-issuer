@@ -57,7 +57,9 @@ class ConfigRepoStub(ConfigRepoPort):
 
     server_host: str = "localhost"
     server_port: int = 8888
-    issuer_agent_base_url: str = "https://issuer-agent.example.com"
+    ssi_agent_url: str = "https://issuer-agent.example.com"
+    ssi_agent_nonce_endpoint: str = "https://issuer-agent.example.com/openid4vci/nonce"
+    ssi_agent_credential_endpoint: str = "https://issuer-agent.example.com/openid4vci/credential"
     public_url: str = "http://localhost:8888"
     debug: bool = False
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"

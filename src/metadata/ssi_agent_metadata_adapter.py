@@ -107,7 +107,7 @@ class SsiAgentMetadataAdapter(MetadataRepositoryPort):
             config: The configuration repository.
             requests_client: The requests client to use.
         """
-        self._base_url = config.issuer_agent_base_url
+        self._base_url = config.ssi_agent_url
         self._public_url = config.public_url
         self._requests_client = requests_client or RequestsWrapper()
         self._timeout = 10  # Hardcoded timeout in seconds

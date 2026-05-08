@@ -8,6 +8,7 @@
 - [HTTP API](./api.md)
 
 # Technical setup
+- [Configuration](./configuration.md)
 - [Hexagonal Architecture](./architecture.md)
   - [Ports Adapters example](./ports_adapters.md)
   - [Ports Adapters example test setup](./ports_adapters_test.md)
