@@ -4,7 +4,7 @@ Credential service that issues and signs **Open Badges 3.0** and **European Lear
 
 [![Python CI/CD](https://github.com/educredentials/ec-issuer/actions/workflows/python-ci.yml/badge.svg)](https://github.com/educredentials/ec-issuer/actions/workflows/python-ci.yml)
 
-This service wraps and abstracts existing issuance services.
+This service orchestrates and integrates with existing issuer services, working alongside them.
 
 ## Features
 

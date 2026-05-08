@@ -19,12 +19,12 @@ As a student, when I have a badge in my backpack, and I have the unime app, then
 Features:
 
 - [ ] OpenID for Verifiable Credential Issuance (OID4VCI) standards authorization code flow with a mobile wallet
-  - [x] Credential Issuer Metadata
-  - [x] Credential Offer creation and delivery to user as QR code
-  - [x] OpenID connect authentication flow started from wallet
-  - [x] Credential Request with authorization token and proof of possession
-  - [x] Credential Response with signed Verifiable Credential in Open Badges 3.0 format
-  - [ ] Deferred Credential response
+  - [ ] Credential Issuer Metadata *(ADR003: needs re-implementation with ssi-agent as peer service)*
+  - [ ] Credential Offer creation and delivery to user as QR code *(ADR003: needs re-implementation with ssi-agent as peer service)*
+  - [ ] OpenID connect authentication flow started from wallet *(ADR003: needs re-implementation with ssi-agent as peer service)*
+  - [ ] Credential Request with authorization token and proof of possession *(ADR003: needs re-implementation with ssi-agent as peer service)*
+  - [ ] Credential Response with signed Verifiable Credential in Open Badges 3.0 format *(ADR003: needs re-implementation with ssi-agent as peer service)*
+  - [ ] Deferred Credential response *(ADR003: needs re-implementation with ssi-agent as peer service)*
 
 #### Edge Cases
 

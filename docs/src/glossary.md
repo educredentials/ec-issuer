@@ -152,7 +152,7 @@ Wallet
   : A digital wallet is a software application that stores verifiable credentials and other digital assets. It is used to get credentials from issuers, store them securely, manage and present these credentials to verifiers.
 
 Wrapper
-  : This EC-issuer service is a wrapper. It wraps the functionality of existing open source issuance software. It abstracts the functionality of the wrapped software and exposes it in domain terms and in a way that is easy to use.
+  : This EC-issuer service works alongside existing issuer services such as ssi-agent. It orchestrates and integrates the issuance process, manages templates and configurations, and exposes a simple, pragmatic API while delegating actual credential issuance to the underlying issuer service.
 
 
 ## X
