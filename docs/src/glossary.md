@@ -71,8 +71,6 @@ EC-issuer
 Issuer
   : The entity (usually a person) that signs a verifiable credential. In practice this is either a staff, teacher or other person when a _Credential_ is issued to a _Subject_. Or it is a student who issues a previously received Credential into their wallet. TODO: Differentiate between the Issuer whose signature is used, and the Person who initialized the Issuance in terminology
 
-Issuer Agent (aka Issuer-agent)
-  : The software that is used by an issuer to create and sign a verifiable credential. Current implementation uses the ssi-agent, also known as _Unime-Core_ for this.
 
 ## J
 
@@ -82,12 +80,19 @@ Issuer Agent (aka Issuer-agent)
 
 ## M
 
+Mock SSI-Agent
+  : A fake, static version of the _SSI-Agent_. Stands in for the concrete implementation of the OID4VCI service, in our tests. Offers deterministic, controllable responses that mimick the responses of the _SSI-Agent_.
+
 ## N
 
 ## O
 
-OID4VC
-  : TODO: Define this term. Found in: docs/src/api.md, docs/src/features.md, README.md. See also: OpenID for Verifiable Credential.
+
+OID4VCI
+  : Abbreviation of OpenID for Verifiable Credentials Issuance.
+
+OID4VCI Agent
+  : The software that is used by an issuer to create and sign a verifiable credential. OID4VCI Agent was previously called "Issuance Agent".
 
 OID4VP
   : TODO: Define this term. Found in: docs/src/features.md
@@ -95,8 +100,8 @@ OID4VP
 Open Badges 3.0 (aka OpenBadgeCredential, OBv3)
   : Open Badges is an [open standard](https://www.imsglobal.org/spec/ob/v3p0) for digital badges. It is a specification for the issuance and verification of digital badges.
 
-OpenID for Verifiable Credential
-  : OpenID for Verifiable Credentials (OID4VC) is a specification for the issuance and verification of verifiable credentials. It is based on the OpenID Connect protocol. See [OID4VC](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) for more information.
+OpenID for Verifiable Credential Issuance
+  : OpenID for Verifiable Credentials (OID4VCI) is a specification for the issuance and verification of verifiable credentials. It is based on the OpenID Connect protocol. See [OID4VCI](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) for more information.
 
 ## P
 
@@ -111,6 +116,11 @@ Revocation
 
 SD-JWT
   : TODO: Define this term. Found in: docs/src/features.md
+
+SSI-Agent
+  : Concrete implementation of the _OID4VCI Agent_. Built by Impierce, also known as _Unime-Core_.
+    We integrate, configure and build this service using [https://github.com/educredentials/ssi-agent-build].
+    See also _Mock SSI-Agent_.
 
 Subject
   : The entity (usually a person) that receives a verifiable credential.
