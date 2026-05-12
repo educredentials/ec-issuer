@@ -36,6 +36,12 @@ docs-code:
     uv sync
     uv run pdoc -o docs/book/pydoc src/
 
+# Generate OpenAPI documentation with Redoc
+docs-api:
+    mkdir -p docs/book/openapi
+    cp docs/api/openapi.yaml docs/book/openapi/openapi.yaml
+    cp docs/api/index.html docs/book/openapi/index.html
+
 # Run mdbook to preview the docs. See https://rust-lang.github.io/mdBook/
 docs:
     mdbook serve docs
