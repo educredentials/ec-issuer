@@ -11,10 +11,7 @@ AchievementCredential
   : Specific variation of a Credential. A Credential that follows the Open Badges 3.0 specification for its content.
 
 Award
-  : TODO: Define this term. Found in: docs/src/features.md, docs/src/import_in_wallet.md, README.md
-
-AwardId
-  : TODO: Define this term. Found in: docs/src/features.md, docs/src/import_in_wallet.md
+  : An Achievement that has been coupled to a user. Plain text. when signed, it becomes a credential. Identified by AwardId
   
 Actor
   : The entity performing an action. This is currently either a _Subject_ or an _Issuer_.
