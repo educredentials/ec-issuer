@@ -29,6 +29,11 @@ jobs:
         run: |
           cd docs
           mdbook build
+      - name: Generate OpenAPI Docs
+        run: |
+          mkdir -p docs/book/openapi
+          cp docs/api/openapi.yaml docs/book/openapi/openapi.yaml
+          cp docs/api/index.html docs/book/openapi/index.html
       - name: Install uv
         uses: astral-sh/setup-uv@v3
       - name: Install dependencies and generate Python Docs

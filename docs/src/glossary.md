@@ -24,7 +24,7 @@ Backpack
 ## C
 
 Credential Offer
-  : TODO: Define this term. Found in: docs/src/api.md, docs/src/features.md
+  : TODO: Define this term. Found in: OpenAPI specification, docs/src/features.md
 
 Credential
   : A credential is a set of attributes that are issued by an issuer and can be verified by a verifier.
@@ -35,7 +35,7 @@ DID
   : TODO: Define this term. Found in: docs/src/import_in_wallet.md
 
 Deferred Credential
-  : TODO: Define this term. Found in: docs/src/api.md, docs/src/features.md
+  : TODO: Define this term. Found in: OpenAPI specification, docs/src/features.md
 
 ## E
 
@@ -136,7 +136,7 @@ Teacher
   : Deprecated, see _Issuer_ instead.
 
 Transaction ID
-  : TODO: Define this term. Found in: docs/src/api.md, docs/src/import_in_wallet.md
+  : TODO: Define this term. Found in: OpenAPI specification, docs/src/import_in_wallet.md
 
 ## U
 

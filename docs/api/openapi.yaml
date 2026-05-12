@@ -1,0 +1,347 @@
+openapi: 3.0.3
+info:
+  title: Educredentials Issuer API
+  description: |
+    **Service Architecture**: This documentation covers two separate but integrated services:
+    
+    - **ec-issuer** (`http://localhost:8000`): Administrative service that manages templates, credential configurations, and creates offers. Handles business logic and orchestration.
+    - **ssi-agent** (`http://localhost:8001`): Handles the OpenID4VCI protocol flow, including credential issuer metadata, credential offers, and credential requests. Performs the actual credential signing and delivery.
+    
+    All administrative endpoints on ec-issuer require admin access token.
+  version: 1.0.0
+  contact:
+    name: SURF
+  license:
+    name: Apache 2.0
+
+servers:
+  - url: http://localhost:8000
+    description: ec-issuer administrative service (development)
+  - url: http://localhost:8001
+    description: ssi-agent OID4VCI service - mock (development)
+  - url: http://localhost:3033
+    description: ssi-agent OID4VCI service - real (development)
+
+tags:
+  - name: ec-issuer Admin
+    description: |
+      All administrative endpoints require admin access token.
+      All these endpoints fall under `/admin/v1/`. Versioned in path.
+  - name: ssi-agent OID4VCI Public Endpoints
+    description: |
+      All OID4VCI endpoints are public by default as per the OpenID4VCI specification.
+      These endpoints are served by the ssi-agent directly, not proxied through ec-issuer.
+      
+      * Public endpoints are not versioned in path
+      * Public endpoints are not scoped in path (e.g., `/public/`) due to OID4VCI spec requirements
+
+paths:
+  /admin/v1/offers:
+    post:
+      tags:
+        - ec-issuer Admin
+      summary: Create Credential and Offer
+      description: |
+        The ec-issuer creates a credential configuration on the ssi-agent and then creates an offer there.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                achievement_id:
+                  type: string
+                  example: achievement-1
+              required:
+                - achievement_id
+      responses:
+        '201':
+          description: Offer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uri:
+                    type: string
+                    format: uri
+                    example: openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/550e8400-e29b-41d4-a716-446655440000
+                  offer_id:
+                    type: string
+                    format: uuid
+                    example: 550e8400-e29b-41d4-a716-446655440000
+
+  /admin/v1/credentials/{credential_id}:
+    delete:
+      tags:
+        - ec-issuer Admin
+      summary: Revoke a Credential
+      description: |
+        Revoke an existing credential.
+      parameters:
+        - name: credential_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Credential no longer valid
+              required:
+                - reason
+      responses:
+        '200':
+          description: Credential revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credential:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: 550e8400-e29b-41d4-a716-446655440000
+                      status:
+                        type: string
+                        example: revoked
+                      revocation_info:
+                        type: object
+                        properties:
+                          revoked_at:
+                            type: string
+                            format: date-time
+                            example: 2025-12-05T11:00:00Z
+                          reason:
+                            type: string
+                            example: Credential no longer valid
+
+  /health:
+    get:
+      tags:
+        - ec-issuer Admin
+      summary: Health Check
+      description: |
+        Check the health status of the ec-issuer service.
+      responses:
+        '200':
+          description: Service is healthy
+
+  /.well-known/openid-credential-issuer:
+    get:
+      tags:
+        - ssi-agent OID4VCI Public Endpoints
+      summary: Get Credential Issuer Metadata
+      description: |
+        Get the OpenID4VCI credential issuer metadata.
+        
+        See [OID4VCI Metadata](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-metadata).
+        
+        Other available well-known endpoints:
+        - `/.well-known/did-configuration.json`
+        - `/.well-known/did.json`
+        - `/.well-known/oauth-authorization-server`
+        - `/.well-known/openid-credential-issuer`
+      responses:
+        '200':
+          description: Credential issuer metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credential_issuer:
+                    type: string
+                    format: uri
+                    example: http://localhost:8001
+                  authorization_servers:
+                    type: array
+                    items:
+                      type: string
+                      format: uri
+                    example: ["https://authn.example.com"]
+                  credential_configurations_supported:
+                    type: object
+                    additionalProperties: true
+                    example: {}
+
+  /.well-known/did-configuration.json:
+    get:
+      tags:
+        - ssi-agent OID4VCI Public Endpoints
+      summary: Get DID Configuration
+      responses:
+        '200':
+          description: DID configuration
+
+  /.well-known/did.json:
+    get:
+      tags:
+        - ssi-agent OID4VCI Public Endpoints
+      summary: Get DID Document
+      responses:
+        '200':
+          description: DID document
+
+  /.well-known/oauth-authorization-server:
+    get:
+      tags:
+        - ssi-agent OID4VCI Public Endpoints
+      summary: Get OAuth Authorization Server Metadata
+      responses:
+        '200':
+          description: OAuth authorization server metadata
+
+  /offers/{offer_id}:
+    get:
+      tags:
+        - ssi-agent OID4VCI Public Endpoints
+      summary: Get a Credential Offer
+      description: |
+        AKA Dereference offer from `credential_offer_uri`.
+        
+        See [Offer Response](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer-response).
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Credential offer details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credential_issuer:
+                    type: string
+                    format: uri
+                    example: http://localhost:8001
+                  credential_configuration_ids:
+                    type: array
+                    items:
+                      type: string
+                    example: ["UniversityDegreeCredential"]
+                  grants:
+                    type: object
+                    properties:
+                      authorization_code:
+                        type: object
+                        properties:
+                          issuer_state:
+                            type: string
+                            example: eyJhbGciOiJSU0Et...FYUaBy
+
+  /credentials:
+    post:
+      tags:
+        - ssi-agent OID4VCI Public Endpoints
+      summary: Get a Credential (OID4VCI Authorization Code Flow)
+      description: |
+        Location: `/credentials` (specified by OID4VCI, included in metadata).
+        
+        Get the credential. A reference to deferred endpoint is always returned.
+        
+        See [OID4VCI Credential Request](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                credential_configuration_id:
+                  type: string
+                  example: UniversityDegreeCredential
+                proofs:
+                  type: object
+                  properties:
+                    jwt:
+                      type: array
+                      items:
+                        type: string
+                      example: ["eyJraWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEva2V5cy8x IiwiYWxnIjoiRVMyNTYiLCJ0eXAiOiJKV1QifQ"]
+              required:
+                - credential_configuration_id
+                - proofs
+      responses:
+        '200':
+          description: Credential request accepted, returns transaction ID for deferred pickup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction_id:
+                    type: string
+                    example: 8xLOxBtZp8
+                  interval:
+                    type: integer
+                    description: Polling interval in seconds
+                    example: 3600
+
+  /deferred_credential:
+    post:
+      tags:
+        - ssi-agent OID4VCI Public Endpoints
+      summary: Get Deferred Credential
+      description: |
+        Get the credential at the [deferred endpoint](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-deferred-credential-endpoint).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transaction_id:
+                  type: string
+                  example: 8xLOxBtZp8
+              required:
+                - transaction_id
+      responses:
+        '200':
+          description: Deferred credential response (once the credential is ready)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credentials:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        credential:
+                          type: string
+                          example: LUpixVCWJk0eOt4CXQe1NXK....WZwmhmn9OQp6YxX0a2L
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Admin access token for ec-issuer endpoints, or OAuth token for ssi-agent endpoints
