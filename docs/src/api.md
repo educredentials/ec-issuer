@@ -1,6 +1,6 @@
 # HTTP API
 
-[View the OpenAPI Documentation](/openapi/)
+[View the OpenAPI Documentation](openapi/)
 
 **Service Architecture**: This documentation covers two separate but integrated services:
 
