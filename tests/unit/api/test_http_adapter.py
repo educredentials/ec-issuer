@@ -22,7 +22,7 @@ class TestHttpAdapter:
         response = http_client.post(
             "/api/v1/offers",
             headers={"Authorization": "Bearer t0k3n"},
-            json={"achievement_id": "achievement-1"},
+            json={"award_id": "achievement-1"},
         )
         assert response.status_code == 201
         assert ("create_offer", "achievement-1", "t0k3n") in offer_service_spy.calls
@@ -33,7 +33,7 @@ class TestHttpAdapter:
         """POST /api/v1/offers without Authorization header returns 401."""
         response = http_client.post(
             "/api/v1/offers",
-            json={"achievement_id": "achievement-1"},
+            json={"award_id": "achievement-1"},
         )
         assert response.status_code == 401
 
@@ -42,7 +42,7 @@ class TestHttpAdapter:
         response = http_client.post(
             "/api/v1/offers",
             headers={"Authorization": "Bearer "},
-            json={"achievement_id": "achievement-1"},
+            json={"award_id": "achievement-1"},
         )
         assert response.status_code == 401
 
@@ -53,6 +53,6 @@ class TestHttpAdapter:
         response = denying_http_client.post(
             "/api/v1/offers",
             headers={"Authorization": "Bearer t0k3n"},
-            json={"achievement_id": "achievement-1"},
+            json={"award_id": "achievement-1"},
         )
         assert response.status_code == 403

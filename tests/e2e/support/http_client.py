@@ -12,6 +12,7 @@ class Config:
     """E2E test configuration loaded from environment variables."""
 
     public_url: str = os.environ["PUBLIC_URL"]
+    ssi_agent_url: str = os.environ["SSI_AGENT_URL"]
 
 
 class HttpClient:
@@ -60,6 +61,10 @@ class HttpClient:
         json: dict[str, object] | None = None,
         headers: dict[str, str] | None = None,
     ) -> Response:
-        url = f"{self._service_url}/{path}"
+        if path.startswith('http://') or path.startswith('https://'): # Absolute
+            url = path
+        else:
+            url = f"{self._service_url}/{path}"
+
         combined_headers = {**self._default_headers, **(headers or {})}
         return request(method, url, json=json, headers=combined_headers)

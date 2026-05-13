@@ -6,6 +6,7 @@ class ConfigRepoPort(ABC):
 
     server_host: str
     server_port: int
+    # TODO: Rename to oid4vci_agent_url
     ssi_agent_url: str
     ssi_agent_nonce_endpoint: str
     ssi_agent_credential_endpoint: str

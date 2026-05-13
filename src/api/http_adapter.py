@@ -28,7 +28,7 @@ class MissingTokenError(Exception):
 class CreateOfferBody:
     """Parsed request body for the create offer endpoint."""
 
-    achievement_id: str
+    award_id: str
 
 
 @dataclass
@@ -154,16 +154,6 @@ class HttpApiAdapter(ApiPort):
                 mimetype = "application/json"
             )
 
-        @app.route("/api/v1/offers/<offer_id>", methods=["GET"])
-        def get_offer(offer_id: str):  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
-            """Return a credential offer by its identifier."""
-            try:
-                offer = self.offer_service.get_offer(offer_id)
-            except KeyError:
-                return json.dumps({"error": "Not Found"}), 404
-
-            return json.dumps(offer.to_credential_offer()), 200
-
         @app.route("/api/v1/offers", methods=["POST"])
         def create_offer():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Create a credential offer for an achievement."""
@@ -173,11 +163,11 @@ class HttpApiAdapter(ApiPort):
                 return json.dumps({"error": "Unauthorized"}), 401
 
             raw: dict[str, str] = request.get_json(silent=True) or {}
-            body = CreateOfferBody(achievement_id=raw.get("achievement_id", ""))
+            body = CreateOfferBody(award_id=raw.get("award_id", ""))
 
             try:
                 offer = self.offer_service.create_offer(
-                    achievement_id=body.achievement_id,
+                    award_id=body.award_id,
                     bearer_token=bearer_token,
                 )
             except PermissionDeniedError:

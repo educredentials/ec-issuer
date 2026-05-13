@@ -31,17 +31,17 @@ class AdminHttpClient(HttpClient):
             "Content-Type": "application/json",
         }
 
-    def create_offer(self, achievement_id: str) -> CreateOfferResponse:
+    def create_offer(self, award_id: str) -> CreateOfferResponse:
         """Create a credential offer for an achievement.
 
         Args:
-            achievement_id: The ID of the achievement to create an offer for.
+            award_id: The ID of the achievement to create an offer for.
 
         Returns:
             CreateOfferResponse with offer_id and uri.
         """
         create_response: Response = self.post(
-            "api/v1/offers", json={"achievement_id": achievement_id}
+            "api/v1/offers", json={"award_id": award_id}
         )
         assert create_response.status_code == 201, (
             f"Expected 201 Created, got {create_response.status_code}: "

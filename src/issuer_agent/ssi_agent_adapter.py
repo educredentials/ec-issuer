@@ -154,10 +154,6 @@ class SsiAgentAdapter(IssuerAgentPort):
         self.timeout: int = 10  # Hardcoded timeout in seconds
 
     @override
-    def create_offer(self, offer_id: str, achievement_id: str) -> None:
-        """Stub — will delegate to the SSI agent in a future iteration."""
-
-    @override
     def credential_issuer_metadata(self) -> CredentialIssuerMetadata:
         """Not supported - use SsiAgentMetadataAdapter for metadata."""
         raise NotImplementedError("Use SsiAgentMetadataAdapter for metadata")

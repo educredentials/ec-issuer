@@ -5,10 +5,10 @@ from typing import cast, override
 import psycopg2
 from psycopg2.extensions import connection as _connection
 
-from src.offers.offer_repository import Offer, OffersRepositoryPort
+from src.offers.models import Offer
+from src.offers.offers_repository_port import OffersRepositoryPort
 
-
-class PostgreSQLOffersRepository(OffersRepositoryPort):
+class PostgreSQLOffersRepositoryAdapter(OffersRepositoryPort):
     """Adapter that stores offers in a PostgreSQL database."""
 
     _conn: _connection
@@ -35,11 +35,10 @@ class PostgreSQLOffersRepository(OffersRepositoryPort):
                 """
                 CREATE TABLE IF NOT EXISTS offers (
                     offer_id TEXT PRIMARY KEY,
-                    achievement_id TEXT NOT NULL,
-                    uri TEXT NOT NULL,
-                    credential_issuer TEXT NOT NULL
+                    award_id TEXT NOT NULL
                 )
                 """
+                # TODO add indexes for offer_id and award_id
             )
             self._conn.commit()
 
@@ -53,18 +52,14 @@ class PostgreSQLOffersRepository(OffersRepositoryPort):
         with self._conn.cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO offers (offer_id, achievement_id, uri, credential_issuer)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO offers (offer_id, award_id)
+                VALUES (%s, %s)
                 ON CONFLICT (offer_id) DO UPDATE
-                SET achievement_id = EXCLUDED.achievement_id,
-                    uri = EXCLUDED.uri,
-                    credential_issuer = EXCLUDED.credential_issuer
+                SET award_id = EXCLUDED.award_id
                 """,
                 (
                     offer.offer_id,
-                    offer.achievement_id,
-                    offer.uri,
-                    offer.credential_issuer,
+                    offer.award_id,
                 ),
             )
             self._conn.commit()
@@ -85,7 +80,7 @@ class PostgreSQLOffersRepository(OffersRepositoryPort):
         with self._conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT offer_id, achievement_id, uri, credential_issuer
+                SELECT offer_id, award_id
                 FROM offers
                 WHERE offer_id = %s
                 """,
@@ -98,7 +93,6 @@ class PostgreSQLOffersRepository(OffersRepositoryPort):
             raise KeyError(f"Offer with id {offer_id} not found")
         return Offer(
             offer_id=cast(str, row[0]),
-            achievement_id=cast(str, row[1]),
-            uri=cast(str, row[2]),
-            credential_issuer=cast(str, row[3]),
+            award_id=cast(str, row[1]),
+            uri=None
         )

@@ -6,12 +6,87 @@ endpoints:
         - code: 200
           body: |
             {
-                "credential_issuer": "https://agent.example.com",
-                "credential_endpoint": "https://agent.example.com/openid4vci/credential",
-                "authorization_servers": ["https://agent.example.com"],
-                "nonce_endpoint": "https://agent.example.com/openid4vci/nonce",
+                "credential_issuer": "http://localhost:8001",
+                "credential_endpoint": "http://localhost:8001/openid4vci/credential",
+                "authorization_servers": ["http://localhost:8001"],
+                "nonce_endpoint": "http://localhost:8001/openid4vci/nonce",
                 "credential_configurations_supported": {}
             }
+  - path: "/openid4vci/offers/offer-123"
+    get:
+      responses:
+        - code: 200
+          body: |
+            {
+              "credential_issuer": "http://localhost:8001",
+              "credential_configuration_ids": [
+                "OpenBadgeCredential"
+              ],
+              "grants": {
+                "authorization_code": {
+                  "issuer_state": "offer-1234"
+                }
+              }
+            }
+  - path: "/openid4vci/offers/:offer_id"
+    get:
+      responses:
+        - code: 200
+          body: |
+            {
+              "credential_issuer": "http://localhost:8001",
+              "credential_configuration_ids": [
+                "OpenBadgeCredential"
+              ],
+              "grants": {
+                "authorization_code": {
+                  "issuer_state": "offer-1234"
+                }
+              }
+            }
+  - path: "/v0/offers"
+    post:
+      responses:
+        - code: 200
+          content_type: text/plain
+          body: openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flocalhost%3A8001%2Fopenid4vci%2Foffers%2Foffer-123
+  - path: "/v0/offers/offer-123"
+    get:
+      responses:
+        - code: 200
+          body: |
+            {
+              "id": "offer-123",
+              "grant_types": ["urn:ietf:params:oauth:grant-type:pre-authorized_code"],
+              "credential_offer_uri": {
+                "credential_offer_uri": "http://localhost:8001/openid4vci/offers/offer-123"
+              },
+              "credential_offer": {
+                "credential_offer": {
+                  "credential_issuer": "http://localhost:8001/",
+                  "credential_configuration_ids": ["OpenBadgeCredential"],
+                  "grants": {
+                    "authorization_code": {
+                      "issuer_state": "offer-1234"
+                    }
+                  }
+                }
+              },
+              "subject_id": null,
+              "credential_ids": [],
+              "form_url_encoded_credential_offer": "openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flocalhost%3A8001%2Fopenid4vci%2Foffers%2Foffer-123",
+              "pre_authorized_code": "08c33af4f9977ab85c4b9dfc556d28059f4d7c81e04ebf5e4b1fa8fa8ff86edf",
+              "credential_response": null,
+              "status": "Pending",
+              "tx_code": null,
+              "delivery_options": null,
+              "offer_link": null
+            }
+  - path: "/v0/offers/offer-999"
+    get:
+      responses:
+        - code: 404
+          body: "Offer not found"
   - path: "/openid4vci/nonce"
     post:
       responses:

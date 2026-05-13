@@ -53,4 +53,6 @@ update-issuer-metadata file:
 # Run everything (lint + test)
 all:
     just lint
+    just dependencies
+    just develop &
     just test

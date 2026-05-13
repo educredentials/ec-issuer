@@ -11,7 +11,10 @@ from src.issuer_agent.ssi_agent_adapter import SsiAgentAdapter
 from src.metadata.metadata_service import MetadataService
 from src.metadata.postgresql_adapter import PostgreSQLMetadataRepository
 from src.offers.offer_service import OfferService
-from src.offers.postgresql_adapter import PostgreSQLOffersRepository
+from src.offers.postgresql_offers_repository_adapter import (
+    PostgreSQLOffersRepositoryAdapter,
+)
+from src.offers.ssi_agent_offers_client_adapter import SsiAgentOffersClientAdapter
 
 
 class App:
@@ -32,14 +35,17 @@ class App:
         )
 
         access_control = HardcodedAccessControlAdapter()
-        offers_repository = PostgreSQLOffersRepository(
+
+        offers_client = SsiAgentOffersClientAdapter(
+            ssi_agent_url=self.config.ssi_agent_url
+        )
+        offers_repository = PostgreSQLOffersRepositoryAdapter(
             self.config.postgresql_connection_string
         )
         offer_service = OfferService(
-            issuer_agent=SsiAgentAdapter(config=self.config),
             access_control=access_control,
+            offers_client=offers_client,
             offers_repository=offers_repository,
-            public_url=self.config.public_url,
         )
 
         credential_service = CredentialService(

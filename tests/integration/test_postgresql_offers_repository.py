@@ -1,9 +1,12 @@
-"""Unit tests for PostgreSQLOffersRepository."""
+"""Integration tests for PostgreSQLOffersRepository."""
 
 import pytest
 
-from src.offers.offer_repository import Offer, OffersRepositoryPort
-from src.offers.postgresql_adapter import PostgreSQLOffersRepository
+from src.offers.models import Offer
+from src.offers.offers_repository_port import OffersRepositoryPort
+from src.offers.postgresql_offers_repository_adapter import (
+    PostgreSQLOffersRepositoryAdapter,
+)
 
 
 class TestPostgreSQLOffersRepository:
@@ -11,27 +14,20 @@ class TestPostgreSQLOffersRepository:
 
     def test_implements_offers_repository_port(self):
         """PostgreSQLOffersRepository implements OffersRepositoryPort."""
-        assert issubclass(PostgreSQLOffersRepository, OffersRepositoryPort)
+        assert issubclass(PostgreSQLOffersRepositoryAdapter, OffersRepositoryPort)
 
-    def test_store_and_get_offer(self, offers_repo: PostgreSQLOffersRepository):
+    def test_store_and_get_offer(self, offers_repo: PostgreSQLOffersRepositoryAdapter):
         """store persists an offer and get retrieves it by id."""
-        offer = Offer(
-            offer_id="test-offer-123",
-            achievement_id="award-456",
-            uri="openid-credential-offer://?credential_offer_uri=https://issuer.example.com/api/v1/offers/test-offer-123",
-            credential_issuer="https://issuer.example.com",
-        )
+        offer = Offer(offer_id="offer-123", award_id="award-456", uri=None)
 
         offers_repo.store(offer)
-        result = offers_repo.get("test-offer-123")
+        result = offers_repo.get("offer-123")
 
         assert result.offer_id == offer.offer_id
-        assert result.achievement_id == offer.achievement_id
-        assert result.uri == offer.uri
-        assert result.credential_issuer == offer.credential_issuer
+        assert result.award_id == offer.award_id
 
     def test_get_raises_key_error_for_unknown_id(
-        self, offers_repo: PostgreSQLOffersRepository
+        self, offers_repo: PostgreSQLOffersRepositoryAdapter
     ):
         """get raises KeyError when the offer_id does not exist."""
         with pytest.raises(KeyError) as exc_info:
@@ -39,20 +35,12 @@ class TestPostgreSQLOffersRepository:
 
         assert "nonexistent-id" in str(exc_info.value)
 
-    def test_store_multiple_offers(self, offers_repo: PostgreSQLOffersRepository):
+    def test_store_multiple_offers(
+        self, offers_repo: PostgreSQLOffersRepositoryAdapter
+    ):
         """store can persist multiple offers and get retrieves each correctly."""
-        offer1 = Offer(
-            offer_id="offer-1",
-            achievement_id="award-1",
-            uri="uri-1",
-            credential_issuer="issuer-1",
-        )
-        offer2 = Offer(
-            offer_id="offer-2",
-            achievement_id="award-2",
-            uri="uri-2",
-            credential_issuer="issuer-2",
-        )
+        offer1 = Offer(offer_id="offer-1", award_id="award-123", uri=None)
+        offer2 = Offer(offer_id="offer-2", award_id="award-123", uri=None)
 
         offers_repo.store(offer1)
         offers_repo.store(offer2)
@@ -61,31 +49,21 @@ class TestPostgreSQLOffersRepository:
         result2 = offers_repo.get("offer-2")
 
         assert result1.offer_id == offer1.offer_id
+        assert result1.award_id == offer1.award_id
         assert result2.offer_id == offer2.offer_id
+        assert result2.award_id == offer2.award_id
 
     def test_store_updates_existing_offer(
-        self, offers_repo: PostgreSQLOffersRepository
+        self, offers_repo: PostgreSQLOffersRepositoryAdapter
     ):
         """store updates an existing offer with the same id."""
-        offer1 = Offer(
-            offer_id="offer-1",
-            achievement_id="award-1",
-            uri="uri-1",
-            credential_issuer="issuer-1",
-        )
-        offer2 = Offer(
-            offer_id="offer-1",
-            achievement_id="award-updated",
-            uri="uri-updated",
-            credential_issuer="issuer-updated",
-        )
+        offer1 = Offer(offer_id="offer-1", award_id="award-123", uri=None)
+        offer2 = Offer(offer_id="offer-1", award_id="award-updated", uri=None)
 
         offers_repo.store(offer1)
         offers_repo.store(offer2)
 
         result = offers_repo.get("offer-1")
 
-        assert result.offer_id == offer2.offer_id
-        assert result.achievement_id == offer2.achievement_id
-        assert result.uri == offer2.uri
-        assert result.credential_issuer == offer2.credential_issuer
+        assert result.offer_id == "offer-1"
+        assert result.award_id == "award-updated"

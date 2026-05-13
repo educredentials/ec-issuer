@@ -3,48 +3,51 @@
 import uuid
 
 from src.access_control.access_control_port import AccessControlPort
-from src.issuer_agent.issuer_agent_port import IssuerAgentPort
-from src.offers.offer_repository import Offer, OffersRepositoryPort
+from src.offers.models import Offer
+from src.offers.offers_client_port import OffersClientPort
+from src.offers.offers_repository_port import OffersRepositoryPort
 
 
 class PermissionDeniedError(Exception):
     """Raised when access control denies the requested action."""
 
+class DoesNotExistInRepositoryError(Exception):
+    """Raised when offer cannot be found in Repository"""
+
+class DoesNotExistInClientError(Exception):
+    """Raised when offer cannot be found in API"""
 
 class OfferService:
     """Service that orchestrates offer creation."""
 
-    _issuer_agent: IssuerAgentPort
     _access_control: AccessControlPort
+    _offers_client: OffersClientPort
     _offers_repository: OffersRepositoryPort
-    _public_url: str
 
     def __init__(
         self,
-        issuer_agent: IssuerAgentPort,
         access_control: AccessControlPort,
+        offers_client: OffersClientPort,
         offers_repository: OffersRepositoryPort,
-        public_url: str,
     ) -> None:
         """Initialise the service with its dependencies.
 
         Args:
-            issuer_agent: Adapter for the SSI agent that registers the offer.
             access_control: Adapter for checking resource permissions.
             offers_repository: Adapter for persisting offers.
+            offers_client: Adapter for interacting with oid4vci agent.
             public_url: Publicly accessible base URL of this issuer service,
                 used to build the offer URI.
         """
-        self._issuer_agent = issuer_agent
         self._access_control = access_control
+        self._offers_client = offers_client
         self._offers_repository = offers_repository
-        self._public_url = public_url
 
-    def create_offer(self, achievement_id: str, bearer_token: str) -> Offer:
+    def create_offer(self, award_id: str, bearer_token: str) -> Offer:
         """Create, persist, and return a new credential offer.
 
         Args:
-            achievement_id: The award/achievement to issue.
+            award_id: The award/achievement to issue.
             bearer_token: The caller's bearer token used for permission checking.
 
         Returns:
@@ -54,23 +57,24 @@ class OfferService:
             PermissionDeniedError: When the caller is not permitted to import the award.
         """
         if not self._access_control.may_import(
-            bearer_token, achievement_id, "Award", "import"
+            bearer_token, award_id, "Award", "import"
         ):
-            raise PermissionDeniedError(achievement_id)
+            raise PermissionDeniedError(award_id)
 
         offer_id = str(uuid.uuid4())
-        self._issuer_agent.create_offer(offer_id, achievement_id)
+        # award: Award = Award()  # TODO: Get the actual award from where?
 
-        uri = f"openid-credential-offer://?credential_offer_uri={self._public_url}/api/v1/offers/{offer_id}"
+        # TODO: wrap in transaction
+        uri = self._offers_client.create(offer_id)
         offer = Offer(
-            offer_id=offer_id,
-            achievement_id=achievement_id,
-            uri=uri,
-            credential_issuer=self._public_url,
+            offer_id = offer_id,
+            award_id = award_id,
+            uri = uri
         )
-
         self._offers_repository.store(offer)
+
         return offer
+
 
     def get_offer(self, offer_id: str) -> Offer:
         """Retrieve an offer by its identifier.
@@ -84,4 +88,11 @@ class OfferService:
         Raises:
             KeyError: When no offer with the given id exists.
         """
-        return self._offers_repository.get(offer_id)
+
+        upstream_offer = self._offers_client.get(offer_id)
+        stored_offer = self._offers_repository.get(offer_id)
+        return Offer(
+            offer_id = offer_id,
+            award_id = stored_offer.award_id,
+            uri = upstream_offer.uri,
+        )

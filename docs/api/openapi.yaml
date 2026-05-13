@@ -3,10 +3,10 @@ info:
   title: Educredentials Issuer API
   description: |
     **Service Architecture**: This documentation covers two separate but integrated services:
-    
+
     - **ec-issuer** (`http://localhost:8000`): Administrative service that manages templates, credential configurations, and creates offers. Handles business logic and orchestration.
     - **ssi-agent** (`http://localhost:8001`): Handles the OpenID4VCI protocol flow, including credential issuer metadata, credential offers, and credential requests. Performs the actual credential signing and delivery.
-    
+
     All administrative endpoints on ec-issuer require admin access token.
   version: 1.0.0
   contact:
@@ -31,7 +31,7 @@ tags:
     description: |
       All OID4VCI endpoints are public by default as per the OpenID4VCI specification.
       These endpoints are served by the ssi-agent directly, not proxied through ec-issuer.
-      
+
       * Public endpoints are not versioned in path
       * Public endpoints are not scoped in path (e.g., `/public/`) due to OID4VCI spec requirements
 
@@ -52,11 +52,11 @@ paths:
             schema:
               type: object
               properties:
-                achievement_id:
+                award_id:
                   type: string
                   example: achievement-1
               required:
-                - achievement_id
+                - award_id
       responses:
         '201':
           description: Offer created successfully
@@ -148,9 +148,9 @@ paths:
       summary: Get Credential Issuer Metadata
       description: |
         Get the OpenID4VCI credential issuer metadata.
-        
+
         See [OID4VCI Metadata](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-metadata).
-        
+
         Other available well-known endpoints:
         - `/.well-known/did-configuration.json`
         - `/.well-known/did.json`
@@ -213,7 +213,7 @@ paths:
       summary: Get a Credential Offer
       description: |
         AKA Dereference offer from `credential_offer_uri`.
-        
+
         See [Offer Response](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer-response).
       parameters:
         - name: offer_id
@@ -257,9 +257,9 @@ paths:
       summary: Get a Credential (OID4VCI Authorization Code Flow)
       description: |
         Location: `/credentials` (specified by OID4VCI, included in metadata).
-        
+
         Get the credential. A reference to deferred endpoint is always returned.
-        
+
         See [OID4VCI Credential Request](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request).
       security:
         - bearerAuth: []
