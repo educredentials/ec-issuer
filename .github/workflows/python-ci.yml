@@ -72,6 +72,7 @@ jobs:
 
       - name: Run e2e tests
         env:
+          SSI_AGENT_URL: http://localhost:8001
           PUBLIC_URL: http://localhost:8000
           POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
         run: uv run pytest tests/e2e/ -v
