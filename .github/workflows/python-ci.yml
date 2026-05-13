@@ -52,6 +52,7 @@ jobs:
 
       - name: Run integration tests
         env:
+          SSI_AGENT_URL: http://localhost:8001
           POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
         run: uv run pytest tests/integration/ -v
 
