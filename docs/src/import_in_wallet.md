@@ -13,6 +13,7 @@ sequenceDiagram
       participant ec-issuer
       participant ec-authentication
       participant ec-access-control
+      participant ec-award
       participant ec-notification
     end
 
@@ -24,9 +25,11 @@ sequenceDiagram
     RecipientPortal->>ec-issuer: Create Credential and Offer(AwardId)
     ec-issuer->>ec-access-control: May import(AwardId)
     ec-access-control->>ec-issuer: Yes
-    ec-issuer->>oid4vci-agent: Create Offer
+    ec-issuer->>ec-award: Get Award(AwardId)
+    ec-award->>ec-issuer: Award
+    ec-issuer->>oid4vci-agent: Create Offer(Award)
     oid4vci-agent->>ec-issuer: Offer
-    ec-issuer->>ec-notification: Publish OfferCreated event
+    ec-issuer->>ec-notification: Publish OfferCreated(AwardId, Offer) event
     ec-issuer->>RecipientPortal: Offer
     RecipientPortal->>EndUser: Offer as QR
 
@@ -60,6 +63,8 @@ In this diagram, the following actions take place:
 1. *RecipientPortal* creates credential and offer for the award on *ec-issuer*
 1. *ec-issuer* checks permission on *Access Control*
 1. *Access Control* returns Yes when permission is allowed
+1. *ec-issuer* gets award from *ec-award*
+1. *ec-award* returns award to *ec-issuer*
 1. *ec-issuer* creates offer on *oid4vci-agent*
 1. *oid4vci-agent* returns offer to *ec-issuer*
 1. *ec-issuer* publishes offer created event on *Notification Service*
