@@ -6,6 +6,7 @@ The EC Issuer is configured exclusively through environment variables, following
 
 The application does not read `.env` files directly. Use your preferred tool to load environment variables:
 
+- [uv with --env-file](https://docs.astral.sh/uv/concepts/configuration-files/#environment-variable-files)
 - [direnv](https://direnv.net/)
 - Or any .env loader from [github.com/topics/dotenv](https://github.com/topics/dotenv)
 
