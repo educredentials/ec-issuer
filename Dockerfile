@@ -18,7 +18,7 @@ FROM gcr.io/distroless/base-debian12
 # uv's managed Python (python-build-standalone) statically links OpenSSL and
 # sqlite3, so those do not appear as system packages and won't produce CVEs here
 COPY --from=builder /python /python
-# psycopg2-binary bundles its own libpq/ssl/krb5 but still links against system zlib
+# psycopg3 bundles its own libpq/ssl/krb5 but still links against system zlib
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libz.so.1 /usr/lib/x86_64-linux-gnu/libz.so.1
 COPY --from=builder --chown=65532:65532 /app/.venv /app/.venv
 COPY --chown=65532:65532 src/ /app/src/

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-
 @dataclass
 class Offer:
     """Domain model representing a credential offer."""
