@@ -67,14 +67,18 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
             KeyError: When no offer with the given id exists.
         """
         with self.conn() as conn:
-            row = conn.cursor(row_factory=class_row(Offer)).execute(
-                """
+            row = (
+                conn.cursor(row_factory=class_row(Offer))
+                .execute(
+                    """
                 SELECT offer_id, award_id, null AS uri
                 FROM offers
                 WHERE offer_id = %(id)s
                 """,
-                { "id": offer_id }
-            ).fetchone()
+                    {"id": offer_id},
+                )
+                .fetchone()
+            )
 
         if row is None:
             raise KeyError(f"Offer with id {offer_id} not found")

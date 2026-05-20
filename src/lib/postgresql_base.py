@@ -5,6 +5,7 @@ from typing import LiteralString
 from psycopg.abc import Params
 from psycopg_pool import ConnectionPool
 
+
 class PostgreSQLRepositoryBase:
     """Base class providing PostgreSQL connection pooling and query helpers."""
 

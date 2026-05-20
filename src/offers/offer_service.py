@@ -11,11 +11,14 @@ from src.offers.offers_repository_port import OffersRepositoryPort
 class PermissionDeniedError(Exception):
     """Raised when access control denies the requested action."""
 
+
 class DoesNotExistInRepositoryError(Exception):
     """Raised when offer cannot be found in Repository"""
 
+
 class DoesNotExistInClientError(Exception):
     """Raised when offer cannot be found in API"""
+
 
 class OfferService:
     """Service that orchestrates offer creation."""
@@ -66,15 +69,10 @@ class OfferService:
 
         # TODO: wrap in transaction
         uri = self._offers_client.create(offer_id)
-        offer = Offer(
-            offer_id = offer_id,
-            award_id = award_id,
-            uri = uri
-        )
+        offer = Offer(offer_id=offer_id, award_id=award_id, uri=uri)
         self._offers_repository.store(offer)
 
         return offer
-
 
     def get_offer(self, offer_id: str) -> Offer:
         """Retrieve an offer by its identifier.
@@ -92,7 +90,7 @@ class OfferService:
         upstream_offer = self._offers_client.get(offer_id)
         stored_offer = self._offers_repository.get(offer_id)
         return Offer(
-            offer_id = offer_id,
-            award_id = stored_offer.award_id,
-            uri = upstream_offer.uri,
+            offer_id=offer_id,
+            award_id=stored_offer.award_id,
+            uri=upstream_offer.uri,
         )

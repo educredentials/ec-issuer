@@ -1,9 +1,10 @@
 """Verifier client for e2e tests."""
 
 from dataclasses import dataclass
-from typing import cast
 
 import jwt as jwt_lib
+from jwt.api_jwk import PyJWK
+import msgspec
 from requests import request
 
 
@@ -14,7 +15,7 @@ class VerificationMethod:
     id: str
     type: str
     controller: str
-    publicKeyPem: str
+    publicKeyJwk: dict[str, str]
 
 
 @dataclass
@@ -52,13 +53,12 @@ class Verifier:
             "No verification methods found in DID document"
         )
         verification_method = did_document.verificationMethod[0]
-        public_key_pem = verification_method.publicKeyPem
+        public_key_jwk = verification_method.publicKeyJwk
+        public_key = PyJWK.from_dict(public_key_jwk)
 
         # Verify the JWT signature using the public key
         try:
-            jwt_lib.decode(  # pyright: ignore[reportUnusedCallResult]
-                credential_jwt, public_key_pem, algorithms=["EdDSA"]
-            )
+            _ = jwt_lib.decode(credential_jwt, public_key)
             return True
         except jwt_lib.InvalidSignatureError:
             return False
@@ -119,53 +119,9 @@ class Verifier:
             f"Expected 200, got {response.status_code}, {response.text[:200]}"
         )
 
-        # Parse the response
-        raw_did_document: dict[str, object] = response.json()  # pyright: ignore[reportAny]
-
-        # Step 7: Verify the ID matches
-        assert raw_did_document.get("id") == did_web, (
-            f"DID mismatch: expected {did_web}, got {raw_did_document.get('id')}"
+        did_document = msgspec.json.decode(response.content, type=DidDocument)
+        assert did_document.id == did_web, (
+            f"DID mismatch: expected {did_web}, got {did_document.id}"
         )
 
-        # Convert raw dict to DidDocument dataclass
-        verification_methods_raw = raw_did_document.get("verificationMethod")
-        assert isinstance(verification_methods_raw, list), (
-            f"Expected verificationMethod to be a list, "
-            f"got {type(verification_methods_raw)}"
-        )
-        verification_methods_raw = cast(
-            list[dict[str, object]], verification_methods_raw
-        )
-
-        verification_methods = [
-            VerificationMethod(
-                id=str(vm.get("id")),
-                type=str(vm.get("type")),
-                controller=str(vm.get("controller")),
-                publicKeyPem=str(vm.get("publicKeyPem")),
-            )
-            for vm in verification_methods_raw
-        ]
-
-        authentication_raw = raw_did_document.get("authentication")
-        authentication = [
-            str(auth) for auth in cast(list[object], authentication_raw or [])
-        ]
-        assertion_method_raw = raw_did_document.get("assertionMethod")
-        assertion_method = [
-            str(am) for am in cast(list[object], assertion_method_raw or [])
-        ]
-        context_raw = raw_did_document.get("@context")
-        context = (
-            [str(c) for c in cast(list[object], context_raw)]
-            if isinstance(context_raw, list)
-            else None
-        )
-
-        return DidDocument(
-            id=str(raw_did_document.get("id")),
-            verificationMethod=verification_methods,
-            authentication=authentication,
-            assertionMethod=assertion_method,
-            context=context,
-        )
+        return did_document

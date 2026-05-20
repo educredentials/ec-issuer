@@ -34,14 +34,6 @@ class TestEnvConfigRepo:
         assert config.server_host == "localhost"
         assert config.server_port == 8080
         assert config.ssi_agent_url == "http://ssi-agent.example.com"
-        assert (
-            config.ssi_agent_nonce_endpoint
-            == "http://ssi-agent.example.com/openid4vci/nonce"
-        )
-        assert (
-            config.ssi_agent_credential_endpoint
-            == "http://ssi-agent.example.com/openid4vci/credential"
-        )
         assert config.public_url == "https://issuer.example.com"
         assert config.postgresql_connection_string == (
             "postgresql://test:test@localhost:5432/test"
@@ -68,13 +60,6 @@ class TestEnvConfigRepo:
         monkeypatch.setenv("SERVER_HOST", "localhost")
         monkeypatch.setenv("SERVER_PORT", "8080")
         monkeypatch.setenv("SSI_AGENT_URL", "http://ssi-agent.example.com")
-        monkeypatch.setenv(
-            "SSI_AGENT_NONCE_ENDPOINT", "http://ssi-agent.example.com/openid4vci/nonce"
-        )
-        monkeypatch.setenv(
-            "SSI_AGENT_CREDENTIAL_ENDPOINT",
-            "http://ssi-agent.example.com/openid4vci/credential",
-        )
         monkeypatch.setenv("PUBLIC_URL", "https://issuer.example.com")
         monkeypatch.setenv(
             "POSTGRES_CONNECTION_STRING",
@@ -86,14 +71,6 @@ class TestEnvConfigRepo:
         assert config.server_host == "localhost"
         assert config.server_port == 8080
         assert config.ssi_agent_url == "http://ssi-agent.example.com"
-        assert (
-            config.ssi_agent_nonce_endpoint
-            == "http://ssi-agent.example.com/openid4vci/nonce"
-        )
-        assert (
-            config.ssi_agent_credential_endpoint
-            == "http://ssi-agent.example.com/openid4vci/credential"
-        )
         assert config.public_url == "https://issuer.example.com"
         assert config.postgresql_connection_string == (
             "postgresql://test:test@localhost:5432/test"

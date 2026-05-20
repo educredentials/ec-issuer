@@ -4,44 +4,10 @@ import pytest
 
 from tests.e2e.support.admin_client import AdminHttpClient
 from tests.e2e.support.browser import Browser
-from tests.e2e.support.http_client import Config, HttpClient
-from tests.e2e.support.utilities import assert_schema
 from tests.e2e.support.verifier import Verifier
 from tests.e2e.support.wallet import WalletClient
 
 
-@pytest.mark.e2e
-class TestCredentialIssuerMetadataEndpoint:
-    """Test the Credential Issuer Metadata endpoint."""
-
-    def test_credential_issuer_metadata_returns_correct_json(
-        self, wallet_client: WalletClient, http_client: HttpClient, config: Config
-    ):
-        """Test Credential Issuer Metadata endpoint returns correct JSON."""
-        response = http_client.get("/.well-known/openid-credential-issuer")
-        assert response.status_code == 200, (
-            f"Expected 200, got {response.status_code}, {response.text[:200]}"
-        )
-        assert response.headers["content-type"] == "application/json"
-        body: object = response.json()  # pyright: ignore[reportAny]
-        assert_schema(body, "credential_issuer_metadata")
-
-        # Use wallet_client to verify metadata can be fetched
-        metadata = wallet_client.get_issuer_metadata(config.public_url)
-        assert metadata.credential_issuer == config.public_url
-
-    def test_did_document_returns_correct_json(self, http_client: HttpClient):
-        """Test DID Document endpoint returns correct JSON."""
-        response = http_client.get("/.well-known/did.json")
-        assert response.status_code == 200, (
-            f"Expected 200, got {response.status_code}, {response.text[:200]}"
-        )
-        assert response.headers["content-type"] == "application/json"
-        body: object = response.json()  # pyright: ignore[reportAny]
-        assert_schema(body, "did_document")
-
-
-@pytest.mark.e2e
 class TestOID4VCIFlow:
     def test_get_credential(
         self,
@@ -62,7 +28,8 @@ class TestOID4VCIFlow:
         callback_url = Browser().open(auth_url)
         credential = wallet_client.open_callback_url(callback_url, offer, metadata)
 
-        assert credential.claims["iss"] == "did:web:localhost%3A8000"
+        # localhost:8001 is the OID4VCI agent
+        assert credential.claims["iss"] == "did:web:localhost%3A8001"
 
 
 @pytest.mark.e2e

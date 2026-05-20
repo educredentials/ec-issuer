@@ -5,7 +5,6 @@ from collections.abc import Generator
 
 import pytest
 
-from src.metadata.postgresql_adapter import PostgreSQLMetadataRepository
 from src.offers.postgresql_offers_repository_adapter import (
     PostgreSQLOffersRepositoryAdapter,
 )
@@ -22,17 +21,6 @@ def postgresql_connection_string() -> str:
     The PostgreSQL service must be running before tests are executed.
     """
     return _CONNECTION_STRING
-
-
-@pytest.fixture(scope="session")
-def metadata_repo() -> Generator[PostgreSQLMetadataRepository, None, None]:
-    """Provide a single PostgreSQLMetadataRepository for the test session.
-
-    Initialises the database once and closes the connection on teardown.
-    """
-    repo = PostgreSQLMetadataRepository(_CONNECTION_STRING)
-    yield repo
-    repo.close_db()
 
 
 @pytest.fixture(scope="session")

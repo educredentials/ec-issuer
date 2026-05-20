@@ -7,17 +7,6 @@ from typing import override
 
 from src.access_control.access_control_port import AccessControlPort
 from src.config.config_port import ConfigRepoPort
-from src.credentials.credential import CredentialResponse
-from src.issuer_agent.issuer_agent_port import IssuerAgentPort
-from src.metadata.credential_issuer_metadata import (
-    CredentialConfiguration,
-    CredentialIssuerMetadata,
-)
-from src.metadata.metadata_repository import (
-    MetadataNotFoundError,
-    MetadataRepositoryPort,
-)
-from src.metadata.metadata_service import MetadataService
 from src.offers.models import Offer
 from src.offers.offer_service import (
     DoesNotExistInClientError,
@@ -161,10 +150,6 @@ class ConfigRepoStub(ConfigRepoPort):
     server_host: str = "localhost"
     server_port: int = 8888
     ssi_agent_url: str = "https://issuer-agent.example.com"
-    ssi_agent_nonce_endpoint: str = "https://issuer-agent.example.com/openid4vci/nonce"
-    ssi_agent_credential_endpoint: str = (
-        "https://issuer-agent.example.com/openid4vci/credential"
-    )
     public_url: str = "http://localhost:8888"
     debug: bool = False
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
@@ -222,69 +207,6 @@ class DenyingAccessControlStub(AccessControlPort):
         return False
 
 
-class IssuerAgentStub(IssuerAgentPort):
-    """Stub: returns hardcoded credential issuer metadata; no-ops create_offer."""
-
-    credential_issuer: str
-    credential_endpoint: str
-    nonce_endpoint: str | None
-    credential_configurations_supported: dict[str, CredentialConfiguration]  # noqa: E501
-    authorization_servers: list[str] | None
-
-    def __init__(
-        self,
-        credential_issuer: str = "https://issuer.example.com",
-        credential_endpoint: str = "https://issuer.example.com/credential",
-        nonce_endpoint: str = "https://issuer.example.com/nonce",
-        credential_configurations_supported: dict[str, CredentialConfiguration]
-        | None = None,
-        authorization_servers: list[str] | None = None,
-    ) -> None:
-        """Initialize with configurable metadata.
-
-        Args:
-            credential_issuer: The credential issuer URL.
-            credential_endpoint: The credential endpoint URL.
-            credential_configurations_supported: The credential configurations.
-            authorization_servers: The authorization servers.
-        """
-        self.credential_issuer = credential_issuer
-        self.credential_endpoint = credential_endpoint
-        self.nonce_endpoint = nonce_endpoint
-        self.credential_configurations_supported = (
-            credential_configurations_supported or {}
-        )
-        self.authorization_servers = authorization_servers
-
-    @override
-    def credential_issuer_metadata(self) -> CredentialIssuerMetadata:
-        """Return hardcoded metadata."""
-        return CredentialIssuerMetadata(
-            credential_issuer=self.credential_issuer,
-            credential_endpoint=self.credential_endpoint,
-            nonce_endpoint=self.nonce_endpoint,
-            credential_configurations_supported=self.credential_configurations_supported,
-            authorization_servers=self.authorization_servers,
-        )
-
-    @override
-    def credential_request(
-        self,
-        format: str,
-        credential_configuration_id: str,
-        proof: dict[str, object],
-        issuer_state: str,
-        access_token: str,
-    ) -> CredentialResponse:
-        """No-op stub that raises NotImplementedError."""
-        raise NotImplementedError
-
-    @override
-    def request_nonce(self) -> dict[str, str]:
-        """Return a hardcoded nonce response."""
-        return {"c_nonce": "wKI4LT17ac15ES9bw8ac4"}
-
-
 class DenyingOfferServiceStub(OfferService):
     """Stub: always raises PermissionDeniedError from create_offer."""
 
@@ -333,48 +255,3 @@ class OfferServiceSpy(OfferService):
         """
         self.calls.append(("create_offer", award_id, bearer_token))
         return super().create_offer(award_id, bearer_token)
-
-
-class InMemoryMetadataRepositoryStub(MetadataRepositoryPort):
-    """Stub: In-memory repository for metadata, for use in unit tests only."""
-
-    def __init__(self) -> None:
-        """Initialise with an empty store."""
-        self._store: list[CredentialIssuerMetadata] = []
-
-    @override
-    def store(self, metadata: CredentialIssuerMetadata) -> None:
-        """Persist metadata in memory.
-
-        Args:
-            metadata: The CredentialIssuerMetadata to store.
-        """
-        self._store.append(metadata)
-
-    @override
-    def get(self) -> CredentialIssuerMetadata:
-        """Retrieve the latest metadata entry.
-
-        Returns:
-            The latest CredentialIssuerMetadata.
-
-        Raises:
-            MetadataNotFoundError: When no metadata entry exists.
-        """
-        if not self._store:
-            raise MetadataNotFoundError("No metadata entry found")
-        return self._store[-1]
-
-
-class MetadataServiceStub(MetadataService):
-    """Stub: MetadataService backed by InMemoryMetadataRepositoryStub."""
-
-    def __init__(self, public_url: str = "http://localhost:8888") -> None:
-        """Initialise with stub metadata repository.
-
-        Args:
-            public_url: The public URL to use for the metadata.
-        """
-        super().__init__(
-            metadata_repository=InMemoryMetadataRepositoryStub(), public_url=public_url
-        )

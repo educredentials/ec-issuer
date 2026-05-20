@@ -61,7 +61,7 @@ class HttpClient:
         json: dict[str, object] | None = None,
         headers: dict[str, str] | None = None,
     ) -> Response:
-        if path.startswith('http://') or path.startswith('https://'): # Absolute
+        if path.startswith("http://") or path.startswith("https://"):  # Absolute
             url = path
         else:
             url = f"{self._service_url}/{path}"

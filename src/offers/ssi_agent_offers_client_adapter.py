@@ -12,27 +12,31 @@ from src.offers.offers_client_port import OfferNotFound
 from src.offers.offers_client_port import OffersClientError
 from src.offers.offers_client_port import OffersClientPort
 
+
 @dataclass
 class _CredentialOffer:
     credential_issuer: str
     credential_configuration_ids: list[str]
     grants: dict[str, dict[str, str]]
 
+
 @dataclass
 class _SsiAgentOfferResponse:
-   """SSI agent response on fetching a single offer from the admin api"""
-   id: str
-   grant_types: list[str]
-   credential_offer_uri: dict[str, str]
-   credential_offer: dict[str, _CredentialOffer]
-   subject_id: str | None
-   credential_ids: list[str]
-   form_url_encoded_credential_offer: str
-   pre_authorized_code: str
-   credential_response: str | None
-   status: str
-   tx_code: str | None
-   delivery_options: str | None
+    """SSI agent response on fetching a single offer from the admin api"""
+
+    id: str
+    grant_types: list[str]
+    credential_offer_uri: dict[str, str]
+    credential_offer: dict[str, _CredentialOffer]
+    subject_id: str | None
+    credential_ids: list[str]
+    form_url_encoded_credential_offer: str
+    pre_authorized_code: str
+    credential_response: str | None
+    status: str
+    tx_code: str | None
+    delivery_options: str | None
+
 
 class SsiAgentOffersClientAdapter(OffersClientPort):
     """Adapter for SSI Agent offers API."""
@@ -110,11 +114,11 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
     def _create_credential_for_subject(self, offer_id: str, award: Award) -> None:
         response = requests.post(
             f"{self._ssi_agent_admin_base_url}/v0/offers",
-            json= {
+            json={
                 "offerId": offer_id,
                 "credential": asdict(award),
                 "credentialConfigurationId": "OpenBadgeCredential",
-                "expiresAt": "3025-10-24 11:34:00Z"
+                "expiresAt": "3025-10-24 11:34:00Z",
             },
             timeout=self._timeout,
         )
@@ -124,12 +128,10 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 f"Upstream error: {response.status_code} - {response.content.decode()}"
             )
 
-
-
     def _create_offer(self, offer_id: str) -> str:
         response = requests.post(
             f"{self._ssi_agent_admin_base_url}/v0/offers",
-            json= {
+            json={
                 "offerId": offer_id,
                 "credentialConfigurationIds": ["OpenBadgeCredential"],
             },

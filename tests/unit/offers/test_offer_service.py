@@ -39,7 +39,9 @@ class TestOfferServiceCreateOffer:
         offer = service.create_offer(award_id="award-123", bearer_token="tok")
         assert offer.offer_id is not None
         assert offer.uri is not None
-        assert offer.uri.startswith("openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/")
+        assert offer.uri.startswith(
+            "openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/"
+        )
 
     def test_stores_offer_in_repository(self):
         """create_offer stores offer in offers repository."""
@@ -57,7 +59,7 @@ class TestOfferServiceCreateOffer:
         expected_offer = Offer(
             offer_id=offer.offer_id,
             award_id="award-999",
-            uri=f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer.offer_id}"
+            uri=f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer.offer_id}",
         )
         assert offers_repository.calls == [("store", {"offer": expected_offer})]
 
@@ -133,7 +135,6 @@ class TestOfferServiceGetOffer:
 
         with pytest.raises(DoesNotExistInRepositoryError):
             _ = service.get_offer("nonexistent-id")
-
 
     def test_get_offer_raises_does_not_exist_in_client(self):
         """get_offer raises Error when the offer does not exist in the Agent."""

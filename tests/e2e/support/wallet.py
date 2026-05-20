@@ -11,7 +11,7 @@ from jwcrypto import jwk
 from msgspec import json as msgspec_json
 from requests import request
 
-from src.metadata.credential_issuer_metadata import CredentialIssuerMetadata
+from tests.e2e.support.credential_issuer_metadata import CredentialIssuerMetadata
 
 _TESTS_E2E_DIR = Path(__file__).parent.parent
 _KEYS_DIR = _TESTS_E2E_DIR / "keys"

@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 from src.offers.models import Offer
 
+
 class OfferNotFound(Exception):
     """Error raised when API service returns 404"""
 
