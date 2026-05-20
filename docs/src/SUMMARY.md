@@ -18,6 +18,7 @@
   - [001 Python and Flask for service](./adr/ADR001-python.md)
   - [002 Use ABC instead of Protocol for Interface Definition](./adr/ADR002-abc-over-protocol.md)
   - [003 Expose ssi-agent as peer service alongside ec-issuer](./adr/ADR003-ssi-agent-as-peer-service.md)
+  - [004 Use psycopg for PostgreSQL database access](./adr/ADR004-database-library.md)
 - [AI Agent context](./agent_context.md)
   - [AGENTS.md](./agents/AGENTS.md)
   - [Skill adr SKILL.md](./agents/skills/adr/SKILL.md)
