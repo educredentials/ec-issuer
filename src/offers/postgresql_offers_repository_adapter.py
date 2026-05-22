@@ -1,18 +1,16 @@
 """PostgreSQL adapter for the offers repository."""
 
-from typing import cast, override
+from typing import override
 
-import psycopg2
-from psycopg2.extensions import connection as _connection
+from psycopg.rows import class_row
 
+from src.lib.postgresql_base import PostgreSQLRepositoryBase
 from src.offers.models import Offer
 from src.offers.offers_repository_port import OffersRepositoryPort
 
-class PostgreSQLOffersRepositoryAdapter(OffersRepositoryPort):
-    """Adapter that stores offers in a PostgreSQL database."""
 
-    _conn: _connection
-    _connection_string: str
+class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersRepositoryPort):
+    """Adapter that stores offers in a PostgreSQL database."""
 
     def __init__(self, connection_string: str) -> None:
         """Initialise with a PostgreSQL connection string.
@@ -20,27 +18,20 @@ class PostgreSQLOffersRepositoryAdapter(OffersRepositoryPort):
         Args:
             connection_string: PostgreSQL connection string.
         """
-        self._connection_string = connection_string
-        self._conn = psycopg2.connect(connection_string)
+        PostgreSQLRepositoryBase.__init__(self, connection_string)
         self._init_db()
-
-    def close_db(self) -> None:
-        """Close the database connection."""
-        self._conn.close()
 
     def _init_db(self) -> None:
         """Initialize the database table for offers."""
-        with self._conn.cursor() as cursor:
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS offers (
-                    offer_id TEXT PRIMARY KEY,
-                    award_id TEXT NOT NULL
-                )
-                """
-                # TODO add indexes for offer_id and award_id
+        self.execute(
+            """
+            CREATE TABLE IF NOT EXISTS offers (
+                offer_id TEXT PRIMARY KEY,
+                award_id TEXT NOT NULL
             )
-            self._conn.commit()
+            """
+            # TODO add indexes for offer_id and award_id
+        )
 
     @override
     def store(self, offer: Offer) -> None:
@@ -49,20 +40,18 @@ class PostgreSQLOffersRepositoryAdapter(OffersRepositoryPort):
         Args:
             offer: The offer to store.
         """
-        with self._conn.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO offers (offer_id, award_id)
-                VALUES (%s, %s)
-                ON CONFLICT (offer_id) DO UPDATE
-                SET award_id = EXCLUDED.award_id
-                """,
-                (
-                    offer.offer_id,
-                    offer.award_id,
-                ),
-            )
-            self._conn.commit()
+        self.execute(
+            """
+            INSERT INTO offers (offer_id, award_id)
+            VALUES (%s, %s)
+            ON CONFLICT (offer_id) DO UPDATE
+            SET award_id = EXCLUDED.award_id
+            """,
+            (
+                offer.offer_id,
+                offer.award_id,
+            ),
+        )
 
     @override
     def get(self, offer_id: str) -> Offer:
@@ -77,22 +66,17 @@ class PostgreSQLOffersRepositoryAdapter(OffersRepositoryPort):
         Raises:
             KeyError: When no offer with the given id exists.
         """
-        with self._conn.cursor() as cursor:
-            cursor.execute(
+        with self.conn() as conn:
+            row = conn.cursor(row_factory=class_row(Offer)).execute(
                 """
-                SELECT offer_id, award_id
+                SELECT offer_id, award_id, null AS uri
                 FROM offers
-                WHERE offer_id = %s
+                WHERE offer_id = %(id)s
                 """,
-                (offer_id,),
-            )
-            row = cursor.fetchone()
-        self._conn.commit()
+                { "id": offer_id }
+            ).fetchone()
 
         if row is None:
             raise KeyError(f"Offer with id {offer_id} not found")
-        return Offer(
-            offer_id=cast(str, row[0]),
-            award_id=cast(str, row[1]),
-            uri=None
-        )
+
+        return row
