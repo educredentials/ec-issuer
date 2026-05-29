@@ -91,10 +91,10 @@ If you find yourself running python, custom bash scripts, python scripts, pip, p
 
 ## Common Pitfalls to Avoid
 
-- DON'T: Create new files unless necessary
 - DON'T: Use print, logging to stdout for debugging. Prefer tests
 - DON'T: Ignore linting and type checking errors or warnings
-- DON'T: Revert or overwrite existing changes in files without explicit instructions. Other agents or a human, may be working on something as well.
+- DON'T: Revert or overwrite existing changes in files without explicit instructions. Other agents or a human, may be working on something as well
+- DO: Follow the established Hexagonal Architecture
 - DO: Add type hints to all code
 - DO: Add pydocstring to all functions and classes
 - DO: Check existing components before creating new ones
