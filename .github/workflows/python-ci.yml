@@ -21,14 +21,25 @@ jobs:
         ports:
           - "5432:5432"
         options: --health-cmd="pg_isready -U ecissuer -d ecissuer" --health-interval=10s --health-timeout=5s --health-retries=5
-      mock-ssi-agent: # built using ./dependency-services.yaml
-        image: ghcr.io/${{ github.repository }}-platypus:latest
-        ports:
-          - "8001:8001"
-        command: "--server.port 8001 --server.host 0.0.0.0 --mock /app/mock.yaml"
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Start mock SSI agent
+        run: |
+          docker run -d \
+            --name mock-ssi-agent \
+            -p 8001:4010 \
+            -v ${{ github.workspace }}/dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
+      - name: Start mock OIDC auth
+        run: |
+          docker run -d \
+            --name mock-oidc-auth \
+            -p 8002:4010 \
+            -v ${{ github.workspace }}/dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -77,7 +88,12 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: pkill -f "python -m src.main" || true
+        run: |
+          pkill -f "python -m src.main" || true
+          docker stop mock-ssi-agent || true
+          docker stop mock-oidc-auth || true
+          docker rm mock-ssi-agent || true
+          docker rm mock-oidc-auth || true
 
 
   build:

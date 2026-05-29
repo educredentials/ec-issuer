@@ -13,8 +13,7 @@ services:
     environment:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8000
-      # Complicated ENV magic, to allow running the ec-issuer with the real-ssi-agent.
-      - SSI_AGENT_URL=${SSI_AGENT_URL:-http://mock-ssi-agent:8001}
+      - SSI_AGENT_URL=http://mock-ssi-agent:4010 # Internal URL
       - PUBLIC_URL=http://localhost:8000
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
     depends_on:
@@ -43,13 +42,20 @@ services:
       UNICORE__DID_METHODS__DID_WEB__ENABLED: true
 
   mock-ssi-agent:
-    image: ghcr.io/depado/platypus:latest
+    image: stoplight/prism:4
     ports:
-      - "8001:8001"
-    command: --server.port 8001 --server.host 0.0.0.0 --mock mock.yaml
+      - "8001:4010"
+    command: mock -h 0.0.0.0 /app/mock.yaml
     volumes:
-      - ./dependencies/platypus/ssi-agent-mock.yaml:/app/mock.yaml
-    working_dir: /app
+      - ./dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml
+
+  mock-oidc-auth:
+    image: stoplight/prism:4
+    ports:
+      - "8002:4010"
+    command: mock -h 0.0.0.0 /app/mock.yaml
+    volumes:
+      - ./dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml
 
   postgresql:
     image: postgres:16-alpine

@@ -1,0 +1,107 @@
+openapi: 3.0.0
+info:
+  title: OIDC Auth Mock
+  version: 1.0.0
+servers:
+  - url: http://localhost:8002
+paths:
+  /.well-known/oauth-authorization-server:
+    get:
+      responses:
+        '200':
+          description: OIDC Discovery
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorization_endpoint:
+                    type: string
+                    example: http://localhost:8002/auth/authorize
+                  issuer:
+                    type: string
+                    example: http://localhost:8002
+                  pushed_authorization_request_endpoint:
+                    type: string
+                    example: http://localhost:8002/auth/par
+                  require_pushed_authorization_requests:
+                    type: boolean
+                    example: true
+                  token_endpoint:
+                    type: string
+                    example: http://localhost:8002/auth/token
+
+  /auth/par:
+    post:
+      requestBody:
+        content:
+          application/x-www-form-urlencoded: {}
+      responses:
+        '201':
+          description: Pushed Authorization Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_uri:
+                    type: string
+                    example: urn:ietf:params:oauth:request_uri:1234567890
+                  expires_in:
+                    type: integer
+                    example: 3600
+
+  /auth/authorize:
+    get:
+      responses:
+        '301':
+          description: Redirect to authorize/done. Simulate a typical redirect-spagetti from oidc flows
+          headers:
+            Location:
+              schema:
+                type: string
+                example: http://localhost:8002/auth/authorize/done
+          content:
+            text/html:
+              schema:
+                type: string
+                example: ""
+
+  /auth/authorize/done:
+    get:
+      responses:
+        '301':
+          description: Redirect to wallet
+          headers:
+            Location:
+              schema:
+                type: string
+                example: mywallet://?code=AUTH-TOKEN-1234
+          content:
+            text/html:
+              schema:
+                type: string
+                example: ""
+
+  /auth/token:
+    post:
+      requestBody:
+        content:
+          application/x-www-form-urlencoded: {}
+      responses:
+        '200':
+          description: Token response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: ACCESS-TOKEN-1234567890
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 3600

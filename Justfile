@@ -9,7 +9,7 @@ default:
     @just --list
 
 # Detect container runtime (podman or docker)
-runtime := `(command -v podman >/dev/null 2>&1 && echo podman || echo docker)`
+runtime := `(command -v docker >/dev/null 2>&1 && echo docker || echo podman)`
 
 # Start development server
 develop:
@@ -18,7 +18,11 @@ develop:
 # (re)start all dependency services - everything except the ec-issuer
 dependencies:
     {{runtime}} compose down
-    {{runtime}} compose --profile real-ssi-agent up --detach --abort-on-container-exit postgresql mock-ssi-agent real-ssi-agent
+    {{runtime}} compose up --wait --wait-timeout 10 --detach postgresql mock-ssi-agent mock-oidc-auth
+
+e2eservices:
+    {{runtime}} compose down
+    {{runtime}} compose up --wait --wait-timeout 10 --detach ec-issuer postgresql mock-ssi-agent mock-oidc-auth
 
 # Run all quality checks (linting + type checking)
 lint:
@@ -53,6 +57,5 @@ update-issuer-metadata file:
 # Run everything (lint + test)
 all:
     just lint
-    just dependencies
-    just develop &
+    just e2eservices
     just test

@@ -1,0 +1,291 @@
+openapi: 3.0.0
+info:
+  title: SSI Agent Mock
+  version: 1.0.0
+servers:
+  - url: http://localhost:8001
+paths:
+  /.well-known/openid-credential-issuer:
+    get:
+      responses:
+        "200":
+          description: OpenID Credential Issuer discovery
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credential_issuer:
+                    type: string
+                    example: http://localhost:8001
+                  credential_endpoint:
+                    type: string
+                    example: http://localhost:8001/openid4vci/credential
+                  authorization_servers:
+                    type: array
+                    items:
+                      type: string
+                    example: ["http://localhost:8002"]
+                  nonce_endpoint:
+                    type: string
+                    example: http://localhost:8001/openid4vci/nonce
+                  credential_configurations_supported:
+                    type: object
+                    example: {}
+
+  /.well-known/did.json:
+    get:
+      responses:
+        "200":
+          description: DID Document
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  {"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/suites/jws-2020/v1"],"id":"did:web:localhost%3A8001","verificationMethod":[{"id":"did:web:localhost%3A8001#0","type":"JsonWebKey2020","publicKeyJwk":{"kty":"OKP","crv":"Ed25519","x":"X4FOGLXPUOD06_9ygJ1wyZX-qreCuuZu3xl_rB4OJXA","use":"sig","key_ops":["verify"],"alg":"EdDSA"},"controller":"did:web:localhost%3A8001"}],"authentication":["did:web:localhost%3A8001#0"],"assertionMethod":["did:web:localhost%3A8001#0"],"capabilityDelegation":["did:web:localhost%3A8001#0"],"capabilityInvocation":["did:web:localhost%3A8001#0"],"service":[{"id":"did:web:localhost%3A8001#oid4vci","type":"OID4VCI","serviceEndpoint":"https://localhost:8001/edubadges"}]}
+
+  /openid4vci/offers/offer-123:
+    get:
+      responses:
+        "200":
+          description: Credential offer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credential_issuer:
+                    type: string
+                    example: http://localhost:8001
+                  credential_configuration_ids:
+                    type: array
+                    items:
+                      type: string
+                    example: ["OpenBadgeCredential"]
+                  grants:
+                    type: object
+                    properties:
+                      authorization_code:
+                        type: object
+                        properties:
+                          issuer_state:
+                            type: string
+                            example: offer-1234
+
+  /openid4vci/offers/{offer_id}:
+    get:
+      responses:
+        "200":
+          description: Credential offer by ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credential_issuer:
+                    type: string
+                    example: http://localhost:8001
+                  credential_configuration_ids:
+                    type: array
+                    items:
+                      type: string
+                    example: ["OpenBadgeCredential"]
+                  grants:
+                    type: object
+                    properties:
+                      authorization_code:
+                        type: object
+                        properties:
+                          issuer_state:
+                            type: string
+                            example: offer-1234
+
+  /v0/credentials:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+                  example: offer-123
+                credential:
+                  type: object
+                credentialConfigurationId:
+                  type: string
+                  example: openbadge_credential
+                expiresAt:
+                  type: string
+                  example: "3025-10-24 11:34:00Z"
+      responses:
+        "200":
+          description: Credentials endpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {}
+
+  /v0/offers:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+                  example: offer-123
+                credentialConfigurationIds:
+                  type: array
+                  items:
+                    type: string
+                  example: ["openbadge_credential"]
+      responses:
+        "200":
+          description: Create offer
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flocalhost%3A8001%2Fopenid4vci%2Foffers%2Foffer-123
+
+  /v0/offers/offer-999:
+    get:
+      responses:
+        "404":
+          description: Offer not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Offer not found
+
+  /v0/offers/{offer_id}:
+    get:
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Get offer by ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: offer-123
+                  grant_types:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      ["urn:ietf:params:oauth:grant-type:pre-authorized_code"]
+                  credential_offer_uri:
+                    type: object
+                    properties:
+                      credential_offer_uri:
+                        type: string
+                        example: http://localhost:8001/openid4vci/offers/offer-123
+                  credential_offer:
+                    type: object
+                    properties:
+                      credential_offer:
+                        type: object
+                        properties:
+                          credential_issuer:
+                            type: string
+                            example: http://localhost:8001/
+                          credential_configuration_ids:
+                            type: array
+                            items:
+                              type: string
+                            example: ["OpenBadgeCredential"]
+                          grants:
+                            type: object
+                            properties:
+                              authorization_code:
+                                type: object
+                                properties:
+                                  issuer_state:
+                                    type: string
+                                    example: offer-1234
+                  subject_id:
+                    type: string
+                    nullable: true
+                    example: null
+                  credential_ids:
+                    type: array
+                    items:
+                      type: string
+                    example: []
+                  form_url_encoded_credential_offer:
+                    type: string
+                    example: openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flocalhost%3A8001%2Fopenid4vci%2Foffers%2Foffer-123
+                  pre_authorized_code:
+                    type: string
+                    example: 08c33af4f9977ab85c4b9dfc556d28059f4d7c81e04ebf5e4b1fa8fa8ff86edf
+                  credential_response:
+                    type: string
+                    nullable: true
+                    example: null
+                  status:
+                    type: string
+                    example: Pending
+                  tx_code:
+                    type: string
+                    nullable: true
+                    example: null
+                  delivery_options:
+                    type: string
+                    nullable: true
+                    example: null
+                  offer_link:
+                    type: string
+                    nullable: true
+                    example: null
+
+  /openid4vci/nonce:
+    post:
+      responses:
+        "200":
+          description: Nonce endpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  c_nonce:
+                    type: string
+                    example: obviously-not-nonce-but-should-be
+
+  /openid4vci/credential:
+    post:
+      requestBody:
+        content:
+          application/json: {}
+      responses:
+        "200":
+          description: Credential endpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credentials:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        credential:
+                          type: string
+                          example: "eyJ0eXAiOiJkYytzZC1qd3QiLCJhbGciOiJFZERTQSJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWxzLzM1MjciLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJkaWQ6d2ViOmxvY2FsaG9zdCUzQTgwMDEiLCJ0eXBlIjpbIlByb2ZpbGUiXSwibmFtZSI6IkV4YW1wbGUgQ29ycCJ9LCJ2YWxpZEZyb20iOiIyMDEwLTAxLTAxVDAwOjAwOjAwWiIsIm5hbWUiOiJUZWFtd29yayBCYWRnZSIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImlkIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSIsInR5cGUiOlsiQWNoaWV2ZW1lbnRTdWJqZWN0Il0sImFjaGlldmVtZW50Ijp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9hY2hpZXZlbWVudHMvMjFzdC1jZW50dXJ5LXNraWxscy90ZWFtd29yayIsInR5cGUiOlsiQWNoaWV2ZW1lbnQiXSwiY3JpdGVyaWEiOnsibmFycmF0aXZlIjoiVGVhbSBtZW1iZXJzIGFyZSBub21pbmF0ZWQgZm9yIHRoaXMgYmFkZ2UgYnkgdGhlaXIgcGVlcnMgYSBuZCByZWNvZ25pemVkIHVwb24gcmV2aWV3IGJ5IEV4YW1wbGUgQ29ycCBtYW5hZ2VtZW50LiJ9LCJkZXNjcmlwdGlvbiI6IlRoaXMgYmFkZ2UgcmVjb2duaXplcyB0aGUgZGV2ZWxvcG1lbnQgb2YgdGhlIGNhcGFjaXR5IHRvIGMgb2xsYWJvcmF0ZSB3aXRoaW4gYSBncm91cCBlbnZpcm9ubWVudC4iLCJuYW1lIjoiVGVhbXdvcmsifX0sImlzcyI6ImRpZDp3ZWI6bG9jYWxob3N0JTNBODAwMSIsImp0aSI6Imh0dHA6Ly9leGFtcGxlLmNvbS9jcmVkZW50aWFscy8zNTI3Iiwic3ViIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSJ9.grTc6_i5JfKISK1gT99m1l3fiPsWgdaf4NaldEBq0n5Vnyrgagz6ZV5lnLG-_EbgY6kdIJjARbr7X-uq-bBaAw"
