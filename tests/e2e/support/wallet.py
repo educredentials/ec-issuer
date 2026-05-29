@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import jwt as jwt_lib
+import pkce
 from jwcrypto import jwk
 from msgspec import json as msgspec_json
 from requests import request
@@ -18,10 +19,22 @@ _KEYS_DIR = _TESTS_E2E_DIR / "keys"
 
 
 @dataclass
-class OpenidConfiguration:
+class _AccessTokenResponse:
+    access_token: str
+    token_type: str
+    expires_in: int | None = None
+    refresh_token: str | None = None
+
+
+@dataclass
+class _OpenidConfiguration:
     """Domain model representing an OpenID configuration."""
 
     authorization_endpoint: str
+    issuer: str
+    pushed_authorization_request_endpoint: str
+    require_pushed_authorization_requests: bool
+    token_endpoint: str
 
 
 @dataclass
@@ -34,8 +47,14 @@ class Offer:
 
     def issuer_state(self) -> str:
         """Get the issuer state from the offer."""
-        assert "authorization_code" in self.grants
-        assert "issuer_state" in self.grants["authorization_code"]
+        assert "authorization_code" in self.grants, (
+            "Offer is not authorization code flow. Missing 'authorization_code' in "
+            f"{self.grants}"
+        )
+        assert "issuer_state" in self.grants["authorization_code"], (
+            "Offer is not an authorization code flow. Missing 'issuer_state' in "
+            f"{self.grants['authorization_code']}"
+        )
         return self.grants["authorization_code"]["issuer_state"]
 
 
@@ -70,8 +89,9 @@ class VerifiableCredential:
 class WalletClient:
     """Wallet client for e2e tests."""
 
-    client_id: str = "TestWallet"
-    deeplink: str = "testwallet://return/"
+    client_id: str = "MyWallet"
+    deeplink: str = "mywallet://return/"
+    code_verifier: str | None = None
 
     def get_offer(self, offer: str) -> Offer:
         """Fetch and parse a credential offer."""
@@ -118,15 +138,48 @@ class WalletClient:
         assert "c_nonce" in data, "c_nonce not found in response"
         return data["c_nonce"]
 
-    def get_auth_metadata(self, auth_server_url: str) -> OpenidConfiguration:
+    def get_auth_metadata(self, auth_server_url: str) -> _OpenidConfiguration:
         """Fetch authorization server metadata."""
-        return OpenidConfiguration(
-            authorization_endpoint=f"{auth_server_url}/authorize",
+
+        response = request(
+            "GET",
+            f"{auth_server_url}/.well-known/oauth-authorization-server",
+            headers={"Accept": "application/json"},
+        )
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}, {response.text[:200]}"
+        )
+        return msgspec_json.decode(response.text, type=_OpenidConfiguration)
+
+    def exchange_authorization_code(
+        self, auth_server_url: str, authorization_code: str
+    ) -> str:
+        """Exchange authorization code for access token."""
+
+        # TODO: read token endpoint from OpenidConfiguration OR from
+        # CredentialIssuerMetadata
+        token_endpoint = f"{auth_server_url}/auth/token"
+        # TODO: Do we need to add "Authorization: Bearer {authorization_code}" ?
+
+        http_response = request(
+            "POST",
+            token_endpoint,
+            data={
+                "grant_type": "authorization_code",
+                "code": authorization_code,
+                "code_verifier": self.code_verifier,
+                "client_id": self.client_id,
+                "redirect_uri": self.deeplink,
+            },
+        )
+        assert http_response.status_code == 200, (
+            f"Expected 200, got {http_response.status_code}, {http_response.text[:200]}"
         )
 
-    def exchange_authorization_code(self, _authorization_code: str) -> str:
-        """Exchange authorization code for access token."""
-        return "fake_access_token"
+        access_token_response = msgspec_json.decode(
+            http_response.content, type=_AccessTokenResponse
+        )
+        return access_token_response.access_token
 
     def use_offer(self, offer_uri: str) -> tuple[Offer, CredentialIssuerMetadata, str]:
         """Fetch and parse a credential offer, get its metadata, and return auth URL.
@@ -140,21 +193,47 @@ class WalletClient:
         offer = self.get_offer(offer_uri)
         metadata = self.get_issuer_metadata(offer.credential_issuer)
 
-        assert metadata.authorization_servers is not None, (
-            "authorization_servers is None in metadata"
-        )
+        auth_metadata = self.get_auth_metadata(metadata.authorization_server())
 
-        auth_metadata = self.get_auth_metadata(metadata.authorization_servers[0])
+        code_challenge, code_verifier = pkce.generate_pkce_pair()
+        self.code_verifier = code_verifier
         auth_attributes: dict[str, str] = {
             "response_type": "code",
             "client_id": self.client_id,
             "redirect_uri": self.deeplink,
             "scope": "openid%20profile%20email",
-            "nonce": "n-0S6_WzA2Mj",
-            "state": offer.issuer_state(),
+            "code_verifier": code_verifier,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+            "authorization_details": '[{\
+                "type": "openid_credential", \
+                "credential_configuration_id": "openbadge_credential"\
+            }]',  # Note: Is one single string! TODO: get from offer?
+            "state": "static_state",
+            "issuer_state": offer.issuer_state(),
         }
+
+        # TODO: Par or direct request should be based on
+        # auth_metadata.require_pushed_authorization_requests
+        http_response = request(
+            "POST",
+            auth_metadata.pushed_authorization_request_endpoint,
+            data=auth_attributes,
+        )
+        assert http_response.status_code == 201, (
+            f"Expected 200, got {http_response.status_code}, {http_response.text[:200]}"
+        )
+        par_response = msgspec_json.decode(
+            http_response.content, type=dict[str, str | int]
+        )
+
+        request_uri_attributes = {
+            "client_id": self.client_id,
+            "request_uri": par_response["request_uri"],
+        }
+
         auth_url = urlparse(auth_metadata.authorization_endpoint)
-        auth_url = auth_url._replace(query=urlencode(auth_attributes)).geturl()
+        auth_url = auth_url._replace(query=urlencode(request_uri_attributes)).geturl()
 
         return offer, metadata, auth_url
 
@@ -176,13 +255,18 @@ class WalletClient:
         """
         # Parse callback URL for authorization code
         callback_query = parse_qs(urlparse(callback_url).query)
-        assert "authorization_code" in callback_query, (
-            f"authorization_code not found in callback URL: {callback_url}"
+        assert "code" in callback_query, (
+            f"code not found in callback URL: {callback_url}"
         )
-        authorization_code = callback_query["authorization_code"][0]
+        authorization_code = callback_query["code"][0]
 
         # Exchange authorization code for access token
-        access_token = self.exchange_authorization_code(authorization_code)
+        access_token = self.exchange_authorization_code(
+            metadata.authorization_server(), authorization_code
+        )
+        assert access_token is not None, (
+            "Failed to exchange authorization code for access token"
+        )
 
         # Request credential
         credential_response = self.request_credential(metadata, offer, access_token)
@@ -221,6 +305,7 @@ class WalletClient:
             json={
                 "format": "jwt_vc_json",
                 "credential_configuration_id": offer.credential_configuration_ids[0],
+                "proofs": {"jwt": [proof]},
                 "proof": {
                     "proof_type": "jwt",
                     "jwt": proof,
@@ -246,9 +331,10 @@ class WalletClient:
         # this as supported option.
         #
         # See https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-ID2.html#jwt-proof-type
-        header: dict[str, str] = {
+        header: dict[str, str | dict[str, str]] = {
             "typ": "openid4vci-proof+jwt",
-            "jwk": self.public_jwk(),
+            "kid": self.did(),
+            # "jwk": self.public_jwk(),
         }
 
         # TODO: "iss": This claim MUST be omitted if the access token
@@ -276,7 +362,8 @@ class WalletClient:
         assert check["header"] == {
             "alg": "EdDSA",
             "typ": "openid4vci-proof+jwt",
-            "jwk": self.public_jwk(),
+            "kid": self.did(),
+            # "jwk": self.public_jwk(),
         }, f"Proof JWT header mismatch: {check['header']}"
         assert check["payload"]["aud"] is not None, "Proof JWT missing aud claim"
         assert check["payload"]["iat"] is not None, "Proof JWT missing iat claim"
@@ -291,10 +378,10 @@ class WalletClient:
         """Return the EdDSA (Ed25519) public key of the wallet."""
         return Path(_KEYS_DIR / "wallet_holder_eddsa.pub").read_text()
 
-    def public_jwk(self) -> str:
+    def public_jwk(self) -> dict[str, str]:
         """Return the JWK of the wallet."""
         jwk_key = jwk.JWK.from_pem(data=self._private_key().encode(), password=None)
-        return jwk_key.export()
+        return jwk_key.export(as_dict=True)
 
     def did(self) -> str:
         """Return the DID of the wallet."""
@@ -302,9 +389,9 @@ class WalletClient:
         # is more ambiguous.
         # See https://github.com/quartzjer/did-jwk/blob/main/spec.md
         # Generate or load a JWK
-        jwk = self.public_jwk()
+        key = jwk.JWK.from_pem(data=self._private_key().encode(), password=None)
         # Serialize it into a UTF-8 string
-        serialized = jwk.encode()
+        serialized = key.export(private_key=False, as_dict=False).encode()
         # Encode that string using base64url. Remove padding. Stupid Python
         encoded = base64.urlsafe_b64encode(serialized).rstrip(b"=")
         # Attach the prefix did:jwk: Decode as UTF-8

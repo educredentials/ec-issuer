@@ -15,7 +15,7 @@ class VerificationMethod:
     id: str
     type: str
     controller: str
-    publicKeyJwk: dict[str, str]
+    publicKeyJwk: dict[str, str | list[str]]
 
 
 @dataclass
@@ -57,11 +57,11 @@ class Verifier:
         public_key = PyJWK.from_dict(public_key_jwk)
 
         # Verify the JWT signature using the public key
-        try:
-            _ = jwt_lib.decode(credential_jwt, public_key)
-            return True
-        except jwt_lib.InvalidSignatureError:
-            return False
+        # try:
+        _ = jwt_lib.decode(credential_jwt, public_key)
+        return True
+        # except jwt_lib.InvalidSignatureError:
+        #     return False
 
     def resolve_did_web(self, did_web: str) -> DidDocument:
         """Resolve a DID Web document according to the W3C specification.

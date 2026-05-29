@@ -1,16 +1,18 @@
 """SSI-Agent Adapter for offer operations."""
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import override
-from attr import dataclass
+
 import msgspec
 import requests
 
 from src.awards.awards_service_port import Award
 from src.offers.models import Offer
-from src.offers.offers_client_port import OfferNotFound
-from src.offers.offers_client_port import OffersClientError
-from src.offers.offers_client_port import OffersClientPort
+from src.offers.offers_client_port import (
+    OfferNotFound,
+    OffersClientError,
+    OffersClientPort,
+)
 
 
 @dataclass
@@ -69,7 +71,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         """
 
         # TODO: subject must be the Award, that must be passed in
-        award = Award()
+        award = Award.default()
         self._create_credential_for_subject(offer_id, award)
         offer_uri = self._create_offer(offer_id)
         return offer_uri
@@ -113,11 +115,11 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
 
     def _create_credential_for_subject(self, offer_id: str, award: Award) -> None:
         response = requests.post(
-            f"{self._ssi_agent_admin_base_url}/v0/offers",
+            f"{self._ssi_agent_admin_base_url}/v0/credentials",
             json={
                 "offerId": offer_id,
                 "credential": asdict(award),
-                "credentialConfigurationId": "OpenBadgeCredential",
+                "credentialConfigurationId": "openbadge_credential",
                 "expiresAt": "3025-10-24 11:34:00Z",
             },
             timeout=self._timeout,
@@ -133,7 +135,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             f"{self._ssi_agent_admin_base_url}/v0/offers",
             json={
                 "offerId": offer_id,
-                "credentialConfigurationIds": ["OpenBadgeCredential"],
+                "credentialConfigurationIds": ["openbadge_credential"],
             },
             timeout=self._timeout,
         )

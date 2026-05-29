@@ -68,3 +68,18 @@ class CredentialIssuerMetadata:
     )
     batch_credential_issuance: dict[str, BatchCredentialIssuance] | None = None
     display: list[Display] | None = None
+
+    def authorization_server(self) -> str:
+        """
+        Helper to hack around ssi-agent (and possibly others) that don't
+        advertise their authorization_server in the CredentialIssuerMetadata.
+        Hardcoded fallback to the "credential_issuer" in that case: presume the
+        issuer is also the authorization server.
+        """
+        if (
+            self.authorization_servers is None
+            or self.authorization_servers.__len__ == 0
+        ):
+            return self.credential_issuer
+        else:
+            return self.authorization_servers[0]

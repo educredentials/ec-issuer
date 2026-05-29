@@ -18,13 +18,18 @@ As a student, when I have a badge in my backpack, and I have the unime app, then
 
 Features:
 
+@INK: Currently running the real-ssi-agent in our e2e tests. They fail with a "FAILED tests/e2e/test_oid4vci.py::TestOID4VCIFlow::test_get_credential - AssertionError: Expected 200, got 400, {"error":"invalid_proof"}"
+Issue probably related to the auth token - did we get one?
+
 - [ ] OpenID for Verifiable Credential Issuance (OID4VCI) standards authorization code flow with a mobile wallet
-  - [x] Credential Issuer Metadata *(ADR003: needs re-implementation with ssi-agent as peer service)*
-  - [x] Credential Offer creation and delivery to user as QR code *(ADR003: needs re-implementation with ssi-agent as peer service)*
-  - [ ] OpenID connect authentication flow started from wallet *(ADR003: needs re-implementation with ssi-agent as peer service)*
-  - [x] Credential Request with authorization token and proof of possession *(ADR003: needs re-implementation with ssi-agent as peer service)*
-  - [x] Credential Response with signed Verifiable Credential in Open Badges 3.0 format *(ADR003: needs re-implementation with ssi-agent as peer service)*
-  - [ ] Deferred Credential response *(ADR003: needs re-implementation with ssi-agent as peer service)*
+  - [x] Credential Issuer Metadata
+  - [x] Credential Offer creation and delivery to user as QR code
+  - [ ] OpenID connect authentication flow started from wallet
+  - [ ] Credential Request with authorization token and proof of possession - WIP: PoP from our e2e wallet is incompatible with the PoP as unime core wants it.
+  - [x] Credential Response with signed Verifiable Credential in Open Badges 3.0 format
+  - [x] Deferred Credential response - Now we rely on Unime-core, which does not have this. Won't-fix?
+
+- [ ] Create OpenBadgeCredential Credential Configuration on the server in admin_cli?
 
 #### Edge Cases
 

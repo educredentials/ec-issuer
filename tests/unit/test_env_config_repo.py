@@ -24,8 +24,6 @@ class TestEnvConfigRepo:
             "SERVER_HOST": "localhost",
             "SERVER_PORT": "8080",
             "SSI_AGENT_URL": "http://ssi-agent.example.com",
-            "SSI_AGENT_NONCE_ENDPOINT": "http://ssi-agent.example.com/openid4vci/nonce",
-            "SSI_AGENT_CREDENTIAL_ENDPOINT": "http://ssi-agent.example.com/openid4vci/credential",
             "PUBLIC_URL": "https://issuer.example.com",
             "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
         }
@@ -45,8 +43,6 @@ class TestEnvConfigRepo:
             "SERVER_HOST": "localhost",
             "SERVER_PORT": "invalid",
             "SSI_AGENT_URL": "http://ssi-agent.example.com",
-            "SSI_AGENT_NONCE_ENDPOINT": "http://ssi-agent.example.com/openid4vci/nonce",
-            "SSI_AGENT_CREDENTIAL_ENDPOINT": "http://ssi-agent.example.com/openid4vci/credential",
             "PUBLIC_URL": "https://issuer.example.com",
             "POSTGRES_CONNECTION_STRING": (
                 "postgresql://test:test@localhost:5432/test"
