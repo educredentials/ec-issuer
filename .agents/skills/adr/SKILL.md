@@ -1,8 +1,6 @@
 ---
-name: ADR editor
-description: 
-  Use this skill to read, write and update Architecture Decision Records, ADRs
-  Keywords: ADR, documentation
+name: adr-editor
+description: "Use this skill to read, write and update Architecture Decision Records, ADRs Keywords: ADR, documentation"
 ---
 
 # Reading ADRs
