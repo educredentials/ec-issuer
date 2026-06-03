@@ -6,7 +6,7 @@ from flask.testing import FlaskClient
 
 from src.api.http_adapter import HttpApiAdapter
 from src.offers.offer_service import OfferService
-from tests.unit.test_doubles import (
+from ..test_doubles import (
     ConfigRepoStub,
     OfferServiceSpy,
 )

@@ -13,7 +13,7 @@ runtime := `(command -v docker >/dev/null 2>&1 && echo docker || echo podman)`
 
 # Start development server
 develop:
-    uv run python -m src.main
+    uv run ec-issuer-web
 
 # (re)start all dependency services - everything except the ec-issuer
 dependencies:

@@ -2,7 +2,7 @@
 
 from typing import override
 
-from src.access_control.access_control_port import AccessControlPort
+from .access_control_port import AccessControlPort
 
 
 class HardcodedAccessControlAdapter(AccessControlPort):

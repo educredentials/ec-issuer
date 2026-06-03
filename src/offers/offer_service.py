@@ -3,9 +3,10 @@
 import uuid
 
 from src.access_control.access_control_port import AccessControlPort
-from src.offers.models import Offer
-from src.offers.offers_client_port import OffersClientPort
-from src.offers.offers_repository_port import OffersRepositoryPort
+
+from .models import Offer
+from .offers_client_port import OffersClientPort
+from .offers_repository_port import OffersRepositoryPort
 
 
 class PermissionDeniedError(Exception):

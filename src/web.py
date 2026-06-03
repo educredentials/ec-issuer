@@ -46,6 +46,10 @@ class App:
         self._api_port.run()
 
 
-if __name__ == "__main__":
+def main() -> None:
     app = App()
     app.run()
+
+
+if __name__ == "__main__":
+    main()

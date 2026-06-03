@@ -5,8 +5,8 @@ from typing import override
 from psycopg.rows import class_row
 
 from src.lib.postgresql_base import PostgreSQLRepositoryBase
-from src.offers.models import Offer
-from src.offers.offers_repository_port import OffersRepositoryPort
+from .models import Offer
+from .offers_repository_port import OffersRepositoryPort
 
 
 class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersRepositoryPort):

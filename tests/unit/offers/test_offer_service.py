@@ -9,7 +9,7 @@ from src.offers.offer_service import (
     OfferService,
     PermissionDeniedError,
 )
-from tests.unit.test_doubles import (
+from ..test_doubles import (
     AccessControlSpy,
     AccessControlStub,
     DenyingAccessControlStub,

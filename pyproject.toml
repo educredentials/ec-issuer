@@ -15,6 +15,10 @@ dependencies = [
     "pkce>=1.0.3",
 ]
 
+[project.scripts]
+ec-issuer-cli = "src.cli:main"
+ec-issuer-web = "src.web:main"
+
 [dependency-groups]
 dev = [
     "basedpyright>=1.38.4",
@@ -27,6 +31,14 @@ dev = [
     "ruff>=0.15.4",
     "types-requests>=2.32.4.20260107",
 ]
+
+[build-system]
+requires = ["uv_build>=0.11.18,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "src"
+module-root = ""
 
 [tool.ruff.lint]
 select = ["E", "F"]

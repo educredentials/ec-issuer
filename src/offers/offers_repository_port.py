@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.offers.models import Offer
+from .models import Offer
 
 
 class OffersRepositoryPort(ABC):

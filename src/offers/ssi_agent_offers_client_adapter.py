@@ -7,8 +7,9 @@ import msgspec
 import requests
 
 from src.awards.awards_service_port import Award
-from src.offers.models import Offer
-from src.offers.offers_client_port import (
+
+from .models import Offer
+from .offers_client_port import (
     OfferNotFound,
     OffersClientError,
     OffersClientPort,

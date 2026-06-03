@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from os import environ
 
-from src.config.config_port import ConfigRepoPort
+from .config_port import ConfigRepoPort
 
 
 class EnvConfigRepo(ConfigRepoPort):
