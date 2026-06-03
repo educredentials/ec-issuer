@@ -43,3 +43,15 @@ def wallet_client() -> WalletClient:
 def verifier() -> Verifier:
     """Provide a verifier for e2e tests."""
     return Verifier()
+
+
+@pytest.fixture(scope="session")
+def credential_configuration_full() -> str:
+    file = _FIXTURES_DIR / "credential_configuration_full.json"
+    return file.read_text()
+
+
+@pytest.fixture(scope="session")
+def credential_configuration_minimal() -> str:
+    file = _FIXTURES_DIR / "credential_configuration_minimal.json"
+    return file.read_text()

@@ -31,7 +31,15 @@ paths:
                     example: http://localhost:8001/openid4vci/nonce
                   credential_configurations_supported:
                     type: object
-                    example: {}
+                    example:
+                      OpenBadgeCredential:
+                        format: "jwt_vc_json"
+                        scope: "OpenBadgeCredential"
+                        cryptographic_binding_methods_supported: ["did:key", "did:jwk"]
+                        credential_signing_alg_values_supported: ["ES256K"]
+                        proof_types_supported:
+                          jwt:
+                            proof_signing_alg_values_supported: ["EdDSA"]
 
   /.well-known/did.json:
     get:
@@ -43,7 +51,43 @@ paths:
               schema:
                 type: object
                 example:
-                  {"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/suites/jws-2020/v1"],"id":"did:web:localhost%3A8001","verificationMethod":[{"id":"did:web:localhost%3A8001#0","type":"JsonWebKey2020","publicKeyJwk":{"kty":"OKP","crv":"Ed25519","x":"X4FOGLXPUOD06_9ygJ1wyZX-qreCuuZu3xl_rB4OJXA","use":"sig","key_ops":["verify"],"alg":"EdDSA"},"controller":"did:web:localhost%3A8001"}],"authentication":["did:web:localhost%3A8001#0"],"assertionMethod":["did:web:localhost%3A8001#0"],"capabilityDelegation":["did:web:localhost%3A8001#0"],"capabilityInvocation":["did:web:localhost%3A8001#0"],"service":[{"id":"did:web:localhost%3A8001#oid4vci","type":"OID4VCI","serviceEndpoint":"https://localhost:8001/edubadges"}]}
+                  {
+                    "@context":
+                      [
+                        "https://www.w3.org/ns/did/v1",
+                        "https://w3id.org/security/suites/jws-2020/v1",
+                      ],
+                    "id": "did:web:localhost%3A8001",
+                    "verificationMethod":
+                      [
+                        {
+                          "id": "did:web:localhost%3A8001#0",
+                          "type": "JsonWebKey2020",
+                          "publicKeyJwk":
+                            {
+                              "kty": "OKP",
+                              "crv": "Ed25519",
+                              "x": "X4FOGLXPUOD06_9ygJ1wyZX-qreCuuZu3xl_rB4OJXA",
+                              "use": "sig",
+                              "key_ops": ["verify"],
+                              "alg": "EdDSA",
+                            },
+                          "controller": "did:web:localhost%3A8001",
+                        },
+                      ],
+                    "authentication": ["did:web:localhost%3A8001#0"],
+                    "assertionMethod": ["did:web:localhost%3A8001#0"],
+                    "capabilityDelegation": ["did:web:localhost%3A8001#0"],
+                    "capabilityInvocation": ["did:web:localhost%3A8001#0"],
+                    "service":
+                      [
+                        {
+                          "id": "did:web:localhost%3A8001#oid4vci",
+                          "type": "OID4VCI",
+                          "serviceEndpoint": "https://localhost:8001/edubadges",
+                        },
+                      ],
+                  }
 
   /openid4vci/offers/offer-123:
     get:
@@ -267,6 +311,22 @@ paths:
                   c_nonce:
                     type: string
                     example: obviously-not-nonce-but-should-be
+
+  /v0/credential-configurations:
+    post:
+      summary: Create or update a credential configuration
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+
+      responses:
+        "200":
+          description: Credential configuration created or updated
+          content:
+            application/json:
+              schema:
+                type: object
 
   /openid4vci/credential:
     post:

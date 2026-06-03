@@ -1,6 +1,5 @@
-"""Command-line adapter for sysadmin operations."""
-
-import sys
+#!/usr/bin/env python3
+"""Command-line application entry point for the EC Issuer."""
 
 from src.config.config import EnvConfigRepo
 from src.credential_configurations import (
@@ -9,35 +8,44 @@ from src.credential_configurations import (
 from src.credential_configurations.credential_configurations_service import (
     CredentialConfigurationsService,
 )
-from src.credential_configurations.credential_configurations_cli_adapter import (
-    CredentialConfigurationsCliAdapter,
-)
+from src.sysadmin.sysadmin_cli_adapter import SysadminCliAdapter
 
-_USAGE = """\
-Usage: ec-issuer <command> [args]
 
-Commands:
-    credential-configuration  - Manage credential configurations
-"""
+class App:
+    """Command-line application entry point."""
+
+    _sysadmin_port: SysadminCliAdapter
+
+    def __init__(self) -> None:
+        """Initialise and wire all application dependencies."""
+        config = EnvConfigRepo()
+
+        client = ssi_adapter.SsiAgentCredentialConfigurationsClientAdapter(
+            ssi_agent_url=config.ssi_agent_url
+        )
+        credential_configurations_service = CredentialConfigurationsService(
+            client=client
+        )
+
+        self._sysadmin_port = SysadminCliAdapter(
+            credential_configurations_service=credential_configurations_service
+        )
+
+    def run(self, args: list[str]) -> None:
+        """Run the application.
+
+        Args:
+            args: Command line arguments.
+        """
+        self._sysadmin_port.run(args)
 
 
 def main() -> None:
     """Entry point for the ec-issuer command."""
-    config = EnvConfigRepo()
+    import sys
 
-    # Initialize credential configurations client and service
-    client = ssi_adapter.SsiAgentCredentialConfigurationsClientAdapter(
-        ssi_agent_url=config.ssi_agent_url
-    )
-    service = CredentialConfigurationsService(client=client)
-    cli_adapter = CredentialConfigurationsCliAdapter(service=service)
-
-    match sys.argv[1:]:
-        case ["credential-configuration", *args]:
-            cli_adapter.handle_command(args)
-        case _:
-            print(_USAGE, file=sys.stderr)
-            sys.exit(1)
+    app = App()
+    app.run(sys.argv[1:])
 
 
 if __name__ == "__main__":

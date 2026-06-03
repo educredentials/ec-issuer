@@ -7,6 +7,11 @@ from typing import override
 
 from src.access_control.access_control_port import AccessControlPort
 from src.config.config_port import ConfigRepoPort
+from src.credential_configurations.credential_configurations_client_port import (
+    CredentialConfigurationNotFound,
+    CredentialConfigurationsClientPort,
+)
+from src.credential_configurations.models import CredentialConfiguration
 from src.offers.models import Offer
 from src.offers.offer_service import (
     DoesNotExistInClientError,
@@ -255,3 +260,189 @@ class OfferServiceSpy(OfferService):
         """
         self.calls.append(("create_offer", award_id, bearer_token))
         return super().create_offer(award_id, bearer_token)
+
+
+# Credential Configurations Client test doubles
+
+
+class CredentialConfigurationsClientStub(CredentialConfigurationsClientPort):
+    """Stub: CredentialConfigurationsClientPort with in-memory storage."""
+
+    def __init__(self) -> None:
+        """Initialise with empty in-memory storage."""
+        self._configurations: dict[str, CredentialConfiguration] = {}
+
+    @override
+    def create(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
+        """Store the configuration and return it.
+
+        Args:
+            configuration: The configuration to store.
+
+        Returns:
+            The stored configuration.
+        """
+        assert configuration.credential_configuration_id is not None
+        self._configurations[configuration.credential_configuration_id] = configuration
+        return configuration
+
+    @override
+    def get(self, configuration_id: str) -> CredentialConfiguration:
+        """Retrieve a configuration by ID.
+
+        Args:
+            configuration_id: The configuration ID.
+
+        Returns:
+            The matching configuration.
+
+        Raises:
+            CredentialConfigurationNotFound: When not found.
+        """
+        if configuration_id not in self._configurations:
+            raise CredentialConfigurationNotFound(
+                f"Configuration {configuration_id} not found"
+            )
+        return self._configurations[configuration_id]
+
+    @override
+    def list(self) -> list[CredentialConfiguration]:
+        """List all configurations.
+
+        Returns:
+            A list of all configurations.
+        """
+        return list(self._configurations.values())
+
+    @override
+    def update(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
+        """Update a configuration.
+
+        Args:
+            configuration: The configuration to update.
+
+        Returns:
+            The updated configuration.
+
+        Raises:
+            CredentialConfigurationNotFound: When not found.
+        """
+        if configuration.credential_configuration_id not in self._configurations:
+            raise CredentialConfigurationNotFound(
+                f"Configuration {configuration.credential_configuration_id} not found"
+            )
+        self._configurations[configuration.credential_configuration_id] = configuration
+        return configuration
+
+    @override
+    def delete(self, configuration_id: str) -> None:
+        """Delete a configuration.
+
+        Args:
+            configuration_id: The configuration ID.
+
+        Raises:
+            CredentialConfigurationNotFound: When not found.
+        """
+        if configuration_id not in self._configurations:
+            raise CredentialConfigurationNotFound(
+                f"Configuration {configuration_id} not found"
+            )
+        del self._configurations[configuration_id]
+
+
+class CredentialConfigurationsClientSpy(CredentialConfigurationsClientPort):
+    """Spy: CredentialConfigurationsClientPort that records all calls."""
+
+    def __init__(self) -> None:
+        """Initialise with empty call log."""
+        self._calls: list[tuple[str, CredentialConfiguration | str]] = []
+        self._configurations: dict[str, CredentialConfiguration] = {}
+
+    @property
+    def calls(self) -> list[tuple[str, CredentialConfiguration | str]]:
+        """Return all calls made to this spy."""
+        return self._calls
+
+    @override
+    def create(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
+        """Record the call and store the configuration.
+
+        Args:
+            configuration: The configuration to store.
+
+        Returns:
+            The stored configuration.
+        """
+        self._calls.append(("create", configuration))
+        assert configuration.credential_configuration_id is not None
+        self._configurations[configuration.credential_configuration_id] = configuration
+        return configuration
+
+    @override
+    def get(self, configuration_id: str) -> CredentialConfiguration:
+        """Record the call and retrieve the configuration.
+
+        Args:
+            configuration_id: The configuration ID.
+
+        Returns:
+            The matching configuration.
+
+        Raises:
+            CredentialConfigurationNotFound: When not found.
+        """
+        self._calls.append(("get", configuration_id))
+        if configuration_id not in self._configurations:
+            raise CredentialConfigurationNotFound(
+                f"Configuration {configuration_id} not found"
+            )
+        return self._configurations[configuration_id]
+
+    @override
+    def list(self) -> list[CredentialConfiguration]:
+        """Record the call and list all configurations.
+
+        Returns:
+            A list of all configurations.
+        """
+        self._calls.append(("list", ""))
+        return list(self._configurations.values())
+
+    @override
+    def update(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
+        """Record the call and update the configuration.
+
+        Args:
+            configuration: The configuration to update.
+
+        Returns:
+            The updated configuration.
+
+        Raises:
+            CredentialConfigurationNotFound: When not found.
+        """
+        self._calls.append(("update", configuration))
+        if configuration.credential_configuration_id not in self._configurations:
+            raise CredentialConfigurationNotFound(
+                f"Configuration {configuration.credential_configuration_id} not found"
+            )
+        self._configurations[configuration.credential_configuration_id] = configuration
+        return configuration
+
+    @override
+    def delete(self, configuration_id: str) -> None:
+        """Record the call and delete the configuration.
+
+        Args:
+            configuration_id: The configuration ID.
+
+        Raises:
+            CredentialConfigurationNotFound: When not found.
+        """
+        self._calls.append(("delete", configuration_id))
+        if configuration_id not in self._configurations:
+            raise CredentialConfigurationNotFound(
+                f"Configuration {configuration_id} not found"
+            )
+        del self._configurations[configuration_id]
