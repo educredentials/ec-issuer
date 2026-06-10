@@ -63,15 +63,18 @@ class RequestsSpy:
 
     This class mimics the requests module interface and records all calls
     to get, post, put, delete methods along with their arguments.
+
+    Responses can be queued with `set_response`; they are consumed in order.
+    When the queue is empty, a default 200 response is returned.
     """
 
     _calls: list[RecordedRequest]
-    _next_response: MockResponse | None
+    _response_queue: list[MockResponse]
 
     def __init__(self) -> None:
-        """Initialize with empty call log."""
+        """Initialize with empty call log and empty response queue."""
         self._calls = []
-        self._next_response = None
+        self._response_queue = []
 
     @property
     def calls(self) -> list[RecordedRequest]:
@@ -143,21 +146,21 @@ class RequestsSpy:
         return self._next_response_or_default(url=url)
 
     def set_response(self, response: MockResponse) -> None:
-        """Set the response to be returned by the next request.
+        """Enqueue a response to be returned by the next request.
+
+        Can be called multiple times to queue responses in order.
+        Each queued response is consumed by one request call.
 
         Args:
-            response: The response to return.
+            response: The response to enqueue.
         """
-        self._next_response = response
+        self._response_queue.append(response)
 
     def _next_response_or_default(self, url: str) -> MockResponse:
-        """Return the next response or a default response if none is set."""
-        if self._next_response is None:
-            return MockResponse(url=url)
-        else:
-            response = self._next_response
-            self._next_response = None
-            return response
+        """Return the next queued response or a default 200 if the queue is empty."""
+        if self._response_queue:
+            return self._response_queue.pop(0)
+        return MockResponse(url=url)
 
 
 # Module-level instance for convenient import
