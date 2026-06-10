@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ec-issuer:
     build:
@@ -24,8 +22,6 @@ services:
 
   real-ssi-agent:
     image: cr.surf.nl/edubadges-educredentials/ssi-agent:latest
-    profiles:
-      - real-ssi-agent
     ports:
       - "3033:3033"
     environment:
