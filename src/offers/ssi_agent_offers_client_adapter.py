@@ -4,9 +4,9 @@ from dataclasses import asdict, dataclass
 from typing import override
 
 import msgspec
-import requests
 
 from src.awards.awards_service_port import Award
+from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .models import Offer
 from .offers_client_port import (
@@ -45,20 +45,25 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
     """Adapter for SSI Agent offers API."""
 
     _ssi_agent_admin_base_url: str
-    _timeout: int
+    _http_client: HttpClient
 
     def __init__(
         self,
         ssi_agent_url: str,
+        http_client: HttpClient | None = None,
     ) -> None:
         """Initialize the adapter.
 
         Args:
             ssi_agent_url: The admin base URL of the SSI agent.
-            requests_client: The HTTP client to use for requests.
+            http_client: The HTTP client to use for requests.
+                Defaults to requests module.
         """
         self._ssi_agent_admin_base_url = ssi_agent_url.rstrip("/")
-        self._timeout = 10
+        if http_client is not None:
+            self._http_client = http_client
+        else:
+            self._http_client = RequestsHttpClient()
 
     @override
     def create(self, offer_id: str) -> str:
@@ -70,7 +75,6 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         Returns:
             The credential offer URI.
         """
-
         # TODO: subject must be the Award, that must be passed in
         award = Award.default()
         self._create_credential_for_subject(offer_id, award)
@@ -89,10 +93,10 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
 
         Raises:
             OfferNotFound: When the offer is not found in the upstream service.
+            OffersClientError: When upstream returns an error or invalid response.
         """
-        response = requests.get(
+        response = self._http_client.get(
             f"{self._ssi_agent_admin_base_url}/v0/offers/{offer_id}",
-            timeout=self._timeout,
         )
 
         if response.status_code == 404:
@@ -103,9 +107,15 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 f"Upstream error: {response.status_code} - {response.content.decode()}"
             )
 
-        response_data: _SsiAgentOfferResponse = msgspec.json.decode(
-            response.content, type=_SsiAgentOfferResponse
-        )
+        try:
+            response_data: _SsiAgentOfferResponse = msgspec.json.decode(
+                response.content, type=_SsiAgentOfferResponse
+            )
+        except msgspec.DecodeError as e:
+            raise OffersClientError(
+                f"Invalid response from upstream: {e}"
+            ) from e
+
         uri: str = response_data.form_url_encoded_credential_offer
 
         return Offer(
@@ -115,7 +125,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         )
 
     def _create_credential_for_subject(self, offer_id: str, award: Award) -> None:
-        response = requests.post(
+        response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credentials",
             json={
                 "offerId": offer_id,
@@ -123,7 +133,6 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 "credentialConfigurationId": "openbadge_credential",
                 "expiresAt": "3025-10-24 11:34:00Z",
             },
-            timeout=self._timeout,
         )
 
         if 400 <= response.status_code < 600:
@@ -132,13 +141,12 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             )
 
     def _create_offer(self, offer_id: str) -> str:
-        response = requests.post(
+        response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/offers",
             json={
                 "offerId": offer_id,
                 "credentialConfigurationIds": ["openbadge_credential"],
             },
-            timeout=self._timeout,
         )
 
         if 400 <= response.status_code < 600:

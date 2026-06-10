@@ -1,18 +1,9 @@
 """HTTP client for e2e tests."""
 
-import os
-from dataclasses import dataclass
-
 from requests import request
 from requests.models import Response
 
-
-@dataclass
-class Config:
-    """E2E test configuration loaded from environment variables."""
-
-    public_url: str = os.environ["PUBLIC_URL"]
-    ssi_agent_url: str = os.environ["SSI_AGENT_URL"]
+from tests.e2e.support.config import Config
 
 
 class HttpClient:
