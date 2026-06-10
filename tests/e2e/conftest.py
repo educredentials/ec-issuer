@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 
 from .support.admin_client import AdminHttpClient
-from .support.http_client import Config, HttpClient
+from .support.http_client import HttpClient
+from .support.config import Config
 from .support.verifier import Verifier
 from .support.wallet import WalletClient
 

@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from msgspec import json as msgspec_json
 from requests.models import Response
 
-from .http_client import HttpClient, Config
+from .http_client import HttpClient
+from .config import Config
 
 
 @dataclass
