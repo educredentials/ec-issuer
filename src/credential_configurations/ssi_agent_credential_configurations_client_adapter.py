@@ -4,7 +4,8 @@ from dataclasses import asdict, dataclass
 from typing import override
 
 import msgspec
-import requests
+
+from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .credential_configurations_client_port import (
     CredentialConfigurationNotFound,
@@ -29,20 +30,26 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
 
     _ssi_agent_admin_base_url: str
     _ssi_agent_issuer_base_url: str
-    _timeout: int
+    _http_client: HttpClient
 
     def __init__(
         self,
         ssi_agent_url: str,
+        http_client: HttpClient | None = None,
     ) -> None:
         """Initialize the adapter.
 
         Args:
             ssi_agent_url: The admin base URL of the SSI agent.
+            http_client: The HTTP client to use for requests.
+                Defaults to requests module.
         """
         self._ssi_agent_admin_base_url = ssi_agent_url.rstrip("/")
         self._ssi_agent_issuer_base_url = ssi_agent_url.rstrip("/")
-        self._timeout = 10
+        if http_client is not None:
+            self._http_client = http_client
+        else:
+            self._http_client = RequestsHttpClient()
 
     @override
     def create(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
@@ -57,15 +64,14 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
         Raises:
             CredentialConfigurationsClientError: When upstream service returns an error.
         """
-        response = requests.post(
+        response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credential-configurations",
             json=asdict(configuration),
-            timeout=self._timeout,
         )
 
         if 400 <= response.status_code < 600:
             raise CredentialConfigurationsClientError(
-                f"Upstream error: {response.status_code} - {response.content.decode()}"
+                f"Upstream error: {response.status_code} - {response.text}"
             )
 
         return configuration
@@ -104,19 +110,23 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
         Raises:
             CredentialConfigurationsClientError: When upstream service returns an error.
         """
-        response = requests.get(
+        response = self._http_client.get(
             f"{self._ssi_agent_admin_base_url}/.well-known/openid-credential-issuer",
-            timeout=self._timeout,
         )
 
         if 400 <= response.status_code < 600:
             raise CredentialConfigurationsClientError(
-                f"Upstream error: {response.status_code} - {response.content.decode()}"
+                f"Upstream error: {response.status_code} - {response.text}"
             )
 
-        metadata: _SsiAgentIssuerMetadata = msgspec.json.decode(
-            response.content, type=_SsiAgentIssuerMetadata
-        )
+        try:
+            metadata: _SsiAgentIssuerMetadata = msgspec.json.decode(
+                response.content, type=_SsiAgentIssuerMetadata
+            )
+        except msgspec.DecodeError as e:
+            raise CredentialConfigurationsClientError(
+                f"Invalid response from upstream: {e}"
+            ) from e
 
         configurations: list[CredentialConfiguration] = []
         for id, config in metadata.credential_configurations_supported.items():
@@ -141,10 +151,9 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
         """
         # For SSI Agent, POST to /v0/credential-configurations with existing
         # ID updates it
-        response = requests.post(
+        response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credential-configurations",
             json=asdict(configuration),
-            timeout=self._timeout,
         )
 
         if response.status_code == 404:
@@ -154,7 +163,7 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
 
         if 400 <= response.status_code < 600:
             raise CredentialConfigurationsClientError(
-                f"Upstream error: {response.status_code} - {response.content.decode()}"
+                f"Upstream error: {response.status_code} - {response.text}"
             )
 
         return configuration

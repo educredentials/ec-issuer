@@ -3,7 +3,7 @@
 from flask.testing import FlaskClient
 
 from ..api.conftest import setup_http_client
-from ..test_doubles import DenyingOfferServiceStub, OfferServiceSpy
+from ..support.test_doubles import DenyingOfferServiceStub, OfferServiceSpy
 
 
 class TestHttpAdapter:
