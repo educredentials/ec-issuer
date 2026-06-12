@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 
 from .support.admin_client import AdminHttpClient
-from .support.http_client import HttpClient
 from .support.config import Config
+from .support.http_client import HttpClient
 from .support.verifier import Verifier
 from .support.wallet import WalletClient
 
@@ -47,12 +47,6 @@ def verifier() -> Verifier:
 
 
 @pytest.fixture(scope="session")
-def credential_configuration_full() -> str:
-    file = _FIXTURES_DIR / "credential_configuration_full.json"
-    return file.read_text()
-
-
-@pytest.fixture(scope="session")
-def credential_configuration_minimal() -> str:
-    file = _FIXTURES_DIR / "credential_configuration_minimal.json"
+def credential_configuration_input() -> str:
+    file = _FIXTURES_DIR / "credential_configuration_input.json"
     return file.read_text()

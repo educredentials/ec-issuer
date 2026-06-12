@@ -12,7 +12,10 @@ from .credential_configurations_client_port import (
     CredentialConfigurationsClientError,
     CredentialConfigurationsClientPort,
 )
-from .models import CredentialConfiguration
+from .models import (
+    CredentialConfiguration,
+    Display,
+)
 
 
 # Response model for issuer metadata
@@ -23,6 +26,57 @@ class _SsiAgentIssuerMetadata:
     credential_issuer: str
     credential_endpoint: str
     credential_configurations_supported: dict[str, CredentialConfiguration]
+
+
+@dataclass
+class _SsiAgentDisplay:
+    """Display information for a credential configuration."""
+
+    name: str | None = None
+    locale: str | None = None
+    logo: dict[str, str | None] | None = None
+
+    @staticmethod
+    def from_configuration(configuration: Display) -> "_SsiAgentDisplay":
+        return _SsiAgentDisplay(
+            name=configuration.name,
+            logo=configuration.logo,
+            locale=configuration.locale,
+        )
+
+
+@dataclass
+class _SsiAgentAddPayload:
+    """Payload for Create (and therefore update) credential configuration on service"""
+
+    credential_configuration_id: str | None = None
+    format: str | None = None
+    type: list[str] | None = None
+    display: list[_SsiAgentDisplay] | None = None
+
+    @staticmethod
+    def from_credential_configuration(
+        configuration: CredentialConfiguration,
+    ) -> "_SsiAgentAddPayload":
+        assert configuration.credential_definition is not None, (
+            "`.credential_definition.type` is required, and must be a list of strings"
+        )
+        type_list = configuration.credential_definition.type
+
+        if configuration.credential_metadata.display is None:
+            displays = []
+        else:
+            displays = [
+                _SsiAgentDisplay.from_configuration(display)
+                for display in configuration.credential_metadata.display
+            ]
+
+        return _SsiAgentAddPayload(
+            credential_configuration_id=configuration.credential_configuration_id,
+            format=configuration.format,
+            type=type_list,
+            display=displays,
+        )
 
 
 class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClientPort):
@@ -63,17 +117,30 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
 
         Raises:
             CredentialConfigurationsClientError: When upstream service returns an error.
+            ValueError: When the credential configuration ID is not set.
         """
+        payload = _SsiAgentAddPayload.from_credential_configuration(configuration)
+
+        # For SSI Agent, POST to /v0/credential-configurations with existing
+        # ID updates it
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credential-configurations",
-            json=asdict(configuration),
+            json=asdict(payload),
         )
+
+        if response.status_code == 404:
+            raise CredentialConfigurationNotFound(
+                f"Configuration {configuration.credential_configuration_id} not found"
+            )
 
         if 400 <= response.status_code < 600:
             raise CredentialConfigurationsClientError(
                 f"Upstream error: {response.status_code} - {response.text}"
             )
 
+        # Rather than returning the input, we re-fetch it, so we get the result as it is
+        # merged and enriched with the issuer config.
+        configuration = self.get(configuration.credential_configuration_id)
         return configuration
 
     @override
@@ -129,9 +196,12 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
             ) from e
 
         configurations: list[CredentialConfiguration] = []
-        for id, config in metadata.credential_configurations_supported.items():
-            config.credential_configuration_id = id
-            configurations.append(config)
+        for (
+            id,
+            configuration,
+        ) in metadata.credential_configurations_supported.items():
+            configuration.credential_configuration_id = id
+            configurations.append(configuration)
 
         return configurations
 
@@ -139,34 +209,10 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
     def update(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
         """Update an existing credential configuration.
 
-        Args:
-            configuration: The credential configuration to update.
-
-        Returns:
-            The updated credential configuration.
-
-        Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When upstream service returns an error.
+        Implemented by "create" with an existing id.
+        See self.create()
         """
-        # For SSI Agent, POST to /v0/credential-configurations with existing
-        # ID updates it
-        response = self._http_client.post(
-            f"{self._ssi_agent_admin_base_url}/v0/credential-configurations",
-            json=asdict(configuration),
-        )
-
-        if response.status_code == 404:
-            raise CredentialConfigurationNotFound(
-                f"Configuration {configuration.credential_configuration_id} not found"
-            )
-
-        if 400 <= response.status_code < 600:
-            raise CredentialConfigurationsClientError(
-                f"Upstream error: {response.status_code} - {response.text}"
-            )
-
-        return configuration
+        return self.create(configuration)
 
     @override
     def delete(self, configuration_id: str) -> None:

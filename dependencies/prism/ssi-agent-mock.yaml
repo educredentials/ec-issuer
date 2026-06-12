@@ -12,34 +12,48 @@ paths:
           description: OpenID Credential Issuer discovery
           content:
             application/json:
+              example:
+                credential_issuer: "http://localhost:8001/"
+                credential_endpoint: "http://localhost:8001/openid4vci/credential"
+                nonce_endpoint: "http://localhost:8001/openid4vci/nonce"
+                authorization_servers: ["http://localhost:8002"]
+                display:
+                  - name: "EduBadges"
+                    locale: "en"
+                    logo:
+                      uri: "https://www.surf.nl/files/styles/social_media/public/2023-12/edubadges-icoon-met-witruimte-v2_2.png"
+                      alt_text: "EduBadges Logo"
+                credential_configurations_supported:
+                  OpenbadgeCredential:
+                    format: "vc+sd-jwt"
+                    credential_definition:
+                      type: ["VerifiableCredential", "OpenbadgeCredential"]
+                    cryptographic_binding_methods_supported:
+                      - "did:jwk"
+                      - "did:key"
+                      - "did:web"
+                    credential_signing_alg_values_supported:
+                      - "ES256"
+                      - "EdDSA"
+                    proof_types_supported:
+                      jwt:
+                        proof_signing_alg_values_supported:
+                          - "ES256"
+                          - "EdDSA"
+                    credential_metadata:
+                      display:
+                        - name: "Open Badge Credential"
+                          locale: "en"
+                          logo:
+                            uri: "https://example.com/images/logo.png"
+                            alt_text: "Blue Logo"
+                        - name: "Open Badge Referentie"
+                          locale: "nl"
+                          logo:
+                            uri: "https://example.com/images/logo.png"
+                            alt_text: "Blauw Logo"
               schema:
                 type: object
-                properties:
-                  credential_issuer:
-                    type: string
-                    example: http://localhost:8001
-                  credential_endpoint:
-                    type: string
-                    example: http://localhost:8001/openid4vci/credential
-                  authorization_servers:
-                    type: array
-                    items:
-                      type: string
-                    example: ["http://localhost:8002"]
-                  nonce_endpoint:
-                    type: string
-                    example: http://localhost:8001/openid4vci/nonce
-                  credential_configurations_supported:
-                    type: object
-                    example:
-                      OpenBadgeCredential:
-                        format: "jwt_vc_json"
-                        scope: "OpenBadgeCredential"
-                        cryptographic_binding_methods_supported: ["did:key", "did:jwk"]
-                        credential_signing_alg_values_supported: ["ES256K"]
-                        proof_types_supported:
-                          jwt:
-                            proof_signing_alg_values_supported: ["EdDSA"]
 
   /.well-known/did.json:
     get:

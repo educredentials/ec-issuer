@@ -36,13 +36,13 @@ tags:
       * Public endpoints are not scoped in path (e.g., `/public/`) due to OID4VCI spec requirements
 
 paths:
-  /admin/v1/offers:
+  /api/v1/offers:
     post:
       tags:
         - ec-issuer Admin
       summary: Create Credential and Offer
       description: |
-        The ec-issuer creates a credential configuration on the ssi-agent and then creates an offer there.
+        The ec-issuer creates a credential offer on the ssi-agent and then creates an offer there.
       security:
         - bearerAuth: []
       requestBody:
@@ -58,7 +58,7 @@ paths:
               required:
                 - award_id
       responses:
-        '201':
+        "201":
           description: Offer created successfully
           content:
             application/json:
@@ -74,62 +74,6 @@ paths:
                     format: uuid
                     example: 550e8400-e29b-41d4-a716-446655440000
 
-  /admin/v1/credentials/{credential_id}:
-    delete:
-      tags:
-        - ec-issuer Admin
-      summary: Revoke a Credential
-      description: |
-        Revoke an existing credential.
-      parameters:
-        - name: credential_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-                  example: Credential no longer valid
-              required:
-                - reason
-      responses:
-        '200':
-          description: Credential revoked successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  credential:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                        example: 550e8400-e29b-41d4-a716-446655440000
-                      status:
-                        type: string
-                        example: revoked
-                      revocation_info:
-                        type: object
-                        properties:
-                          revoked_at:
-                            type: string
-                            format: date-time
-                            example: 2025-12-05T11:00:00Z
-                          reason:
-                            type: string
-                            example: Credential no longer valid
-
   /health:
     get:
       tags:
@@ -138,7 +82,7 @@ paths:
       description: |
         Check the health status of the ec-issuer service.
       responses:
-        '200':
+        "200":
           description: Service is healthy
 
   /.well-known/openid-credential-issuer:
@@ -157,7 +101,7 @@ paths:
         - `/.well-known/oauth-authorization-server`
         - `/.well-known/openid-credential-issuer`
       responses:
-        '200':
+        "200":
           description: Credential issuer metadata
           content:
             application/json:
@@ -185,7 +129,7 @@ paths:
         - ssi-agent OID4VCI Public Endpoints
       summary: Get DID Configuration
       responses:
-        '200':
+        "200":
           description: DID configuration
 
   /.well-known/did.json:
@@ -194,7 +138,7 @@ paths:
         - ssi-agent OID4VCI Public Endpoints
       summary: Get DID Document
       responses:
-        '200':
+        "200":
           description: DID document
 
   /.well-known/oauth-authorization-server:
@@ -203,7 +147,7 @@ paths:
         - ssi-agent OID4VCI Public Endpoints
       summary: Get OAuth Authorization Server Metadata
       responses:
-        '200':
+        "200":
           description: OAuth authorization server metadata
 
   /offers/{offer_id}:
@@ -224,7 +168,7 @@ paths:
             format: uuid
           example: 550e8400-e29b-41d4-a716-446655440000
       responses:
-        '200':
+        "200":
           description: Credential offer details
           content:
             application/json:
@@ -280,12 +224,15 @@ paths:
                       type: array
                       items:
                         type: string
-                      example: ["eyJraWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEva2V5cy8x IiwiYWxnIjoiRVMyNTYiLCJ0eXAiOiJKV1QifQ"]
+                      example:
+                        [
+                          "eyJraWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEva2V5cy8x IiwiYWxnIjoiRVMyNTYiLCJ0eXAiOiJKV1QifQ",
+                        ]
               required:
                 - credential_configuration_id
                 - proofs
       responses:
-        '200':
+        "200":
           description: Credential request accepted, returns transaction ID for deferred pickup
           content:
             application/json:
@@ -322,7 +269,7 @@ paths:
               required:
                 - transaction_id
       responses:
-        '200':
+        "200":
           description: Deferred credential response (once the credential is ready)
           content:
             application/json:

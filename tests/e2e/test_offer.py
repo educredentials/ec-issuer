@@ -7,7 +7,8 @@ import msgspec
 import pytest
 
 from tests.e2e.support.admin_client import AdminHttpClient
-from tests.e2e.support.http_client import Config, HttpClient
+from tests.e2e.support.http_client import HttpClient
+from tests.e2e.support.config import Config
 from tests.e2e.support.utilities import assert_schema, jsonpath_value
 
 

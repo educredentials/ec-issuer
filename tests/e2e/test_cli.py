@@ -22,31 +22,17 @@ class _Display:
 
 
 @dataclass
-class CredentialConfigurationOutput:
-    """Output structure from CLI credential configuration commands."""
+class _CredentialConfiguration:
+    """Output structure from CLI credential configuration commands.
 
-    credential_configuration_id: str
-    format: str
-    display: list[_Display] | None = None
-    credential_definition: dict[str, object] | None = None
-    cryptographic_binding_methods_supported: list[str] | None = None
-    credential_signing_alg_values_supported: list[str] | None = None
-    proof_types_supported: dict[str, object] | None = None
-
-
-@dataclass
-class CredentialConfigurationInput:
-    """
-    Input structure for credential configuration from CLI.
-
-    Intentially duplicated from src.credential_configurations to decouple tests
+    Intentially decoupled from src.credential_configurations to decouple tests
     from implementation
     """
 
-    credential_configuration_id: str
     format: str
-    display: list[_Display] | None = None
     credential_definition: dict[str, object] | None = None
+    credential_configuration_id: str | None = None
+    credential_metadata: dict[str, list[_Display] | None] | None = None
     cryptographic_binding_methods_supported: list[str] | None = None
     credential_signing_alg_values_supported: list[str] | None = None
     proof_types_supported: dict[str, object] | None = None
@@ -71,29 +57,29 @@ def process(subcommand: str, args: None | list[str] = None) -> Popen[str]:
 class TestCredentialConfigurationCli:
     """Test the credential-configuration CLI commands."""
 
-    def test_create_credential_configuration_minimal(
-        self, credential_configuration_minimal: str
-    ):
+    def test_create_credential_configuration(self, credential_configuration_input: str):
         """Test that create returns the created configuration."""
-        create_process = process("create")
+        create_process = process("create", ["OpenbadgeCredential"])
         stdout, stderr = create_process.communicate(
-            input=credential_configuration_minimal
+            input=credential_configuration_input
         )
 
         assert create_process.returncode == 0, f"Create failed: {stderr}"
-        create_output = msgspec.json.decode(stdout, type=CredentialConfigurationOutput)
-        assert create_output
+        create_output = msgspec.json.decode(stdout, type=_CredentialConfiguration)
+        assert create_output.credential_configuration_id == "OpenbadgeCredential"
 
-    def test_create_credential_configuration_full(
-        self, credential_configuration_full: str
-    ):
-        """Test that create returns the created configuration."""
-        create_process = process("create")
-        stdout, stderr = create_process.communicate(input=credential_configuration_full)
-
-        assert create_process.returncode == 0, f"Create failed: {stderr}"
-        create_output = msgspec.json.decode(stdout, type=CredentialConfigurationOutput)
-        assert create_output
+        assert create_output.credential_metadata is not None
+        assert create_output.credential_metadata["display"] is not None
+        assert len(create_output.credential_metadata["display"]) == 2
+        assert (
+            create_output.credential_metadata["display"][0].name
+            == "Open Badge Credential"
+        )
+        assert create_output.credential_definition is not None
+        assert create_output.credential_definition["type"] == [
+            "VerifiableCredential",
+            "OpenbadgeCredential",
+        ]
 
     def test_list_credential_configurations(self):
         """Test that list returns configurations."""
@@ -101,62 +87,63 @@ class TestCredentialConfigurationCli:
         stdout, stderr = list_process.communicate()
 
         assert list_process.returncode == 0, f"List failed: {stderr}"
-        list_output: list[CredentialConfigurationOutput] = msgspec.json.decode(
-            stdout, type=list[CredentialConfigurationOutput]
+        list_output: list[_CredentialConfiguration] = msgspec.json.decode(
+            stdout, type=list[_CredentialConfiguration]
         )
         assert isinstance(list_output, list)
         # Should contain the configuration assigned in mock
         assert any(
-            config.credential_configuration_id == "OpenBadgeCredential"
+            config.credential_configuration_id == "OpenbadgeCredential"
             for config in list_output
         )
 
     def test_show_credential_configuration(self):
         """Test that show returns a configuration."""
-        show_process = process("show", ["OpenBadgeCredential"])
+        show_process = process("show", ["OpenbadgeCredential"])
         stdout, stderr = show_process.communicate()
 
         assert show_process.returncode == 0, f"Show failed: {stderr}"
-        show_output = msgspec.json.decode(stdout, type=CredentialConfigurationOutput)
-        assert show_output.credential_configuration_id == "OpenBadgeCredential"
-        assert show_output.format == "jwt_vc_json"
+        show_output = msgspec.json.decode(stdout, type=_CredentialConfiguration)
+        assert show_output.credential_configuration_id == "OpenbadgeCredential"
+        assert show_output.format == "vc+sd-jwt"
 
-    def test_update_credential_configuration(self, credential_configuration_full: str):
+    def test_update_credential_configuration(self, credential_configuration_input: str):
         """Test that update updates a configuration."""
         # First create a configuration
-        create_process = process("create")
-        stdout, stderr = create_process.communicate(input=credential_configuration_full)
-
+        create_process = process("create", ["OpenbadgeCredential"])
+        _, stderr = create_process.communicate(input=credential_configuration_input)
         assert create_process.returncode == 0, f"Create failed: {stderr}"
 
-        # Now update the configuration
+        # Now update the configuration, for that, create a mutable object from fixture
         update_input = msgspec.json.decode(
-            credential_configuration_full, type=CredentialConfigurationInput
+            credential_configuration_input, type=_CredentialConfiguration
         )
 
-        # Test that we can remove items from arrays
+        # Remove a type to test we can remove items from arrays
+        # Update name to test we can update items
         assert update_input.credential_definition is not None
         update_input.credential_definition["type"] = ["VerifiableCredential"]
-
-        # Test that we can change a display name
-        assert update_input.display is not None
-        update_input.display[0].name = "Updated Name"
-
+        update_input.credential_metadata = {
+            "display": [_Display(name="Updated Name", locale="en")]
+        }
         json_str = msgspec.json.encode(update_input).decode()
 
-        update_process = process("update", ["test_config_3"])
+        update_process = process("update", ["OpenbadgeCredential"])
         stdout, stderr = update_process.communicate(input=json_str)
 
         assert update_process.returncode == 0, f"Update failed: {stderr}"
-        update_output = msgspec.json.decode(stdout, type=CredentialConfigurationOutput)
-        assert update_output.credential_configuration_id == "test_config_3"
+        update_output = msgspec.json.decode(stdout, type=_CredentialConfiguration)
+        assert update_output.credential_configuration_id == "OpenbadgeCredential"
 
-        assert update_output.credential_definition is not None
-        # Test that we can remove items from arrays
-        assert update_output.credential_definition["type"] == ["VerifiableCredential"]
-        assert update_output.display is not None
-        # Test that we can change a display name
-        assert update_output.display[0].name == "Updated Name"
+        # Our mock server cannot handle dynamic resources, it always returns
+        # a fixed json for credential issuer metadata.
+        # So we cannot test that an update request actually updates the resources
+        # on the service.
+        # Using the "real-ssi-server" will show the items being updated, but this
+        # service has state, so re-running tests will result in failures due to
+        # accumulating state - e.g. the update will change the name, but then
+        # following list/get will get that name instead of the one they assert
+        # against
 
     def test_invalid_command(self):
         """Test that invalid commands return an error."""

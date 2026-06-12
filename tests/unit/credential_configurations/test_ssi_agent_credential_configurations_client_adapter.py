@@ -1,5 +1,6 @@
 """Unit tests for SsiAgentCredentialConfigurationsClientAdapter."""
 
+import msgspec
 import pytest
 
 from src.credential_configurations.credential_configurations_client_port import (
@@ -8,6 +9,9 @@ from src.credential_configurations.credential_configurations_client_port import 
 )
 from src.credential_configurations.models import (
     CredentialConfiguration,
+    CredentialDefinition,
+    CredentialMetadata,
+    ProofTypesSupportedJwt,
 )
 from src.credential_configurations.ssi_agent_credential_configurations_client_adapter import (  # noqa: E501
     SsiAgentCredentialConfigurationsClientAdapter,
@@ -33,16 +37,30 @@ def subject(http_client: HttpClient) -> SsiAgentCredentialConfigurationsClientAd
 def credential_configuration() -> CredentialConfiguration:
     return CredentialConfiguration(
         format="jwt_vc_json",
-        display=None,
+        credential_metadata=CredentialMetadata(display=None),
         credential_configuration_id="credential_configuration_id",
-        credential_definition=None,
+        credential_definition=CredentialDefinition(
+            type=["VerifiableCredential"]
+        ),
         cryptographic_binding_methods_supported=None,
         credential_signing_alg_values_supported=None,
-        proof_types_supported=None,
+        proof_types_supported=ProofTypesSupportedJwt(jwt={}),
     )
 
 
-_VALID_METADATA_JSON = b'{"credential_issuer":"http://issuer.example.com","credential_endpoint":"http://issuer.example.com/credential","credential_configurations_supported":{"credential_configuration_id":{"format":"jwt_vc_json"}}}'
+_VALID_METADATA_JSON = msgspec.json.encode(
+    {
+        "credential_issuer": "http://issuer.example.com",
+        "credential_endpoint": "http://issuer.example.com/credential",
+        "credential_configurations_supported": {
+            "credential_configuration_id": {
+                "format": "jwt_vc_json",
+                "credential_metadata": {"type": ["VerifiableCredential"]},
+                "proof_types_supported": {"jwt": {}},
+            }
+        },
+    }
+)
 
 
 @pytest.fixture
@@ -59,15 +77,18 @@ class TestSsiAgentCredentialConfigurationsClientAdapter:
         subject: SsiAgentCredentialConfigurationsClientAdapter,
         credential_configuration: CredentialConfiguration,
     ):
-        was_created = subject.create(credential_configuration)
+        # The create response
+        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
+        # The get/list response
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_VALID_METADATA_JSON)
+        )
+        _ = subject.create(credential_configuration)
         expected_payload = {
             "format": "jwt_vc_json",
-            "display": None,
+            "display": [],
             "credential_configuration_id": "credential_configuration_id",
-            "credential_definition": None,
-            "cryptographic_binding_methods_supported": None,
-            "credential_signing_alg_values_supported": None,
-            "proof_types_supported": None,
+            "type": ["VerifiableCredential"],
         }
         expected_request = RecordedRequest(
             method="post",
@@ -75,7 +96,26 @@ class TestSsiAgentCredentialConfigurationsClientAdapter:
             json=expected_payload,
         )
         assert http_client.calls[0] == expected_request
-        assert was_created == credential_configuration
+
+    def test_create_returns_merged_configuration(
+        self,
+        http_client: RequestsSpy,
+        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        credential_configuration: CredentialConfiguration,
+        valid_metadata_response: MockResponse,
+    ):
+        # The create response
+        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
+        # The get/list response
+        http_client.set_response(valid_metadata_response)
+
+        credential_configuration.format = "updated_vc_json"
+        result = subject.update(credential_configuration)
+
+        assert result.credential_configuration_id == "credential_configuration_id"
+        # _VALID_METADATA_JSON has format set to jwt_vc_json, so this is what we expect
+        # in return, not the 'updated_vc_json' that we provided.
+        assert result.format == "jwt_vc_json"
 
     def test_create_error(
         self,
@@ -100,6 +140,8 @@ class TestSsiAgentCredentialConfigurationsClientAdapter:
         assert result == CredentialConfiguration(
             format="jwt_vc_json",
             credential_configuration_id="credential_configuration_id",
+            credential_metadata=CredentialMetadata(),
+            proof_types_supported=ProofTypesSupportedJwt(jwt={}),
         )
 
     def test_list_sends_get_to_wellknown_url(
@@ -121,18 +163,15 @@ class TestSsiAgentCredentialConfigurationsClientAdapter:
         subject: SsiAgentCredentialConfigurationsClientAdapter,
     ):
         http_client.set_response(
-            MockResponse(
-                status_code=200,
-                _content=b'{"credential_issuer":"http://issuer.example.com","credential_endpoint":"http://issuer.example.com/credential","credential_configurations_supported":{"config-a":{"format":"jwt_vc_json"},"config-b":{"format":"ldp_vc"}}}',
-            )
+            MockResponse(status_code=200, _content=_VALID_METADATA_JSON)
         )
         results = subject.list()
-        assert len(results) == 2
+        assert len(results) == 1
         assert results[0] == CredentialConfiguration(
-            format="jwt_vc_json", credential_configuration_id="config-a"
-        )
-        assert results[1] == CredentialConfiguration(
-            format="ldp_vc", credential_configuration_id="config-b"
+            format="jwt_vc_json",
+            credential_configuration_id="credential_configuration_id",
+            credential_metadata=CredentialMetadata(),
+            proof_types_supported=ProofTypesSupportedJwt(jwt={}),
         )
 
     def test_list_raises_client_error_on_upstream_error(
@@ -188,23 +227,52 @@ class TestSsiAgentCredentialConfigurationsClientAdapter:
         http_client: RequestsSpy,
         subject: SsiAgentCredentialConfigurationsClientAdapter,
         credential_configuration: CredentialConfiguration,
+        valid_metadata_response: MockResponse,
     ):
-        result = subject.update(credential_configuration)
-        expected_payload = {
+        # Response for put
+        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
+        # Response for following get metadata
+        http_client.set_response(valid_metadata_response)
+
+        _ = subject.update(credential_configuration)
+        expected_update_payload = {
             "format": "jwt_vc_json",
-            "display": None,
+            "display": [],
             "credential_configuration_id": "credential_configuration_id",
-            "credential_definition": None,
-            "cryptographic_binding_methods_supported": None,
-            "credential_signing_alg_values_supported": None,
-            "proof_types_supported": None,
+            "type": ["VerifiableCredential"],
         }
+        assert len(http_client.calls) == 2
+        # The first is the POST with expected payload
         assert http_client.calls[0] == RecordedRequest(
             method="post",
             url="http://agent.example.com/v0/credential-configurations",
-            json=expected_payload,
+            json=expected_update_payload,
         )
-        assert result == credential_configuration
+
+    def test_update_returns_merged_configuration(
+        self,
+        http_client: RequestsSpy,
+        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        credential_configuration: CredentialConfiguration,
+    ):
+        # Note: Implementation detail is that the update is
+        # exactly the same as create. We test it as different
+        # implementations to decouple implementation from test
+
+        # The update response
+        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
+        # The get/list response
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_VALID_METADATA_JSON)
+        )
+
+        credential_configuration.format = "updated_vc_json"
+        result = subject.update(credential_configuration)
+
+        assert result.credential_configuration_id == "credential_configuration_id"
+        # _VALID_METADATA_JSON has format set to jwt_vc_json, so this is what we expect
+        # in return, not the 'updated_vc_json' that we provided.
+        assert result.format == "jwt_vc_json"
 
     def test_update_raises_not_found_on_404(
         self,
