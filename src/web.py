@@ -4,6 +4,8 @@
 from src.access_control.hardcoded_adapter import HardcodedAccessControlAdapter
 from src.api.api_port import ApiPort
 from src.api.http_adapter import HttpApiAdapter
+from src.awards.award_service import AwardService
+from src.awards.http_awards_client_adapter import HttpAwardsClientAdapter
 from src.config.config import EnvConfigRepo
 from src.config.config_port import ConfigRepoPort
 from src.offers.offer_service import OfferService
@@ -25,6 +27,11 @@ class App:
 
         access_control = HardcodedAccessControlAdapter()
 
+        awards_client = HttpAwardsClientAdapter(
+            awards_service_url=self.config.awards_service_url
+        )
+        award_service = AwardService(client=awards_client)
+
         offers_client = SsiAgentOffersClientAdapter(
             ssi_agent_url=self.config.ssi_agent_url
         )
@@ -35,6 +42,7 @@ class App:
             access_control=access_control,
             offers_client=offers_client,
             offers_repository=offers_repository,
+            award_service=award_service,
         )
 
         self._api_port = HttpApiAdapter(
@@ -43,10 +51,12 @@ class App:
         )
 
     def run(self):
+        """Start the application."""
         self._api_port.run()
 
 
 def main() -> None:
+    """Entry point for the EC Issuer application."""
     app = App()
     app.run()
 

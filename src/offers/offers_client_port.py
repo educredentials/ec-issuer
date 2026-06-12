@@ -2,6 +2,8 @@
 
 from abc import ABC, abstractmethod
 
+from src.awards.models import Award
+
 from .models import Offer
 
 
@@ -16,19 +18,16 @@ class OffersClientError(Exception):
 class OffersClientPort(ABC):
     """Port: repository interface for persisting and retrieving offers."""
 
-    # TODO: Award is not appropriate here. We want a decoupled abstraction.
-    # Maybe something like "CredentialPayload"? That can be built from the Award.
-    # So maybe we can build that here?
-
     @abstractmethod
-    def create(self, offer_id: str) -> str:
-        """Persist an offer.
+    def create(self, offer_id: str, award: Award) -> str:
+        """Create a credential offer on the SSI agent.
 
         Args:
-            offer: The offer to store.
+            offer_id: The offer identifier to create.
+            award: The award (OB3 AchievementCredential) for this offer.
 
         Returns:
-            The offer URI
+            The offer URI.
         """
         ...
 
@@ -43,6 +42,7 @@ class OffersClientPort(ABC):
             The matching Offer.
 
         Raises:
-            KeyError: When no offer with the given id exists.
+            OfferNotFound: When no offer with the given id exists.
+            OffersClientError: When the upstream service returns an error.
         """
         ...

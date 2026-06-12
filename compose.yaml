@@ -11,6 +11,7 @@ services:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8000
       - SSI_AGENT_URL=http://mock-ssi-agent:4010 # Internal URL
+      - AWARDS_SERVICE_URL=http://mock-awards:4010
       - PUBLIC_URL=http://localhost:8000
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
     depends_on:
@@ -51,6 +52,14 @@ services:
     command: mock -h 0.0.0.0 /app/mock.yaml
     volumes:
       - ./dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml
+
+  mock-awards:
+    image: stoplight/prism:4
+    ports:
+      - "8003:4010"
+    command: mock -h 0.0.0.0 /app/mock.yaml
+    volumes:
+      - ./dependencies/prism/awards-mock.yaml:/app/mock.yaml
 
   postgresql:
     image: postgres:16-alpine

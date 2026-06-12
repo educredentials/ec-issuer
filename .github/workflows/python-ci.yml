@@ -41,6 +41,14 @@ jobs:
             -v ${{ github.workspace }}/dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml \
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
+      - name: Start mock awards service
+        run: |
+          docker run -d \
+            --name mock-awards \
+            -p 8003:4010 \
+            -v ${{ github.workspace }}/dependencies/prism/awards-mock.yaml:/app/mock.yaml \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -76,6 +84,7 @@ jobs:
           export PUBLIC_URL=http://localhost:8000
           export DEBUG_METRICS=1
           export POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          export AWARDS_SERVICE_URL=http://localhost:8003
           RUNNER_TRACKING_ID="" && (nohup uv run ec-issuer-web &)
           sleep 1
 
@@ -86,6 +95,7 @@ jobs:
           PUBLIC_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
           POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          AWARDS_SERVICE_URL: http://localhost:8003
         run: uv run pytest tests/e2e/ -v
 
       - name: Cleanup
@@ -94,8 +104,10 @@ jobs:
           pkill -f "python -m src.main" || true
           docker stop mock-ssi-agent || true
           docker stop mock-oidc-auth || true
+          docker stop mock-awards || true
           docker rm mock-ssi-agent || true
           docker rm mock-oidc-auth || true
+          docker rm mock-awards || true
 
 
   build:

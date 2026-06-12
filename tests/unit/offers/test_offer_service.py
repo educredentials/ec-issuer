@@ -4,14 +4,15 @@ import pytest
 
 from src.offers.models import Offer
 from src.offers.offer_service import (
-    DoesNotExistInClientError,
-    DoesNotExistInRepositoryError,
+    NotFoundError,
     OfferService,
+    OfferServiceError,
     PermissionDeniedError,
 )
 from ..support.test_doubles import (
     AccessControlSpy,
     AccessControlStub,
+    AwardServiceStub,
     DenyingAccessControlStub,
     OffersClientSpy,
     OffersClientStub,
@@ -19,9 +20,9 @@ from ..support.test_doubles import (
     OffersRepositorySpy,
     OffersRepositoryStub,
     OffersRepositoryStubNotFound,
+    STUB_AWARD,
 )
 
-# PUBLIC_URL = "https://issuer.example.com"
 ISSUER_AGENT_URL = "http://issuer-agent.example.com"
 
 
@@ -34,6 +35,7 @@ class TestOfferServiceCreateOffer:
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
+            award_service=AwardServiceStub(),
         )
 
         offer = service.create_offer(award_id="award-123", bearer_token="tok")
@@ -50,6 +52,7 @@ class TestOfferServiceCreateOffer:
             access_control=AccessControlStub(),
             offers_repository=offers_repository,
             offers_client=OffersClientStub(),
+            award_service=AwardServiceStub(),
         )
 
         offer = service.create_offer(award_id="award-999", bearer_token="tok")
@@ -64,13 +67,14 @@ class TestOfferServiceCreateOffer:
         assert offers_repository.calls == [("store", {"offer": expected_offer})]
 
     def test_creates_offer_with_client(self):
-        """create_offer creates offer on API with client."""
+        """create_offer creates offer on API with client, passing the fetched award."""
         offers_client = OffersClientSpy()
 
         service = OfferService(
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=offers_client,
+            award_service=AwardServiceStub(),
         )
 
         offer = service.create_offer(award_id="award-999", bearer_token="tok")
@@ -78,7 +82,7 @@ class TestOfferServiceCreateOffer:
         assert len(offers_client.calls) == 1
         assert offers_client.calls[0] == (
             "create",
-            {"offer_id": offer.offer_id},
+            {"offer_id": offer.offer_id, "award": STUB_AWARD},
         )
 
     def test_raises_permission_denied_when_access_control_denies(self):
@@ -87,6 +91,7 @@ class TestOfferServiceCreateOffer:
             access_control=DenyingAccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
+            award_service=AwardServiceStub(),
         )
 
         with pytest.raises(PermissionDeniedError):
@@ -100,6 +105,7 @@ class TestOfferServiceCreateOffer:
             access_control=spy,
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
+            award_service=AwardServiceStub(),
         )
 
         _ = service.create_offer(award_id="award-123", bearer_token="my-token")
@@ -111,10 +117,12 @@ class TestOfferServiceGetOffer:
     """Tests for OfferService.get_offer."""
 
     def test_get_offer_returns_stored_offer_and_agent_url(self):
+        """get_offer returns Offer with URI from the client and award_id from repo."""
         service = OfferService(
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
+            award_service=AwardServiceStub(),
         )
         result = service.get_offer("offer-123")
 
@@ -125,24 +133,47 @@ class TestOfferServiceGetOffer:
             == "openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/offer-123"
         )
 
-    def test_get_offer_raises_does_not_exist_in_repository(self):
-        """get_offer raises Error when the offer does not exist in the Repository."""
-        service = OfferService(
-            access_control=AccessControlStub(),
-            offers_repository=OffersRepositoryStubNotFound(),
-            offers_client=OffersClientStub(),
-        )
-
-        with pytest.raises(DoesNotExistInRepositoryError):
-            _ = service.get_offer("nonexistent-id")
-
-    def test_get_offer_raises_does_not_exist_in_client(self):
-        """get_offer raises Error when the offer does not exist in the Agent."""
+    def test_get_offer_raises_not_found_when_offer_absent_in_client(self):
+        """get_offer raises NotFoundError when the offer is absent in the SSI agent."""
         service = OfferService(
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStubNotFound(),
+            award_service=AwardServiceStub(),
         )
 
-        with pytest.raises(DoesNotExistInClientError):
+        with pytest.raises(NotFoundError, match="Offer nonexistent-id not found"):
             _ = service.get_offer("nonexistent-id")
+
+    def test_get_offer_raises_not_found_when_offer_absent_in_repository(self):
+        """get_offer raises NotFoundError when the offer is absent in the repository."""
+        service = OfferService(
+            access_control=AccessControlStub(),
+            offers_repository=OffersRepositoryStubNotFound(),
+            offers_client=OffersClientStub(),
+            award_service=AwardServiceStub(),
+        )
+
+        with pytest.raises(NotFoundError, match="Offer nonexistent-id not found"):
+            _ = service.get_offer("nonexistent-id")
+
+    def test_get_offer_raises_offer_service_error_on_client_error(self):
+        """get_offer raises OfferServiceError when the SSI agent returns an error."""
+        from typing import override
+
+        from src.offers.offers_client_port import OffersClientError
+
+        class _OffersClientErrorStub(OffersClientStub):
+            @override
+            def get(self, offer_id: str) -> Offer:
+                raise OffersClientError("upstream failure")
+
+        service = OfferService(
+            access_control=AccessControlStub(),
+            offers_repository=OffersRepositoryStub(),
+            offers_client=_OffersClientErrorStub(),
+            award_service=AwardServiceStub(),
+        )
+
+        with pytest.raises(OfferServiceError):
+            _ = service.get_offer("offer-123")

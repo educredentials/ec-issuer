@@ -18,11 +18,11 @@ develop:
 # (re)start all dependency services - everything except the ec-issuer
 dependencies:
     {{runtime}} compose down
-    {{runtime}} compose up --wait --wait-timeout 10 --detach postgresql mock-ssi-agent mock-oidc-auth
+    {{runtime}} compose up --wait --wait-timeout 10 --detach postgresql mock-ssi-agent mock-oidc-auth mock-awards
 
 e2eservices:
     {{runtime}} compose down
-    {{runtime}} compose up --wait --wait-timeout 10 --detach ec-issuer postgresql mock-ssi-agent mock-oidc-auth
+    {{runtime}} compose up --wait --wait-timeout 10 --detach ec-issuer postgresql mock-ssi-agent mock-oidc-auth mock-awards
 
 # Run all quality checks (linting + type checking)
 lint:

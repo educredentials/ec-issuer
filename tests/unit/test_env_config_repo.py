@@ -26,6 +26,7 @@ class TestEnvConfigRepo:
             "SSI_AGENT_URL": "http://ssi-agent.example.com",
             "PUBLIC_URL": "https://issuer.example.com",
             "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
+            "AWARDS_SERVICE_URL": "http://awards.example.com",
         }
         config = EnvConfigRepo(env=env)
 
@@ -36,6 +37,7 @@ class TestEnvConfigRepo:
         assert config.postgresql_connection_string == (
             "postgresql://test:test@localhost:5432/test"
         )
+        assert config.awards_service_url == "http://awards.example.com"
 
     def test_invalid_server_port(self):
         """Test that invalid server port raises ValueError."""
@@ -61,6 +63,7 @@ class TestEnvConfigRepo:
             "POSTGRES_CONNECTION_STRING",
             "postgresql://test:test@localhost:5432/test",
         )
+        monkeypatch.setenv("AWARDS_SERVICE_URL", "http://awards.example.com")
 
         config = EnvConfigRepo()
 
