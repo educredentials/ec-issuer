@@ -58,8 +58,10 @@ release bump-value=bump_value_default:
     set -euo pipefail
     previous_version=$(uv version --short)
     this_version=$(uv version --bump {{bump-value}} --short)
-    changelog=$(git log --pretty=format:'%s' "${previous_version}".."${this_version}")
-    git tag -a "${this_version}" -m "${changelog}"
+    git add pyproject.toml uv.lock
+    changelog=$(git log --pretty=format:'%s' "v${previous_version}".."HEAD")
+    git commit -m "Bump version to ${this_version}"
+    git tag -a "v${this_version}" -m "${changelog}"
 
 # Run everything (lint + test)
 all:
