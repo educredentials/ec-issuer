@@ -8,6 +8,7 @@ class ConfigRepoPort(ABC):
     server_port: int
     # TODO: Rename to oid4vci_agent_url
     ssi_agent_url: str
+    awards_service_url: str
     public_url: str
     debug: bool
     postgresql_connection_string: str

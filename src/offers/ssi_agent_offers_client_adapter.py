@@ -5,7 +5,7 @@ from typing import override
 
 import msgspec
 
-from src.awards.awards_service_port import Award
+from src.awards.models import Award
 from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .models import Offer
@@ -66,17 +66,16 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             self._http_client = RequestsHttpClient()
 
     @override
-    def create(self, offer_id: str) -> str:
+    def create(self, offer_id: str, award: Award) -> str:
         """Create an offer in the SSI agent.
 
         Args:
             offer_id: The offer identifier to create.
+            award: The award to issue as a credential.
 
         Returns:
             The credential offer URI.
         """
-        # TODO: subject must be the Award, that must be passed in
-        award = Award.default()
         self._create_credential_for_subject(offer_id, award)
         offer_uri = self._create_offer(offer_id)
         return offer_uri
