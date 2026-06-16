@@ -50,9 +50,16 @@ docs-api:
 docs:
     mdbook serve docs
 
-# Seed the database with credential issuer metadata from a JSON file
-update-issuer-metadata file:
-    uv run python -m src.sysadmin.commandline_adapter update-issuer-metadata < {{file}}
+bump_value_default := 'minor'
+
+# Bump version, create changelog and add this to the tag
+release bump-value=bump_value_default:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    previous_version=$(uv version --short)
+    this_version=$(uv version --bump {{bump-value}} --short)
+    changelog=$(git log --pretty=format:'%s' "${previous_version}".."${this_version}")
+    git tag -a "${this_version}" -m "${changelog}"
 
 # Run everything (lint + test)
 all:
