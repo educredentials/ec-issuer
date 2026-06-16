@@ -18,7 +18,7 @@ class HttpClient:
         Args:
             config: Test configuration.
         """
-        self._service_url = config.public_url
+        self._service_url = config.ec_issuer_url
         self._default_headers = {}
 
     def get(self, path: str, headers: dict[str, str] | None = None) -> Response:

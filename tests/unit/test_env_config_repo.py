@@ -24,7 +24,6 @@ class TestEnvConfigRepo:
             "SERVER_HOST": "localhost",
             "SERVER_PORT": "8080",
             "SSI_AGENT_URL": "http://ssi-agent.example.com",
-            "PUBLIC_URL": "https://issuer.example.com",
             "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
             "AWARDS_SERVICE_URL": "http://awards.example.com",
         }
@@ -33,7 +32,6 @@ class TestEnvConfigRepo:
         assert config.server_host == "localhost"
         assert config.server_port == 8080
         assert config.ssi_agent_url == "http://ssi-agent.example.com"
-        assert config.public_url == "https://issuer.example.com"
         assert config.postgresql_connection_string == (
             "postgresql://test:test@localhost:5432/test"
         )
@@ -45,7 +43,6 @@ class TestEnvConfigRepo:
             "SERVER_HOST": "localhost",
             "SERVER_PORT": "invalid",
             "SSI_AGENT_URL": "http://ssi-agent.example.com",
-            "PUBLIC_URL": "https://issuer.example.com",
             "POSTGRES_CONNECTION_STRING": (
                 "postgresql://test:test@localhost:5432/test"
             ),
@@ -58,7 +55,6 @@ class TestEnvConfigRepo:
         monkeypatch.setenv("SERVER_HOST", "localhost")
         monkeypatch.setenv("SERVER_PORT", "8080")
         monkeypatch.setenv("SSI_AGENT_URL", "http://ssi-agent.example.com")
-        monkeypatch.setenv("PUBLIC_URL", "https://issuer.example.com")
         monkeypatch.setenv(
             "POSTGRES_CONNECTION_STRING",
             "postgresql://test:test@localhost:5432/test",
@@ -70,7 +66,6 @@ class TestEnvConfigRepo:
         assert config.server_host == "localhost"
         assert config.server_port == 8080
         assert config.ssi_agent_url == "http://ssi-agent.example.com"
-        assert config.public_url == "https://issuer.example.com"
         assert config.postgresql_connection_string == (
             "postgresql://test:test@localhost:5432/test"
         )

@@ -12,7 +12,6 @@ services:
       - SERVER_PORT=8000
       - SSI_AGENT_URL=http://mock-ssi-agent:4010 # Internal URL
       - AWARDS_SERVICE_URL=http://mock-awards:4010
-      - PUBLIC_URL=http://localhost:8000
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
     depends_on:
       postgresql:

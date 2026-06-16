@@ -18,7 +18,6 @@ The `.env.example` file in the repository root provides a template. Copy it to `
 |----------|-------------|
 | `SERVER_HOST` | Host address to bind the server to |
 | `SERVER_PORT` | Port to listen on |
-| `PUBLIC_URL` | The URL on which the service is publicly available |
 | `SSI_AGENT_URL` | The base URL of the SSI agent |
 | `SSI_AGENT_NONCE_ENDPOINT` | Full URL to the SSI agent's nonce endpoint |
 | `SSI_AGENT_CREDENTIAL_ENDPOINT` | Full URL to the SSI agent's credential endpoint |
