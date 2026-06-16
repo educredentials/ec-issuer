@@ -263,7 +263,6 @@ class ConfigRepoStub(ConfigRepoPort):
     server_host: str = "localhost"
     server_port: int = 8888
     ssi_agent_url: str = "https://issuer-agent.example.com"
-    public_url: str = "http://localhost:8888"
     debug: bool = False
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
     awards_service_url: str = "http://awards.example.com"
@@ -382,12 +381,8 @@ class OfferServiceSpy(OfferService):
 
     calls: list[tuple[str, str, str]]
 
-    def __init__(self, public_url: str = "http://localhost:8888") -> None:
-        """Initialise with stub dependencies and an empty call log.
-
-        Args:
-            public_url: Issuer public URL used for offer URI construction.
-        """
+    def __init__(self) -> None:
+        """Initialise with stub dependencies and an empty call log."""
         self.calls = []
         super().__init__(
             access_control=AccessControlStub(),

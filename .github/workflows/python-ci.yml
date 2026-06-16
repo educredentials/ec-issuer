@@ -81,7 +81,6 @@ jobs:
           export SERVER_HOST=0.0.0.0
           export SERVER_PORT=8000
           export SSI_AGENT_URL=http://localhost:8001
-          export PUBLIC_URL=http://localhost:8000
           export DEBUG_METRICS=1
           export POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
           export AWARDS_SERVICE_URL=http://localhost:8003
@@ -92,7 +91,7 @@ jobs:
         env:
           SERVER_HOST: 0.0.0.0
           SERVER_PORT: 8000
-          PUBLIC_URL: http://localhost:8000
+          EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
           POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
           AWARDS_SERVICE_URL: http://localhost:8003
