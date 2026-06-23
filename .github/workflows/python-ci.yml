@@ -142,10 +142,11 @@ jobs:
             echo "HAS_TAG=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (web service)
         uses: docker/build-push-action@v7
         with:
           context: .
+          target: web
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -153,3 +154,16 @@ jobs:
             cr.surf.nl/edubadges-educredentials/ec-issuer:latest
             cr.surf.nl/edubadges-educredentials/ec-issuer:${{ steps.version.outputs.VERSION }}
             ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
+
+      - name: Build and push Docker image (cli, init container)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: cli
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            cr.surf.nl/edubadges-educredentials/ec-issuer-init:latest
+            cr.surf.nl/edubadges-educredentials/ec-issuer-init:${{ steps.version.outputs.VERSION }}
+            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer-init:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}

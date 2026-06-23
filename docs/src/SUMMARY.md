@@ -9,6 +9,7 @@
 
 # Technical setup
 - [Configuration](./configuration.md)
+- [Credential Configuration](./credential_configuration.md)
 - [Hexagonal Architecture](./architecture.md)
   - [Ports Adapters example](./ports_adapters.md)
   - [Ports Adapters example test setup](./ports_adapters_test.md)

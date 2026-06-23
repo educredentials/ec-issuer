@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --python 3.14
 
 # Distroless: no shell, no package manager, no pip — glibc, libssl, zlib, ca-certs only
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/base-debian12 AS web
 
 # uv's managed Python (python-build-standalone) statically links OpenSSL and
 # sqlite3, so those do not appear as system packages and won't produce CVEs here
@@ -32,3 +32,28 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 ENV PYTHONPATH="/app/src"
 CMD ["ec-issuer-web"]
+
+FROM gcr.io/distroless/base-debian12 AS cli
+
+# uv's managed Python (python-build-standalone) statically links OpenSSL and
+# sqlite3, so those do not appear as system packages and won't produce CVEs here
+COPY --from=builder /python /python
+# psycopg3 bundles its own libpq/ssl/krb5 but still links against system zlib
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libz.so.1 /usr/lib/x86_64-linux-gnu/libz.so.1
+COPY --from=builder /usr/bin/cat /usr/bin/cat
+COPY --from=builder /usr/bin/sh /usr/bin/sh
+COPY --from=builder --chown=65532:65532 /app/.venv /app/.venv
+COPY --chown=65532:65532 src/ /app/src/
+COPY --chown=65532:65532 docs/src/openbadge_credential_configuration.json /etc/openbadge_credential_configuration.json
+
+# nonroot is UID 65532 in all distroless images
+USER nonroot
+
+WORKDIR /app
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+ENV PYTHONPATH="/app/src"
+
+ENTRYPOINT [ "/usr/bin/sh", "-c" ]
+CMD ["/app/.venv/bin/ec-issuer-cli", "--help"]
