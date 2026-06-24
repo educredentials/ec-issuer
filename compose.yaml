@@ -14,6 +14,7 @@ services:
       - SSI_AGENT_URL=http://mock-ssi-agent:4010 # Internal URL
       - AWARDS_SERVICE_URL=http://mock-awards:4010
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
+      - ALLOWED_CORS_DOMAINS=http://localhost:8080,http://localhost:3000
     depends_on:
       postgresql:
         condition: service_healthy

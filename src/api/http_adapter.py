@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import override
 
 from flask import Flask, Request, request
+from flask_cors import CORS
 from prometheus_flask_exporter import (  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
     PrometheusMetrics,
 )
@@ -71,6 +72,10 @@ class HttpApiAdapter(ApiPort):
     def _flask_app(self) -> Flask:
         app = Flask("HttpApi")
 
+        # Configure CORS
+        allowed_origins = self._parse_allowed_cors_domains()
+        _ = CORS(app, resources={r"/*": {"origins": allowed_origins}})
+
         # Metrics endpoint is only relevant to HttpAdapter
         # no need for service/domain models
         metrics: PrometheusMetrics = PrometheusMetrics(app)
@@ -109,6 +114,18 @@ class HttpApiAdapter(ApiPort):
             return json.dumps({"offer_id": offer.offer_id, "uri": offer.uri}), 201
 
         return app
+
+    def _parse_allowed_cors_domains(self) -> list[str]:
+        """Parse the allowed CORS domains from configuration.
+
+        Returns:
+            List of allowed origins. If the config value is "*", returns ["*"].
+            Otherwise, splits the comma-separated list of domains.
+        """
+        domains = self.config.allowed_cors_domains
+        if domains == "*":
+            return ["*"]
+        return [domain.strip() for domain in domains.split(",")]
 
     @override
     def run(self):

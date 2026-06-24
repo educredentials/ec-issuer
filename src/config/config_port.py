@@ -11,3 +11,4 @@ class ConfigRepoPort(ABC):
     awards_service_url: str
     debug: bool
     postgresql_connection_string: str
+    allowed_cors_domains: str

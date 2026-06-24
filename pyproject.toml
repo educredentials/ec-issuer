@@ -6,6 +6,7 @@ authors = [{ name = "Bèr Kessels", email = "ber@berk.es" }]
 requires-python = ">=3.10"
 dependencies = [
     "flask>=3.0.0",
+    "flask-cors>=4.0.0",
     "jwcrypto>=1.5.7",
     "msgspec>=0.20.0",
     "prometheus-flask-exporter>=0.23.2",

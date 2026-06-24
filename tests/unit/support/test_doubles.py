@@ -266,6 +266,7 @@ class ConfigRepoStub(ConfigRepoPort):
     debug: bool = False
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
     awards_service_url: str = "http://awards.example.com"
+    allowed_cors_domains: str = "http://localhost:8000,https://app.example.com"
 
 
 class AccessControlStub(AccessControlPort):

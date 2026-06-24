@@ -26,6 +26,13 @@ class TestRootEndpoint:
         assert response.status_code == 200
         assert response.text == "Hello, World!"
 
+    def test_root_endpoint_returns_cors_headers(self, http_client: HttpClient):
+        """Test that the root endpoint returns CORS headers."""
+        response = http_client.get("/", headers={"Origin": "http://localhost:3000"})
+        assert response.status_code == 200
+        assert "Access-Control-Allow-Origin" in response.headers
+        assert response.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
+
 
 @pytest.mark.e2e
 class TestMetricsEndpoint:

@@ -18,6 +18,19 @@ class TestEnvConfigRepo:
                 }
             )
 
+    def test_missing_allowed_cors_domains_raises_keyerror(self):
+        """Test that missing ALLOWED_CORS_DOMAINS raises KeyError."""
+        with pytest.raises(KeyError):
+            _ = EnvConfigRepo(
+                env={
+                    "SERVER_HOST": "localhost",
+                    "SERVER_PORT": "8080",
+                    "SSI_AGENT_URL": "http://ssi-agent.example.com",
+                    "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
+                    "AWARDS_SERVICE_URL": "http://awards.example.com",
+                }
+            )
+
     def test_valid_env_vars(self):
         """Test that valid environment variables are parsed correctly."""
         env = {
@@ -26,6 +39,7 @@ class TestEnvConfigRepo:
             "SSI_AGENT_URL": "http://ssi-agent.example.com",
             "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
             "AWARDS_SERVICE_URL": "http://awards.example.com",
+            "ALLOWED_CORS_DOMAINS": "https://example.com,http://localhost:8000",
         }
         config = EnvConfigRepo(env=env)
 
@@ -36,6 +50,9 @@ class TestEnvConfigRepo:
             "postgresql://test:test@localhost:5432/test"
         )
         assert config.awards_service_url == "http://awards.example.com"
+        assert (
+            config.allowed_cors_domains == "https://example.com,http://localhost:8000"
+        )
 
     def test_invalid_server_port(self):
         """Test that invalid server port raises ValueError."""
@@ -60,6 +77,9 @@ class TestEnvConfigRepo:
             "postgresql://test:test@localhost:5432/test",
         )
         monkeypatch.setenv("AWARDS_SERVICE_URL", "http://awards.example.com")
+        monkeypatch.setenv(
+            "ALLOWED_CORS_DOMAINS", "http://localhost:8000,https://app.example.com"
+        )
 
         config = EnvConfigRepo()
 
@@ -68,4 +88,8 @@ class TestEnvConfigRepo:
         assert config.ssi_agent_url == "http://ssi-agent.example.com"
         assert config.postgresql_connection_string == (
             "postgresql://test:test@localhost:5432/test"
+        )
+        assert (
+            config.allowed_cors_domains
+            == "http://localhost:8000,https://app.example.com"
         )
