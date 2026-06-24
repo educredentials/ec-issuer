@@ -1,5 +1,6 @@
 services:
   ec-issuer:
+    platform: "linux/amd64"
     build:
       context: .
       dockerfile: Dockerfile
@@ -23,6 +24,7 @@ services:
     working_dir: /app
 
   real-ssi-agent:
+    platform: "linux/amd64"
     image: cr.surf.nl/edubadges-educredentials/ssi-agent:latest
     ports:
       - "3033:3033"
@@ -39,6 +41,7 @@ services:
       UNICORE__DID_METHODS__DID_WEB__ENABLED: true
 
   mock-ssi-agent:
+    platform: "linux/amd64"
     image: stoplight/prism:4
     ports:
       - "8001:4010"
@@ -47,6 +50,7 @@ services:
       - ./dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml
 
   mock-oidc-auth:
+    platform: "linux/amd64"
     image: stoplight/prism:4
     ports:
       - "8002:4010"
@@ -55,6 +59,7 @@ services:
       - ./dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml
 
   mock-awards:
+    platform: "linux/amd64"
     image: stoplight/prism:4
     ports:
       - "8003:4010"
@@ -63,6 +68,7 @@ services:
       - ./dependencies/prism/awards-mock.yaml:/app/mock.yaml
 
   postgresql:
+    platform: "linux/amd64"
     image: postgres:16-alpine
     environment:
       - POSTGRES_USER=ecissuer
