@@ -57,5 +57,3 @@ class Award:
     issuer: Issuer
     validFrom: str
     credentialSubject: AchievementSubject
-
-

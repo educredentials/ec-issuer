@@ -15,6 +15,17 @@ class TestHttpAdapter:
         assert response.status_code == 200
         assert response.text == "Hello, World!"
 
+    def test_root_returns_cors_headers(self, http_client: FlaskClient):
+        """GET / returns CORS headers."""
+        response = http_client.get("/")
+        assert response.status_code == 200
+        assert "Access-Control-Allow-Origin" in response.headers
+        # The ConfigRepoStub has ALLOWED_CORS_DOMAINS="http://localhost:8000,https://app.example.com"
+        # Flask-CORS will use the first origin for simple requests
+        assert (
+            response.headers["Access-Control-Allow-Origin"] == "http://localhost:8000"
+        )
+
     def test_offers_creates_offer_and_returns_201(
         self, http_client: FlaskClient, offer_service_spy: OfferServiceSpy
     ):

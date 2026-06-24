@@ -22,6 +22,7 @@ The `.env.example` file in the repository root provides a template. Copy it to `
 | `SSI_AGENT_NONCE_ENDPOINT` | Full URL to the SSI agent's nonce endpoint |
 | `SSI_AGENT_CREDENTIAL_ENDPOINT` | Full URL to the SSI agent's credential endpoint |
 | `POSTGRES_CONNECTION_STRING` | PostgreSQL connection string (format: `postgresql://user:password@host:port/database`) |
+| `ALLOWED_CORS_DOMAINS` | Comma-separated list of allowed origins for CORS (e.g., `http://localhost:8000,https://app.example.com`) |
 | `DEBUG_METRICS` | Enable `/metrics` endpoint (for development) |
 
 ## SSI Agent Endpoint Configuration

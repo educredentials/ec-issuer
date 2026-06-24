@@ -1,6 +1,5 @@
 """Config for e2e tests."""
 
-
 from dataclasses import dataclass
 import os
 

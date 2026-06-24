@@ -15,6 +15,7 @@ class EnvConfigRepo(ConfigRepoPort):
     awards_service_url: str
     debug: bool
     postgresql_connection_string: str
+    allowed_cors_domains: str
 
     def __init__(self, env: Mapping[str, str] = environ):
         """Initialize with optional environment mapping.
@@ -28,3 +29,4 @@ class EnvConfigRepo(ConfigRepoPort):
         self.awards_service_url = env["AWARDS_SERVICE_URL"]
         self.debug = False
         self.postgresql_connection_string = env["POSTGRES_CONNECTION_STRING"]
+        self.allowed_cors_domains = env["ALLOWED_CORS_DOMAINS"]

@@ -111,9 +111,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 response.content, type=_SsiAgentOfferResponse
             )
         except msgspec.DecodeError as e:
-            raise OffersClientError(
-                f"Invalid response from upstream: {e}"
-            ) from e
+            raise OffersClientError(f"Invalid response from upstream: {e}") from e
 
         uri: str = response_data.form_url_encoded_credential_offer
 

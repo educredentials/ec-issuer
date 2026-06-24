@@ -11,6 +11,7 @@ import requests
 # any object that can be serialized to JSON. Used exactly like this in requests
 JSON: TypeAlias = Any
 
+
 class HttpResponse(Protocol):
     """Protocol defining the HTTP response interface.
 
@@ -118,9 +119,7 @@ class RequestsHttpClient:
     def delete(self, url: str, json: JSON | None = None) -> HttpResponse:
         return self._request("DELETE", url, json=json)
 
-    def _request(
-        self, method: str, url: str, json: JSON | None = None
-    ) -> HttpResponse:
+    def _request(self, method: str, url: str, json: JSON | None = None) -> HttpResponse:
         return requests.request(
             method=method, url=url, json=json, timeout=self._default_timeout
         )

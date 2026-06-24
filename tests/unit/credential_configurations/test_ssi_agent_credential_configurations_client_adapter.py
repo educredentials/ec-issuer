@@ -39,9 +39,7 @@ def credential_configuration() -> CredentialConfiguration:
         format="jwt_vc_json",
         credential_metadata=CredentialMetadata(display=None),
         credential_configuration_id="credential_configuration_id",
-        credential_definition=CredentialDefinition(
-            type=["VerifiableCredential"]
-        ),
+        credential_definition=CredentialDefinition(type=["VerifiableCredential"]),
         cryptographic_binding_methods_supported=None,
         credential_signing_alg_values_supported=None,
         proof_types_supported=ProofTypesSupportedJwt(jwt={}),

@@ -27,6 +27,7 @@ class CredentialMetadata:
 class ProofTypesSupportedJwt:
     jwt: dict[str, list[str]]
 
+
 @dataclass
 class CredentialConfiguration:
     """Represents a credential configuration."""
