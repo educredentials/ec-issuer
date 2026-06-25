@@ -16,7 +16,10 @@ from .models import Award
 
 
 class HttpAwardsClientAdapter(AwardsClientPort):
-    """Adapter for the awards HTTP service."""
+    """
+    Adapter for the awards HTTP service. This maps to the stoplight mock. Not
+    yet to the STRAPI API!, that would make this a "StrapiAwardsClientAdapter".
+    """
 
     _awards_service_base_url: str
     _http_client: HttpClient
