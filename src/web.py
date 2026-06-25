@@ -33,7 +33,8 @@ class App:
         award_service = AwardService(client=awards_client)
 
         offers_client = SsiAgentOffersClientAdapter(
-            ssi_agent_url=self.config.ssi_agent_url
+            ssi_agent_url=self.config.ssi_agent_url,
+            credential_configuration_id=self.config.credential_configuration_id,
         )
         offers_repository = PostgreSQLOffersRepositoryAdapter(
             self.config.postgresql_connection_string

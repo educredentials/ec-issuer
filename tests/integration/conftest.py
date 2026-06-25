@@ -32,4 +32,7 @@ def offers_repo() -> Generator[PostgreSQLOffersRepositoryAdapter, None, None]:
 
 @pytest.fixture(scope="session")
 def offers_client() -> SsiAgentOffersClientAdapter:
-    return SsiAgentOffersClientAdapter(ssi_agent_url=_SSI_AGENT_URL)
+    return SsiAgentOffersClientAdapter(
+        ssi_agent_url=_SSI_AGENT_URL,
+        credential_configuration_id="openbadge_credential",
+    )

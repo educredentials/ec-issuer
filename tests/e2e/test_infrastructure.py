@@ -31,7 +31,9 @@ class TestRootEndpoint:
         response = http_client.get("/", headers={"Origin": "http://localhost:3000"})
         assert response.status_code == 200
         assert "Access-Control-Allow-Origin" in response.headers
-        assert response.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
+        assert (
+            response.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
+        )
 
 
 @pytest.mark.e2e

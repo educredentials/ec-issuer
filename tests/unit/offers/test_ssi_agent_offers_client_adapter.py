@@ -47,7 +47,9 @@ def http_client() -> RequestsSpy:
 def subject(http_client: HttpClient) -> SsiAgentOffersClientAdapter:
     """Provide the adapter wired to the spy."""
     return SsiAgentOffersClientAdapter(
-        ssi_agent_url="http://agent.example.com", http_client=http_client
+        ssi_agent_url="http://agent.example.com",
+        credential_configuration_id="openbadge_credential",
+        http_client=http_client,
     )
 
 
@@ -203,3 +205,28 @@ class TestSsiAgentOffersClientAdapter:
         )
         with pytest.raises(OffersClientError):
             _ = subject.create("offer-123", sample_award)
+
+    def test_create_uses_credential_configuration_id(
+        self,
+        http_client: RequestsSpy,
+        sample_award: Award,
+    ):
+        """create() uses the provided credential_configuration_id in requests."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_configuration_id="test_credential_config",
+            http_client=http_client,
+        )
+        _ = adapter.create("offer-123", sample_award)
+        # Check that credentialConfigurationId in credential creation uses the ID
+        credential_call = http_client.calls[0]
+        assert credential_call.json is not None
+        json_dict = credential_call.json  # type: ignore[reportAny]
+        assert isinstance(json_dict, dict)
+        assert json_dict["credentialConfigurationId"] == "test_credential_config"
+        # Check that credentialConfigurationIds in offer creation uses the ID
+        offer_call = http_client.calls[1]
+        assert offer_call.json is not None
+        offer_dict = offer_call.json  # type: ignore[reportAny]
+        assert isinstance(offer_dict, dict)
+        assert offer_dict["credentialConfigurationIds"] == ["test_credential_config"]

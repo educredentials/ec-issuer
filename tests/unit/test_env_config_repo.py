@@ -31,6 +31,20 @@ class TestEnvConfigRepo:
                 }
             )
 
+    def test_missing_credential_configuration_id_raises_keyerror(self):
+        """Test that missing CREDENTIAL_CONFIGURATION_ID raises KeyError."""
+        with pytest.raises(KeyError):
+            _ = EnvConfigRepo(
+                env={
+                    "SERVER_HOST": "localhost",
+                    "SERVER_PORT": "8080",
+                    "SSI_AGENT_URL": "http://ssi-agent.example.com",
+                    "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
+                    "AWARDS_SERVICE_URL": "http://awards.example.com",
+                    "ALLOWED_CORS_DOMAINS": "http://localhost:8000",
+                }
+            )
+
     def test_valid_env_vars(self):
         """Test that valid environment variables are parsed correctly."""
         env = {
@@ -40,6 +54,7 @@ class TestEnvConfigRepo:
             "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
             "AWARDS_SERVICE_URL": "http://awards.example.com",
             "ALLOWED_CORS_DOMAINS": "https://example.com,http://localhost:8000",
+            "CREDENTIAL_CONFIGURATION_ID": "openbadge_credential",
         }
         config = EnvConfigRepo(env=env)
 
@@ -53,6 +68,7 @@ class TestEnvConfigRepo:
         assert (
             config.allowed_cors_domains == "https://example.com,http://localhost:8000"
         )
+        assert config.credential_configuration_id == "openbadge_credential"
 
     def test_invalid_server_port(self):
         """Test that invalid server port raises ValueError."""
@@ -80,6 +96,7 @@ class TestEnvConfigRepo:
         monkeypatch.setenv(
             "ALLOWED_CORS_DOMAINS", "http://localhost:8000,https://app.example.com"
         )
+        monkeypatch.setenv("CREDENTIAL_CONFIGURATION_ID", "openbadge_credential")
 
         config = EnvConfigRepo()
 
@@ -93,3 +110,4 @@ class TestEnvConfigRepo:
             config.allowed_cors_domains
             == "http://localhost:8000,https://app.example.com"
         )
+        assert config.credential_configuration_id == "openbadge_credential"

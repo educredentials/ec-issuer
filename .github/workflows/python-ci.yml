@@ -85,6 +85,7 @@ jobs:
           export POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
           export AWARDS_SERVICE_URL=http://localhost:8003
           export ALLOWED_CORS_DOMAINS=http://localhost:8000,http://localhost:3000
+          export CREDENTIAL_CONFIGURATION_ID=openbadge_credential
           RUNNER_TRACKING_ID="" && (nohup uv run ec-issuer-web &)
           sleep 1
 
@@ -97,6 +98,7 @@ jobs:
           POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
           AWARDS_SERVICE_URL: http://localhost:8003
           ALLOWED_CORS_DOMAINS: http://localhost:8000,http://localhost:3000
+          CREDENTIAL_CONFIGURATION_ID: openbadge_credential
         run: uv run pytest tests/e2e/ -v
 
       - name: Cleanup
