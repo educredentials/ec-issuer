@@ -1,6 +1,5 @@
 """Unit tests for HttpAwardsClientAdapter."""
 
-import msgspec
 import pytest
 
 from src.awards.awards_client_port import (
@@ -15,65 +14,52 @@ from src.awards.models import (
     Award,
     Criteria,
     Issuer,
+    _ob3_default_schema,  # pyright:ignore[reportPrivateUsage]
 )
 from src.lib.http_client import HttpClient
 
-from ..support.requests_doubles import MockResponse, RecordedRequest, RequestsSpy
+from ..support.requests_doubles import MockResponse, RequestsSpy
 
-_VALID_AWARD_JSON = msgspec.json.encode(
-    {
-        "id": "http://example.com/credentials/3527",
-        "type": ["VerifiableCredential", "OpenBadgeCredential"],
-        "name": "Teamwork Badge",
-        "issuer": {
-            "id": "https://example.com/issuers/876543",
-            "type": ["Profile"],
-            "name": "Example Corp",
-        },
-        "validFrom": "2010-01-01T00:00:00Z",
-        "credentialSubject": {
-            "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
-            "type": ["AchievementSubject"],
-            "achievement": {
-                "id": "https://example.com/achievements/21st-century-skills/teamwork",
-                "type": ["Achievement"],
-                "criteria": {
-                    "narrative": (
-                        "Team members are nominated for this badge by their peers."
-                    )
-                },
-                "description": (
-                    "This badge recognizes the capacity to collaborate in a group."
-                ),
-                "name": "Teamwork",
-            },
-        },
-    }
+_BADGR_AWARD_JSON = (
+    b'{"id":32,"entity_id":"http://example.com/'
+    b'awards/3527","name":"Teamwork Badge",'
+    b'"issued_on":"2010-01-01T00:00:00Z",'
+    b'"badgr":null,"revoked":false,"public":true,'
+    b'"grade_achieved":null,"expires_at":null,'
+    b'"badgeclass":{"id":18,"name":"Teamwork Badge",'
+    b'"entity_id":"http://example.com/'
+    b'badgeclasses/21",'
+    b'"description":"Demonstrates the ability to work effectively",'
+    b'"criteria_text":"Successfully complete the teamwork project",'
+    b'"issuer":{'
+    b'"name_dutch":null,"name_english":null,'
+    b'"faculty":null}}}'
 )
 
-_EXPECTED_AWARD = Award(
-    id="http://example.com/credentials/3527",
-    type=["VerifiableCredential", "OpenBadgeCredential"],
+_EXPECTED_BADGR_AWARD = Award(
+    id="http://example.com/awards/3527",
+    type=["VerifiableCredential", "AchievementCredential"],
     name="Teamwork Badge",
     issuer=Issuer(
-        id="https://example.com/issuers/876543",
+        id="",
         type=["Profile"],
-        name="Example Corp",
+        name="Teamwork Badge",
     ),
     validFrom="2010-01-01T00:00:00Z",
     credentialSubject=AchievementSubject(
-        id="did:example:ebfeb1f712ebc6f1c276e12ec21",
+        id="http://example.com/awards/3527",
         type=["AchievementSubject"],
         achievement=Achievement(
-            id="https://example.com/achievements/21st-century-skills/teamwork",
+            id="http://example.com/awards/3527",
             type=["Achievement"],
             criteria=Criteria(
-                narrative="Team members are nominated for this badge by their peers."
+                narrative="Successfully complete the teamwork project",
             ),
-            description="This badge recognizes the capacity to collaborate in a group.",
-            name="Teamwork",
+            description=("Demonstrates the ability to work effectively"),
+            name="Teamwork Badge",
         ),
     ),
+    credentialSchema=_ob3_default_schema(),
 )
 
 
@@ -87,14 +73,14 @@ def http_client() -> RequestsSpy:
 def subject(http_client: HttpClient) -> HttpAwardsClientAdapter:
     """Provide the adapter wired to the spy."""
     return HttpAwardsClientAdapter(
-        awards_service_url="http://awards.example.com", http_client=http_client
+        awards_service_url="http://awards.example.com/awards/", http_client=http_client
     )
 
 
 @pytest.fixture
-def valid_award_response() -> MockResponse:
-    """Provide a 200 response with valid award JSON."""
-    return MockResponse(status_code=200, _content=_VALID_AWARD_JSON)
+def valid_badgr_award_response() -> MockResponse:
+    """Provide a 200 response with Badgr award JSON."""
+    return MockResponse(status_code=200, _content=_BADGR_AWARD_JSON)
 
 
 class TestHttpAwardsClientAdapter:
@@ -104,26 +90,26 @@ class TestHttpAwardsClientAdapter:
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
-        valid_award_response: MockResponse,
+        valid_badgr_award_response: MockResponse,
     ) -> None:
         """get() sends a GET request to /awards/{award_id}."""
-        http_client.set_response(valid_award_response)
-        _ = subject.get("award-123")
-        assert http_client.calls[0] == RecordedRequest(
-            method="get",
-            url="http://awards.example.com/awards/award-123",
-        )
+        http_client.set_response(valid_badgr_award_response)
+        _ = subject.get("award-123", "fake_token")
+        call = http_client.calls[0]
+        assert call.method == "get"
+        assert call.url == "http://awards.example.com/awards/award-123"
+        assert call.headers == {"Authorization": "Bearer fake_token"}
 
     def test_get_returns_award_from_response(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
-        valid_award_response: MockResponse,
+        valid_badgr_award_response: MockResponse,
     ) -> None:
         """get() decodes and returns the Award from a 200 response."""
-        http_client.set_response(valid_award_response)
-        result = subject.get("award-123")
-        assert result == _EXPECTED_AWARD
+        http_client.set_response(valid_badgr_award_response)
+        result = subject.get("award-123", "fake_token")
+        assert result == _EXPECTED_BADGR_AWARD
 
     def test_get_raises_award_not_found_on_404(
         self,
@@ -135,7 +121,7 @@ class TestHttpAwardsClientAdapter:
             MockResponse(status_code=404, _content=b'{"error": "Award not found"}')
         )
         with pytest.raises(AwardNotFound):
-            _ = subject.get("award-999")
+            _ = subject.get("award-999", "fake_token")
 
     def test_get_raises_award_forbidden_on_403(
         self,
@@ -147,7 +133,7 @@ class TestHttpAwardsClientAdapter:
             MockResponse(status_code=403, _content=b'{"error": "Forbidden"}')
         )
         with pytest.raises(AwardForbidden):
-            _ = subject.get("award-123")
+            _ = subject.get("award-123", "fake_token")
 
     def test_get_raises_awards_client_error_on_500(
         self,
@@ -159,7 +145,7 @@ class TestHttpAwardsClientAdapter:
             MockResponse(status_code=500, _content=b'"Internal Server Error"')
         )
         with pytest.raises(AwardsClientError):
-            _ = subject.get("award-123")
+            _ = subject.get("award-123", "fake_token")
 
     def test_get_raises_awards_client_error_on_4xx(
         self,
@@ -171,7 +157,7 @@ class TestHttpAwardsClientAdapter:
             MockResponse(status_code=422, _content=b'"Unprocessable"')
         )
         with pytest.raises(AwardsClientError):
-            _ = subject.get("award-123")
+            _ = subject.get("award-123", "fake_token")
 
     def test_get_raises_awards_client_error_on_invalid_json(
         self,
@@ -183,4 +169,4 @@ class TestHttpAwardsClientAdapter:
             MockResponse(status_code=200, _content=b"not valid json")
         )
         with pytest.raises(AwardsClientError):
-            _ = subject.get("award-123")
+            _ = subject.get("award-123", "fake_token")

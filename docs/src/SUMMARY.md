@@ -9,7 +9,6 @@
 
 # Technical setup
 - [Configuration](./configuration.md)
-- [Credential Configuration](./credential_configuration.md)
 - [Hexagonal Architecture](./architecture.md)
   - [Ports Adapters example](./ports_adapters.md)
   - [Ports Adapters example test setup](./ports_adapters_test.md)
@@ -20,6 +19,8 @@
   - [002 Use ABC instead of Protocol for Interface Definition](./adr/ADR002-abc-over-protocol.md)
   - [003 Expose ssi-agent as peer service alongside ec-issuer](./adr/ADR003-ssi-agent-as-peer-service.md)
   - [004 Use psycopg for PostgreSQL database access](./adr/ADR004-database-library.md)
+  - [005 Serialize Badgr API response as DTO](./adr/ADR005-Badgr-award-serialization.md)
+  - [006 Pass bearer token through awards client chain](./adr/ADR006-bearer-token-passthrough.md)
 - [OIDC4VCI Issuer Agent](./oidc4vci_issuer_agent.md)
 - [AI Agent context](./agent_context.md)
   - [AGENTS.md](./agents/AGENTS.md)

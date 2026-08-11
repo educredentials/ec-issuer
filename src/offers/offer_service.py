@@ -86,7 +86,7 @@ class OfferService:
             raise PermissionDeniedError(award_id)
 
         try:
-            award = self._award_service.get(award_id)
+            award = self._award_service.get(award_id, bearer_token)
         except AwardNotFound:
             raise NotFoundError(f"Award {award_id} not found")
         except AwardForbidden:

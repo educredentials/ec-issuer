@@ -7,10 +7,10 @@ from typing import override
 import msgspec
 
 from src.credential_configurations.credential_configurations_service import (
-    CredentialConfigurationsService,
+    CredentialTemplateService,
 )
 from src.credential_configurations.models import (
-    CredentialConfiguration,
+    CredentialTemplate,
 )
 
 from .sysadmin_port import SysadminPort
@@ -36,17 +36,15 @@ Commands:
 class SysadminCliAdapter(SysadminPort):
     """CLI adapter for sysadmin operations."""
 
-    _credential_configurations_service: CredentialConfigurationsService
+    _credential_template_service: CredentialTemplateService
 
-    def __init__(
-        self, credential_configurations_service: CredentialConfigurationsService
-    ) -> None:
+    def __init__(self, credential_template_service: CredentialTemplateService) -> None:
         """Initialize the adapter.
 
         Args:
             service: The credential configurations service.
         """
-        self._credential_configurations_service = credential_configurations_service
+        self._credential_template_service = credential_template_service
 
     @override
     def run(self, command: list[str]) -> None:
@@ -81,11 +79,11 @@ class SysadminCliAdapter(SysadminPort):
         """Handle the create command."""
         try:
             input_json = sys.stdin.read()
-            configuration: CredentialConfiguration = msgspec.json.decode(
-                input_json, type=CredentialConfiguration
+            configuration: CredentialTemplate = msgspec.json.decode(
+                input_json, type=CredentialTemplate
             )
-            configuration.credential_configuration_id = config_id
-            result = self._credential_configurations_service.create(configuration)
+            result = self._credential_template_service.create(configuration)
+            configuration.id = result.id
             print(msgspec.json.encode(asdict(result)).decode())
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
@@ -94,7 +92,7 @@ class SysadminCliAdapter(SysadminPort):
     def _handle_show(self, config_id: str) -> None:
         """Handle the show command."""
         try:
-            result = self._credential_configurations_service.get(config_id)
+            result = self._credential_template_service.get(config_id)
             print(msgspec.json.encode(asdict(result)).decode())
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
@@ -103,7 +101,7 @@ class SysadminCliAdapter(SysadminPort):
     def _handle_list(self) -> None:
         """Handle the list command."""
         try:
-            results = self._credential_configurations_service.list()
+            results = self._credential_template_service.list()
             # Convert to list of dicts for JSON serialization
             results_list = [asdict(r) for r in results]
             print(msgspec.json.encode(results_list).decode())

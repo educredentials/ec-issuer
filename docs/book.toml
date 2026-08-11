@@ -1,6 +1,6 @@
 [book]
 title = "Educredentials Issuer"
-authors = ["Bèr Kessels"]
+authors = ["Bèr Kessels", "Daniel Ostkamp"]
 language = "en"
 
 [preprocessor]

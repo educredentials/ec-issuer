@@ -1,15 +1,21 @@
 """Service for credential configurations operations."""
 
-from .credential_configurations_client_port import CredentialConfigurationsClientPort
-from .models import CredentialConfiguration
+from typing import TYPE_CHECKING
+
+from .models import CredentialTemplate
+
+if TYPE_CHECKING:
+    from .credential_configurations_client_port import (
+        CredentialTemplateClientPort,
+    )
 
 
-class CredentialConfigurationsService:
+class CredentialTemplateService:
     """Service that executes operations for credential configurations."""
 
-    _client: CredentialConfigurationsClientPort
+    _client: "CredentialTemplateClientPort"
 
-    def __init__(self, client: CredentialConfigurationsClientPort) -> None:
+    def __init__(self, client: "CredentialTemplateClientPort") -> None:
         """Initialize the service.
 
         Args:
@@ -17,7 +23,7 @@ class CredentialConfigurationsService:
         """
         self._client = client
 
-    def create(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
+    def create(self, configuration: CredentialTemplate) -> CredentialTemplate:
         """Create a new credential configuration.
 
         Args:
@@ -27,37 +33,37 @@ class CredentialConfigurationsService:
             The created credential configuration.
 
         Raises:
-            CredentialConfigurationsClientError: When creation fails.
+            CredentialTemplateClientError: When creation fails.
         """
         return self._client.create(configuration)
 
-    def get(self, configuration_id: str) -> CredentialConfiguration:
-        """Retrieve a credential configuration by ID.
+    def get(self, template_id: str) -> CredentialTemplate:
+        """Retrieve a credential template by ID.
 
         Args:
-            configuration_id: The unique credential configuration identifier.
+            template_id: The unique credential template identifier.
 
         Returns:
-            The matching CredentialConfiguration.
+            The matching CredentialTemplate.
 
         Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When retrieval fails.
+            CredentialTemplateNotFound: When not found.
+            CredentialTemplateClientError: When retrieval fails.
         """
-        return self._client.get(configuration_id)
+        return self._client.get(template_id)
 
-    def list(self) -> list[CredentialConfiguration]:
+    def list(self) -> list[CredentialTemplate]:
         """List all credential configurations.
 
         Returns:
             A list of all credential configurations.
 
         Raises:
-            CredentialConfigurationsClientError: When listing fails.
+            CredentialTemplateClientError: When listing fails.
         """
         return self._client.list()
 
-    def update(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
+    def update(self, configuration: CredentialTemplate) -> CredentialTemplate:
         """Update an existing credential configuration.
 
         Args:
@@ -67,19 +73,52 @@ class CredentialConfigurationsService:
             The updated credential configuration.
 
         Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When update fails.
+            CredentialTemplateNotFound: When not found.
+            CredentialTemplateClientError: When update fails.
         """
         return self._client.update(configuration)
 
-    def delete(self, configuration_id: str) -> None:
-        """Delete a credential configuration.
+    def ensure_by_title(
+        self,
+        template: CredentialTemplate,
+        ssi_agent_url: str = "",
+    ) -> CredentialTemplate:
+        """Find an existing template by title, or create the template.
+
+        Searches the SSI Agent for a template with a matching title.
+        If one exists, it is returned. Otherwise the new template is
+        created and the created result is returned.
 
         Args:
-            configuration_id: The unique credential configuration identifier.
+            template: The template to ensure exists on the SSI Agent.
+            ssi_agent_url: The SSI Agent URL, included in error messages.
+
+        Returns:
+            The matching or newly created CredentialTemplate.
 
         Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When deletion fails.
+            RuntimeError: When the SSI Agent is unreachable or creation fails.
         """
-        return self._client.delete(configuration_id)
+        import requests
+
+        from src.credential_configurations.credential_configurations_client_port import (  # noqa: E501
+            CredentialTemplateClientError,
+        )
+
+        try:
+            templates = self._client.list()
+        except (requests.RequestException, CredentialTemplateClientError) as e:
+            raise RuntimeError(
+                f"Failed to reach SSI Agent {ssi_agent_url}: {e}"
+            ) from e
+
+        for t in templates:
+            if t.title == template.title:
+                return t
+
+        try:
+            return self._client.create(template)
+        except (requests.RequestException, CredentialTemplateClientError) as e:
+            raise RuntimeError(
+                f"Failed to create credential template on {ssi_agent_url}: {e}"
+            ) from e

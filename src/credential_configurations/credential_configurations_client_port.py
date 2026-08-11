@@ -2,65 +2,65 @@
 
 from abc import ABC, abstractmethod
 
-from .models import CredentialConfiguration
+from .models import CredentialTemplate
 
 
-class CredentialConfigurationNotFound(Exception):
+class CredentialTemplateNotFound(Exception):
     """Error raised when a credential configuration is not found."""
 
 
-class CredentialConfigurationsClientError(Exception):
+class CredentialTemplateClientError(Exception):
     """Error raised when credential configurations client operations fail."""
 
 
-class CredentialConfigurationsClientPort(ABC):
+class CredentialTemplateClientPort(ABC):
     """Client port: Operations for credential configurations."""
 
     @abstractmethod
-    def create(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
-        """Create a new credential configuration.
+    def create(self, template: CredentialTemplate) -> CredentialTemplate:
+        """Create a new credential template.
 
         Args:
-            configuration: The credential configuration to create.
+            template: The credential template to create.
 
         Returns:
             The created credential configuration.
 
         Raises:
-            CredentialConfigurationsClientError: When creation fails.
+            CredentialTemplateClientError: When creation fails.
         """
         ...
 
     @abstractmethod
-    def get(self, configuration_id: str) -> CredentialConfiguration:
-        """Retrieve a credential configuration by ID.
+    def list(self) -> list[CredentialTemplate]:
+        """List all credential templates.
+
+        Returns:
+            A list of all credential templates.
+
+        Raises:
+            CredentialTemplateClientError: When listing fails.
+        """
+        ...
+
+    @abstractmethod
+    def get(self, template_id: str) -> CredentialTemplate:
+        """Retrieve a credential template by ID.
 
         Args:
-            configuration_id: The unique credential configuration identifier.
+            configuration_id: The unique credential template identifier.
 
         Returns:
-            The matching CredentialConfiguration.
+            The matching CredentialTemplate.
 
         Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When retrieval fails.
+            CredentialTemplateNotFound: When not found.
+            CredentialTemplateClientError: When retrieval fails.
         """
         ...
 
     @abstractmethod
-    def list(self) -> list[CredentialConfiguration]:
-        """List all credential configurations.
-
-        Returns:
-            A list of all credential configurations.
-
-        Raises:
-            CredentialConfigurationsClientError: When listing fails.
-        """
-        ...
-
-    @abstractmethod
-    def update(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
+    def update(self, configuration: CredentialTemplate) -> CredentialTemplate:
         """Update an existing credential configuration.
 
         Args:
@@ -70,20 +70,7 @@ class CredentialConfigurationsClientPort(ABC):
             The updated credential configuration.
 
         Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When update fails.
-        """
-        ...
-
-    @abstractmethod
-    def delete(self, configuration_id: str) -> None:
-        """Delete a credential configuration.
-
-        Args:
-            configuration_id: The unique credential configuration identifier.
-
-        Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When deletion fails.
+            CredentialTemplateNotFound: When not found.
+            CredentialTemplateClientError: When update fails.
         """
         ...

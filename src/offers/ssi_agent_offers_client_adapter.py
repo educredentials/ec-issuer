@@ -19,7 +19,7 @@ from .offers_client_port import (
 @dataclass
 class _CredentialOffer:
     credential_issuer: str
-    credential_configuration_ids: list[str]
+    credential_template_id: str
     grants: dict[str, dict[str, str]]
 
 
@@ -46,12 +46,12 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
 
     _ssi_agent_admin_base_url: str
     _http_client: HttpClient
-    _credential_configuration_id: str
+    _credential_template_id: str
 
     def __init__(
         self,
         ssi_agent_url: str,
-        credential_configuration_id: str,
+        credential_template_id: str,
         http_client: HttpClient | None = None,
     ) -> None:
         """Initialize the adapter.
@@ -64,7 +64,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 Defaults to requests module.
         """
         self._ssi_agent_admin_base_url = ssi_agent_url.rstrip("/")
-        self._credential_configuration_id = credential_configuration_id
+        self._credential_template_id = credential_template_id
         if http_client is not None:
             self._http_client = http_client
         else:
@@ -132,8 +132,8 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             json={
                 "offerId": offer_id,
                 "credential": asdict(award),
-                "credentialConfigurationId": self._credential_configuration_id,
-                "expiresAt": "3025-10-24 11:34:00Z",
+                "templateId": self._credential_template_id,
+                "expiresAt": "never",
             },
         )
 
@@ -147,7 +147,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             f"{self._ssi_agent_admin_base_url}/v0/offers",
             json={
                 "offerId": offer_id,
-                "credentialConfigurationIds": [self._credential_configuration_id],
+                "templateIds": [self._credential_template_id],
             },
         )
 

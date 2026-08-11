@@ -1,6 +1,6 @@
 """SSI-Agent Adapter for credential configurations operations."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import override
 
 import msgspec
@@ -8,12 +8,12 @@ import msgspec
 from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .credential_configurations_client_port import (
-    CredentialConfigurationNotFound,
-    CredentialConfigurationsClientError,
-    CredentialConfigurationsClientPort,
+    CredentialTemplateNotFound,
+    CredentialTemplateClientError,
+    CredentialTemplateClientPort,
 )
 from .models import (
-    CredentialConfiguration,
+    CredentialTemplate,
     Display,
 )
 
@@ -25,7 +25,9 @@ class _SsiAgentIssuerMetadata:
 
     credential_issuer: str
     credential_endpoint: str
-    credential_configurations_supported: dict[str, CredentialConfiguration]
+    credential_configurations_supported: dict[
+        str, object
+    ]
 
 
 @dataclass
@@ -35,13 +37,16 @@ class _SsiAgentDisplay:
     name: str | None = None
     locale: str | None = None
     logo: dict[str, str | None] | None = None
+    description: str | None = None
 
     @staticmethod
-    def from_configuration(configuration: Display) -> "_SsiAgentDisplay":
+    def from_display_info(display: Display) -> "_SsiAgentDisplay":
+        logo: dict[str, str | None] | None = None
+        if display.logo is not None:
+            logo = {"uri": display.logo.uri, "alt_text": display.logo.alt_text}
         return _SsiAgentDisplay(
-            name=configuration.name,
-            logo=configuration.logo,
-            locale=configuration.locale,
+            name=display.name,
+            logo=logo,
         )
 
 
@@ -49,37 +54,39 @@ class _SsiAgentDisplay:
 class _SsiAgentAddPayload:
     """Payload for Create (and therefore update) credential configuration on service"""
 
-    credential_configuration_id: str | None = None
-    format: str | None = None
+    title: str | None = None
+    dataModel: str | None = None
+    holderType: str | None = None
+    status: str | None = None
+    description: str | None = None
     type: list[str] | None = None
-    display: list[_SsiAgentDisplay] | None = None
+    display: _SsiAgentDisplay | None = None
+    schema: dict[str, object] | None = None
+    credentialExpiration: dict[str, str] = field(
+        default_factory=lambda: {"type": "never"},
+    )
 
     @staticmethod
-    def from_credential_configuration(
-        configuration: CredentialConfiguration,
+    def from_credential_template(
+        template: CredentialTemplate,
     ) -> "_SsiAgentAddPayload":
-        assert configuration.credential_definition is not None, (
-            "`.credential_definition.type` is required, and must be a list of strings"
-        )
-        type_list = configuration.credential_definition.type
-
-        if configuration.credential_metadata.display is None:
-            displays = []
-        else:
-            displays = [
-                _SsiAgentDisplay.from_configuration(display)
-                for display in configuration.credential_metadata.display
-            ]
+        display_list: _SsiAgentDisplay | None = None
+        if template.display is not None:
+            display_list = _SsiAgentDisplay.from_display_info(template.display)
 
         return _SsiAgentAddPayload(
-            credential_configuration_id=configuration.credential_configuration_id,
-            format=configuration.format,
-            type=type_list,
-            display=displays,
+            title=template.title,
+            dataModel=template.dataModel,
+            holderType=template.holderType,
+            status=template.status,
+            type=template.type,
+            description=template.description,
+            schema=template.schema,
+            display=display_list,
         )
 
 
-class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClientPort):
+class SsiAgentCredentialTemplateClientAdapter(CredentialTemplateClientPort):
     """Adapter for SSI Agent credential configurations API."""
 
     _ssi_agent_admin_base_url: str
@@ -106,125 +113,104 @@ class SsiAgentCredentialConfigurationsClientAdapter(CredentialConfigurationsClie
             self._http_client = RequestsHttpClient()
 
     @override
-    def create(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
-        """Create a new credential configuration.
+    def create(self, template: CredentialTemplate) -> CredentialTemplate:
+        """Create a new credential template.
 
         Args:
-            configuration: The credential configuration to create.
+            template: The credential configuration to create.
 
         Returns:
-            The created credential configuration.
+            The created credential template.
 
         Raises:
-            CredentialConfigurationsClientError: When upstream service returns an error.
+            CredentialTemplateClientError: When upstream service returns an error.
             ValueError: When the credential configuration ID is not set.
         """
-        payload = _SsiAgentAddPayload.from_credential_configuration(configuration)
+        payload = _SsiAgentAddPayload.from_credential_template(template)
+        payload_dict = asdict(payload)
+        url = f"{self._ssi_agent_admin_base_url}/v0/create-new-template"
 
-        # For SSI Agent, POST to /v0/credential-configurations with existing
-        # ID updates it
-        response = self._http_client.post(
-            f"{self._ssi_agent_admin_base_url}/v0/credential-configurations",
-            json=asdict(payload),
-        )
+        response = self._http_client.post(url, json=payload_dict)
 
         if response.status_code == 404:
-            raise CredentialConfigurationNotFound(
-                f"Configuration {configuration.credential_configuration_id} not found"
-            )
+            raise CredentialTemplateNotFound(f"Template {template.id} not found")
 
         if 400 <= response.status_code < 600:
-            raise CredentialConfigurationsClientError(
-                f"Upstream error: {response.status_code} - {response.text}"
-            )
-
-        # Rather than returning the input, we re-fetch it, so we get the result as it is
-        # merged and enriched with the issuer config.
-        configuration = self.get(configuration.credential_configuration_id)
-        return configuration
-
-    @override
-    def get(self, configuration_id: str) -> CredentialConfiguration:
-        """Retrieve a credential configuration by ID.
-
-        Args:
-            configuration_id: The unique credential configuration identifier.
-
-        Returns:
-            The matching CredentialConfiguration.
-
-        Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When upstream service returns an error.
-        """
-        # Get issuer metadata which contains all credential configurations
-        all = self.list()
-
-        # Find by credential_configuration_id
-        for config in all:
-            if config.credential_configuration_id == configuration_id:
-                return config
-
-        raise CredentialConfigurationNotFound(configuration_id)
-
-    @override
-    def list(self) -> list[CredentialConfiguration]:
-        """List all credential configurations.
-
-        Returns:
-            A list of all credential configurations.
-
-        Raises:
-            CredentialConfigurationsClientError: When upstream service returns an error.
-        """
-        response = self._http_client.get(
-            f"{self._ssi_agent_admin_base_url}/.well-known/openid-credential-issuer",
-        )
-
-        if 400 <= response.status_code < 600:
-            raise CredentialConfigurationsClientError(
+            raise CredentialTemplateClientError(
                 f"Upstream error: {response.status_code} - {response.text}"
             )
 
         try:
-            metadata: _SsiAgentIssuerMetadata = msgspec.json.decode(
-                response.content, type=_SsiAgentIssuerMetadata
+            template: CredentialTemplate = msgspec.json.decode(
+                response.content, type=CredentialTemplate
             )
         except msgspec.DecodeError as e:
-            raise CredentialConfigurationsClientError(
+            raise CredentialTemplateClientError(
                 f"Invalid response from upstream: {e}"
             ) from e
 
-        configurations: list[CredentialConfiguration] = []
-        for (
-            id,
-            configuration,
-        ) in metadata.credential_configurations_supported.items():
-            configuration.credential_configuration_id = id
-            configurations.append(configuration)
-
-        return configurations
+        return template
 
     @override
-    def update(self, configuration: CredentialConfiguration) -> CredentialConfiguration:
-        """Update an existing credential configuration.
+    def list(self) -> list[CredentialTemplate]:
+        """List all credential templates.
+
+        Calls /v0/templates/get-all-templates and decodes the response
+        as a dict of templates keyed by ID.
+
+        Returns:
+            A list of all credential templates.
+
+        Raises:
+            CredentialTemplateClientError: When upstream service returns an error.
+        """
+        response = self._http_client.get(
+            f"{self._ssi_agent_admin_base_url}/v0/list-all-templates",
+        )
+
+        if 400 <= response.status_code < 600:
+            raise CredentialTemplateClientError(
+                f"Upstream error: {response.status_code} - {response.text}"
+            )
+
+        try:
+            templates: list[CredentialTemplate] = msgspec.json.decode(
+                response.content, type=list[CredentialTemplate]
+            )
+        except msgspec.DecodeError as e:
+            raise CredentialTemplateClientError(
+                f"Invalid response from upstream: {e}"
+            ) from e
+
+        return templates
+
+    @override
+    def get(self, template_id: str) -> CredentialTemplate:
+        """Retrieve a credential template by ID.
+
+        Args:
+            template_id: The unique credential template identifier.
+
+        Returns:
+            The matching CredentialTemplate.
+
+        Raises:
+            CredentialTemplateNotFound: When not found.
+            CredentialTemplateClientError: When upstream service returns an error.
+        """
+        all = self.list()
+
+        for template in all:
+            if template.id == template_id:
+                return template
+
+        raise CredentialTemplateNotFound(template_id)
+
+    @override
+    def update(self, configuration: CredentialTemplate) -> CredentialTemplate:
+        """Update an existing credential template.
 
         Implemented by "create" with an existing id.
         See self.create()
         """
         return self.create(configuration)
-
-    @override
-    def delete(self, configuration_id: str) -> None:
-        """Delete a credential configuration.
-
-        Args:
-            configuration_id: The unique credential configuration identifier.
-
-        Raises:
-            CredentialConfigurationNotFound: When not found.
-            CredentialConfigurationsClientError: When upstream service returns an error.
-        """
-        raise NotImplementedError(
-            "Delete is not implemented for credential configurations"
-        )

@@ -48,12 +48,16 @@ class HttpClient(Protocol):
     and test doubles that implement the same interface.
     """
 
-    def get(self, url: str) -> HttpResponse:
+    def get(
+        self,
+        url: str,
+        headers: dict[str, str] | None = None,
+    ) -> HttpResponse:
         """Send a GET request.
 
         Args:
             url: The URL to request.
-            **kwargs: Additional request parameters.
+            headers: Optional HTTP headers.
 
         Returns:
             The response object.
@@ -107,8 +111,12 @@ class RequestsHttpClient:
 
     _default_timeout: int = 10
 
-    def get(self, url: str) -> HttpResponse:
-        return self._request("GET", url)
+    def get(
+        self,
+        url: str,
+        headers: dict[str, str] | None = None,
+    ) -> HttpResponse:
+        return self._request("GET", url, headers=headers)
 
     def post(self, url: str, json: JSON) -> HttpResponse:
         return self._request("POST", url, json=json)
@@ -119,7 +127,20 @@ class RequestsHttpClient:
     def delete(self, url: str, json: JSON | None = None) -> HttpResponse:
         return self._request("DELETE", url, json=json)
 
-    def _request(self, method: str, url: str, json: JSON | None = None) -> HttpResponse:
+    def _request(
+        self,
+        method: str,
+        url: str,
+        json: JSON | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> HttpResponse:
+        kwargs: dict[str, object] = {"timeout": self._default_timeout}
+        if json is not None:
+            kwargs["json"] = json
+        if headers is not None:
+            kwargs["headers"] = headers
         return requests.request(
-            method=method, url=url, json=json, timeout=self._default_timeout
+            method=method,
+            url=url,
+            **kwargs,  # pyright: ignore[reportArgumentType]
         )

@@ -1,12 +1,13 @@
-from abc import ABC
+"""Configuration port — defines the interface for configuration repositories."""
+
+from typing import Protocol
 
 
-class ConfigRepoPort(ABC):
+class ConfigRepoPort(Protocol):
     """Port: Configuration repository interface."""
 
     server_host: str
     server_port: int
-    # TODO: Rename to oid4vci_agent_url
     ssi_agent_url: str
     awards_service_url: str
     debug: bool

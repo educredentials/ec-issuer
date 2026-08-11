@@ -8,6 +8,7 @@ from src.awards.award_service import AwardService
 from src.awards.http_awards_client_adapter import HttpAwardsClientAdapter
 from src.config.config import EnvConfigRepo
 from src.config.config_port import ConfigRepoPort
+from src.credential_configurations.bootstrap import resolve_credential_template_id
 from src.offers.offer_service import OfferService
 from src.offers.postgresql_offers_repository_adapter import (
     PostgreSQLOffersRepositoryAdapter,
@@ -23,21 +24,27 @@ class App:
 
     def __init__(self):
         """Initialise and wire all application dependencies."""
-        self.config = EnvConfigRepo()
+        # Resolve credential template ID
+        credential_configuration_id = resolve_credential_template_id()
+
+        # Create config with resolved ID
+        self.config = EnvConfigRepo(
+            credential_configuration_id=credential_configuration_id,
+        )
 
         access_control = HardcodedAccessControlAdapter()
 
         awards_client = HttpAwardsClientAdapter(
-            awards_service_url=self.config.awards_service_url
+            awards_service_url=self.config.awards_service_url,
         )
         award_service = AwardService(client=awards_client)
 
         offers_client = SsiAgentOffersClientAdapter(
             ssi_agent_url=self.config.ssi_agent_url,
-            credential_configuration_id=self.config.credential_configuration_id,
+            credential_template_id=self.config.credential_configuration_id,
         )
         offers_repository = PostgreSQLOffersRepositoryAdapter(
-            self.config.postgresql_connection_string
+            self.config.postgresql_connection_string,
         )
         offer_service = OfferService(
             access_control=access_control,

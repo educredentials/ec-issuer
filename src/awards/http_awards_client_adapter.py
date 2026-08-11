@@ -12,7 +12,7 @@ from .awards_client_port import (
     AwardsClientError,
     AwardsClientPort,
 )
-from .models import Award
+from .models import Award, _BadgrAwardResponse, _to_ob3_award  # pyright: ignore[reportPrivateUsage]
 
 
 class HttpAwardsClientAdapter(AwardsClientPort):
@@ -42,11 +42,12 @@ class HttpAwardsClientAdapter(AwardsClientPort):
             self._http_client = RequestsHttpClient()
 
     @override
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> Award:
         """Fetch an award by ID from the awards HTTP service.
 
         Args:
             award_id: The unique award identifier.
+            bearer_token: The caller's bearer token for authentication.
 
         Returns:
             The matching Award.
@@ -57,7 +58,8 @@ class HttpAwardsClientAdapter(AwardsClientPort):
             AwardsClientError: On other errors or invalid response.
         """
         response = self._http_client.get(
-            f"{self._awards_service_base_url}/awards/{award_id}"
+            f"{self._awards_service_base_url}/{award_id}",
+            headers={"Authorization": f"Bearer {bearer_token}"},
         )
 
         if response.status_code == 404:
@@ -72,6 +74,8 @@ class HttpAwardsClientAdapter(AwardsClientPort):
             )
 
         try:
-            return msgspec.json.decode(response.content, type=Award)
+            dto = msgspec.json.decode(response.content, type=_BadgrAwardResponse)
         except msgspec.DecodeError as e:
             raise AwardsClientError(f"Invalid response from awards service: {e}") from e
+
+        return _to_ob3_award(dto)

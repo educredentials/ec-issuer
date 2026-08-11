@@ -21,11 +21,12 @@ class AwardsClientPort(ABC):
     """Port: fetches awards from the external awards service."""
 
     @abstractmethod
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> Award:
         """Fetch an award by its identifier.
 
         Args:
             award_id: The unique award identifier.
+            bearer_token: The caller's bearer token for authentication.
 
         Returns:
             The matching Award.

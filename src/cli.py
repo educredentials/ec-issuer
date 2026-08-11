@@ -6,7 +6,7 @@ from src.credential_configurations import (
     ssi_agent_credential_configurations_client_adapter as ssi_adapter,
 )
 from src.credential_configurations.credential_configurations_service import (
-    CredentialConfigurationsService,
+    CredentialTemplateService,
 )
 from src.sysadmin.sysadmin_cli_adapter import SysadminCliAdapter
 
@@ -20,15 +20,13 @@ class App:
         """Initialise and wire all application dependencies."""
         config = EnvConfigRepo()
 
-        client = ssi_adapter.SsiAgentCredentialConfigurationsClientAdapter(
+        client = ssi_adapter.SsiAgentCredentialTemplateClientAdapter(
             ssi_agent_url=config.ssi_agent_url
         )
-        credential_configurations_service = CredentialConfigurationsService(
-            client=client
-        )
+        credential_template_service = CredentialTemplateService(client=client)
 
         self._sysadmin_port = SysadminCliAdapter(
-            credential_configurations_service=credential_configurations_service
+            credential_template_service=credential_template_service
         )
 
     def run(self, args: list[str]) -> None:
