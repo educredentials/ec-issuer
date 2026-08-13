@@ -148,7 +148,7 @@ class TestBadgrAwardResponseDeserialization:
         assert result.badgeclass.issuer is not None
         raw_faculty: object = result.badgeclass.issuer.faculty
         assert raw_faculty is not None and isinstance(raw_faculty, dict)
-        raw_inst: dict[str, object] = raw_faculty["institution"]  # pyright: ignore[reportUnknownVariableType]
+        raw_inst: dict[str, object] = raw_faculty["institution"]
         assert raw_inst["identifier"] == "university-example.org"
 
 

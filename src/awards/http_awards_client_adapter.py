@@ -58,7 +58,7 @@ class HttpAwardsClientAdapter(AwardsClientPort):
             AwardsClientError: On other errors or invalid response.
         """
         response = self._http_client.get(
-            f"{self._awards_service_base_url}/{award_id}",
+            f"{self._awards_service_base_url}/awards/{award_id}",
             headers={"Authorization": f"Bearer {bearer_token}"},
         )
 

@@ -73,7 +73,7 @@ def http_client() -> RequestsSpy:
 def subject(http_client: HttpClient) -> HttpAwardsClientAdapter:
     """Provide the adapter wired to the spy."""
     return HttpAwardsClientAdapter(
-        awards_service_url="http://awards.example.com/awards/", http_client=http_client
+        awards_service_url="http://awards.example.com", http_client=http_client
     )
 
 
