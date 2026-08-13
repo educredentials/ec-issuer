@@ -36,7 +36,7 @@ implement ports and adapters. The storage (database) and HTTP (the API) are such
 
 ## Decision Outcome
 
-Chosen option: "Python"
+Chosen option: "Python", because the issuer-service falls into the "Core services" category (wrapping Rust's signing service with business logic and integrations), where Python's developer availability and low boilerplate outweigh the lack of compile-time safety.
 
 Since the signing service is in rust, and the issuer-service wraps this to add
 our business-logic, API and other integrations, the issuer-service falls into

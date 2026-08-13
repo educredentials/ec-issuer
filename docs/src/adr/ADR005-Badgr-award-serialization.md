@@ -30,9 +30,24 @@ Three layers:
 * Good, because the DTO types express the Badgr API contract explicitly
 * Good, because `msgspec.Struct` handles unknown fields by ignoring them, so new Badgr fields don't break us
 * Bad, because adds a serialization step between HTTP response and domain model
-* Neutral, because the DTO types are private (`_` prefix) and internal to `src.awards.models`
+ * Neutral, because the DTO types are private (`_` prefix) and internal to `src.awards.models`
 
-### Badgr DTO Schema
+## Pros and Cons of the Options
+
+### DTO with msgspec Struct
+
+* Good, because msgspec raises `ValidationError` at the HTTP boundary if the Badgr response schema changes unexpectedly
+* Good, because `_to_ob3_award()` is tested independently with plain DTO objects, no JSON parsing involved
+* Good, because the DTO types express the Badgr API contract explicitly
+* Good, because `msgspec.Struct` handles unknown fields by ignoring them, so new Badgr fields don't break us
+
+### Manual `dict[str, object]` indexing
+
+* Bad, because any schema change from the awards service silently produces incorrect mappings
+* Bad, because `isinstance` guards make the mapping function hard to read and test
+* Bad, because there is no validation at the HTTP boundary
+
+## Badgr DTO Schema
 
 ```
 _BadgrAwardResponse (id: int, entity_id: str \| None, name: str \| None, issued_on: str \| None, badgeclass: _BadgrBadgeclass \| None)
@@ -40,7 +55,7 @@ _BadgrAwardResponse (id: int, entity_id: str \| None, name: str \| None, issued_
         └── _BadgrIssuer (name_dutch: str \| None, name_english: str \| None, faculty: str \| None)
 ```
 
-### Badgr → OB3 Field Mapping
+## Badgr → OB3 Field Mapping
 
 | Badgr field | OB3 Award field |
 |---|---|

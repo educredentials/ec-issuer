@@ -32,7 +32,7 @@ Both approaches work with type checkers like basedpyright, but they have differe
 
 ## Decision Outcome
 
-Chosen option: "Use `abc.ABC` with `@abstractmethod` for all interfaces", as demonstrated in `ports_adapters.py`.
+Chosen option: "Use `abc.ABC` with `@abstractmethod` for all interfaces"
 
 ### Positive Consequences
 
@@ -53,7 +53,7 @@ Chosen option: "Use `abc.ABC` with `@abstractmethod` for all interfaces", as dem
 
 While Protocol offers more flexibility through structural typing, ABC provides better development-time feedback which aligns with our goal of catching errors early. The explicit nature of ABC interfaces makes the code more self-documenting and easier to understand for team members.
 
-The `ports_adapters.py` example demonstrates this approach effectively:
+The example below demonstrates this approach effectively:
 
 ```python
 from abc import ABC, abstractmethod
