@@ -79,7 +79,8 @@ class HttpApiAdapter(ApiPort):
         # Metrics endpoint is only relevant to HttpAdapter
         # no need for service/domain models
         metrics: PrometheusMetrics = PrometheusMetrics(app)
-        _ = metrics.info("app_info", "Application info", version="1.0.3")  # pyright: ignore[reportUnknownMemberType] PrometheusMetrics has no typing
+        # PrometheusMetrics has no typing
+        _ = metrics.info("app_info", "Application info", version="1.0.3")
 
         @app.route("/health")
         @metrics.do_not_track()

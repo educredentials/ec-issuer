@@ -13,27 +13,37 @@ paths:
           content:
             application/json:
               example:
-                "@context":
-                  - "https://www.w3.org/ns/credentials/v2"
-                  - "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
-                id: "http://example.com/credentials/3527"
-                type: ["VerifiableCredential", "OpenBadgeCredential"]
+                id: 123
+                entity_id: "award-123"
                 name: "Teamwork Badge"
-                issuer:
-                  id: "https://example.com/issuers/876543"
-                  type: ["Profile"]
-                  name: "Example Corp"
-                validFrom: "2010-01-01T00:00:00Z"
-                credentialSubject:
-                  id: "did:example:ebfeb1f712ebc6f1c276e12ec21"
-                  type: ["AchievementSubject"]
-                  achievement:
-                    id: "https://example.com/achievements/21st-century-skills/teamwork"
-                    type: ["Achievement"]
-                    criteria:
-                      narrative: "Team members are nominated for this badge by their peers and recognized upon review by Example Corp management."
-                    description: "This badge recognizes the development of the capacity to collaborate within a group environment."
-                    name: "Teamwork"
+                issued_on: "2024-01-01"
+                image: "https://example.com/badges/teamwork.png"
+                badgeclass:
+                  id: 456
+                  name: "Teamwork"
+                  description: "Demonstrates team collaboration"
+                  type: ["VerifiableCredential", "OpenBadgeCredential"]
+                  criteria:
+                    narrative: "Team members are nominated by their peers"
+                  issuer:
+                    id: "https://example.com/issuers/876543"
+                    name: "Example Corp"
+                    entity_id: "example-org"
+                    faculty:
+                      organization_name: "Example Corp"
+                      organization_id: "example-org"
+                      address:
+                        addressLocality: "Amsterdam"
+                        addressCountry: "NL"
+                      identifier: "example-org"
+                  badgeclass_url: "https://badgr.com/badgeclasses/456"
+                  image:
+                    data: "https://example.com/badges/teamwork.png"
+                    id: "https://example.com/badges/teamwork.png"
+                  issuer:
+                    id: "https://example.com/issuers/876543"
+                    name: "Example Corp"
+                    entity_id: "example-org"
               schema:
                 type: object
 
@@ -63,26 +73,36 @@ paths:
           content:
             application/json:
               example:
-                "@context":
-                  - "https://www.w3.org/ns/credentials/v2"
-                  - "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
-                id: "http://example.com/credentials/3527"
-                type: ["VerifiableCredential", "OpenBadgeCredential"]
+                id: 123
+                entity_id: "award-123"
                 name: "Teamwork Badge"
-                issuer:
-                  id: "https://example.com/issuers/876543"
-                  type: ["Profile"]
-                  name: "Example Corp"
-                validFrom: "2010-01-01T00:00:00Z"
-                credentialSubject:
-                  id: "did:example:ebfeb1f712ebc6f1c276e12ec21"
-                  type: ["AchievementSubject"]
-                  achievement:
-                    id: "https://example.com/achievements/21st-century-skills/teamwork"
-                    type: ["Achievement"]
-                    criteria:
-                      narrative: "Team members are nominated for this badge by their peers and recognized upon review by Example Corp management."
-                    description: "This badge recognizes the development of the capacity to collaborate within a group environment."
-                    name: "Teamwork"
+                issued_on: "2024-01-01"
+                image: "https://example.com/badges/teamwork.png"
+                badgeclass:
+                  id: 456
+                  name: "Teamwork"
+                  description: "Demonstrates team collaboration"
+                  type: ["VerifiableCredential", "OpenBadgeCredential"]
+                  criteria:
+                    narrative: "Team members are nominated by their peers"
+                  issuer:
+                    id: "https://example.com/issuers/876543"
+                    name: "Example Corp"
+                    entity_id: "example-org"
+                    faculty:
+                      organization_name: "Example Corp"
+                      organization_id: "example-org"
+                      address:
+                        addressLocality: "Amsterdam"
+                        addressCountry: "NL"
+                      identifier: "example-org"
+                  badgeclass_url: "https://badgr.com/badgeclasses/456"
+                  image:
+                    data: "https://example.com/badges/teamwork.png"
+                    id: "https://example.com/badges/teamwork.png"
+                  issuer:
+                    id: "https://example.com/issuers/876543"
+                    name: "Example Corp"
+                    entity_id: "example-org"
               schema:
                 type: object

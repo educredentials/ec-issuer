@@ -172,7 +172,7 @@ paths:
                   example: offer-123
                 credential:
                   type: object
-                credentialConfigurationId:
+                CredentialTemplateId:
                   type: string
                   example: openbadge_credential
                 expiresAt:
@@ -198,7 +198,7 @@ paths:
                 offerId:
                   type: string
                   example: offer-123
-                credentialConfigurationIds:
+                CredentialTemplateIds:
                   type: array
                   items:
                     type: string
@@ -363,3 +363,93 @@ paths:
                         credential:
                           type: string
                           example: "eyJ0eXAiOiJkYytzZC1qd3QiLCJhbGciOiJFZERTQSJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWxzLzM1MjciLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJkaWQ6d2ViOmxvY2FsaG9zdCUzQTgwMDEiLCJ0eXBlIjpbIlByb2ZpbGUiXSwibmFtZSI6IkV4YW1wbGUgQ29ycCJ9LCJ2YWxpZEZyb20iOiIyMDEwLTAxLTAxVDAwOjAwOjAwWiIsIm5hbWUiOiJUZWFtd29yayBCYWRnZSIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImlkIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSIsInR5cGUiOlsiQWNoaWV2ZW1lbnRTdWJqZWN0Il0sImFjaGlldmVtZW50Ijp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9hY2hpZXZlbWVudHMvMjFzdC1jZW50dXJ5LXNraWxscy90ZWFtd29yayIsInR5cGUiOlsiQWNoaWV2ZW1lbnQiXSwiY3JpdGVyaWEiOnsibmFycmF0aXZlIjoiVGVhbSBtZW1iZXJzIGFyZSBub21pbmF0ZWQgZm9yIHRoaXMgYmFkZ2UgYnkgdGhlaXIgcGVlcnMgYSBuZCByZWNvZ25pemVkIHVwb24gcmV2aWV3IGJ5IEV4YW1wbGUgQ29ycCBtYW5hZ2VtZW50LiJ9LCJkZXNjcmlwdGlvbiI6IlRoaXMgYmFkZ2UgcmVjb2duaXplcyB0aGUgZGV2ZWxvcG1lbnQgb2YgdGhlIGNhcGFjaXR5IHRvIGMgb2xsYWJvcmF0ZSB3aXRoaW4gYSBncm91cCBlbnZpcm9ubWVudC4iLCJuYW1lIjoiVGVhbXdvcmsifX0sImlzcyI6ImRpZDp3ZWI6bG9jYWxob3N0JTNBODAwMSIsImp0aSI6Imh0dHA6Ly9leGFtcGxlLmNvbS9jcmVkZW50aWFscy8zNTI3Iiwic3ViIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSJ9.grTc6_i5JfKISK1gT99m1l3fiPsWgdaf4NaldEBq0n5Vnyrgagz6ZV5lnLG-_EbgY6kdIJjARbr7X-uq-bBaAw"
+
+  /v0/create-new-template:
+    post:
+      summary: Create a new credential template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: { type: array, items: { type: string } }
+                title: { type: string }
+                dataModel: { type: string }
+                holderType: { type: string }
+                status: { type: string }
+                visibility: { type: string }
+                description: { type: string }
+                display:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    locale: { type: string }
+                    description: { type: string }
+                    logo:
+                      type: object
+                      properties:
+                        uri: { type: string }
+                        alt_text: { type: string }
+                tags: { type: array, items: { type: string } }
+                schema: { type: object }
+                credentialExpiration: { type: object }
+            example:
+              title: "eduCredentials OBv3 Credential"
+              display:
+                { name: "Open Badge Credential", locale: "en" }
+              dataModel: "open_badges_3-0"
+              holderType: "individual"
+              status: "published"
+              type: ["VerifiableCredential", "OpenBadgeCredential"]
+              schema:
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+              credentialExpiration: { type: "never" }
+      responses:
+        "200":
+          description: Credential template created
+          content:
+            application/json:
+              example:
+                type: ["VerifiableCredential", "OpenBadgeCredential"]
+                id: "OpenbadgeCredential"
+                title: "eduCredentials OBv3 Credential"
+                display:
+                  name: "Open Badge Credential"
+                  logo: { uri: "https://example.com/images/logo.png", alt_text: "Blue Logo" }
+                dataModel: "open_badges_3-0"
+                holderType: "individual"
+                status: "published"
+                tags: ["educredentials", "openbadge", "identity"]
+                visibility: "public"
+                description: "eduCredentials OBv3 credentials"
+                schema:
+                  $schema: "https://json-schema.org/draft/2020-12/schema"
+                  type: object
+                credentialExpiration: { type: "never" }
+
+  /v0/list-all-templates:
+    get:
+      summary: List all credential templates
+      responses:
+        "200":
+          description: List of credential templates
+          content:
+            application/json:
+              example:
+                - type: ["VerifiableCredential", "OpenBadgeCredential"]
+                  id: "OpenbadgeCredential"
+                  title: "eduCredentials OBv3 Credential"
+                  display:
+                    name: "Open Badge Credential"
+                    logo: { uri: "https://example.com/images/logo.png", alt_text: "Blue Logo" }
+                  dataModel: "open_badges_3-0"
+                  holderType: "individual"
+                  status: "published"
+                  tags: ["educredentials", "openbadge", "identity"]
+                  visibility: "public"
+                  credentialExpiration: { type: "never" }
+                  description: "eduCredentials OBv3 credentials"
+                  credentialExpiration: { type: "never" }

@@ -6,33 +6,45 @@ services:
       dockerfile: Dockerfile
       target: web
     ports:
-      - "8000:8000"
+      - "8008:8008"
     env_file:
       - .env
     environment:
       - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8000
+      - SERVER_PORT=8008
       - SSI_AGENT_URL=http://mock-ssi-agent:4010 # Internal URL
       - AWARDS_SERVICE_URL=http://mock-awards:4010
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
       - ALLOWED_CORS_DOMAINS=http://localhost:8080,http://localhost:3000
-      - CREDENTIAL_CONFIGURATION_ID=openbadge_credential
+      # Credential template resolution:
+      # - CREDENTIAL_TEMPLATE_JSON_FILE: path to a JSON file with the template definition
+      #   (the app will parse it and ensure it exists on the SSI Agent)
+      # - CREDENTIAL_TEMPLATE_ID: raw template ID (used if JSON_FILE is not set)
+      # Set CREDENTIAL_TEMPLATE_ID when the template already exists on the SSI Agent.
+      # Set CREDENTIAL_TEMPLATE_JSON_FILE when you want the app to create/verify it.
     depends_on:
       postgresql:
         condition: service_healthy
+      mock-ssi-agent:
+        condition: service_started
+      mock-oidc-auth:
+        condition: service_started
+      mock-awards:
+        condition: service_started
     volumes:
-      - ./src:/app/src/
+      - ./src:/app/src/:Z
+      - ./templates:/templates/:Z
     working_dir: /app
 
   real-ssi-agent:
     platform: "linux/amd64"
-    image: cr.surf.nl/edubadges-educredentials/ssi-agent:latest
+    image: cr.surf.nl/edubadges-educredentials/vc-service:0.4.0
     ports:
       - "3033:3033"
     environment:
       UNICORE__PROFILE: development
       UNICORE__APPLICATION_URL: http://localhost:3033
-      UNICORE__PUBLIC_URL: http://localhost:8000
+      UNICORE__PUBLIC_URL: http://localhost:8008
       UNICORE__EVENT_STORE__TYPE: in_memory
       UNICORE__SECRET_MANAGER__STRONGHOLD_PASSWORD: very-secret-secure_password
       UNICORE__METRICS__ENABLED: false
@@ -48,7 +60,7 @@ services:
       - "8001:4010"
     command: mock -h 0.0.0.0 /app/mock.yaml
     volumes:
-      - ./dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml
+      - ./dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml:Z
 
   mock-oidc-auth:
     platform: "linux/amd64"
@@ -57,7 +69,7 @@ services:
       - "8002:4010"
     command: mock -h 0.0.0.0 /app/mock.yaml
     volumes:
-      - ./dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml
+      - ./dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml:Z
 
   mock-awards:
     platform: "linux/amd64"
@@ -66,7 +78,7 @@ services:
       - "8003:4010"
     command: mock -h 0.0.0.0 /app/mock.yaml
     volumes:
-      - ./dependencies/prism/awards-mock.yaml:/app/mock.yaml
+      - ./dependencies/prism/awards-mock.yaml:/app/mock.yaml:Z
 
   postgresql:
     platform: "linux/amd64"
