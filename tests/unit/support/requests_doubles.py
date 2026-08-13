@@ -56,6 +56,7 @@ class RecordedRequest:
     method: str
     url: str
     json: object | None = None
+    headers: dict[str, str] | None = None
 
 
 class RequestsSpy:
@@ -85,17 +86,23 @@ class RequestsSpy:
         """
         return self._calls
 
-    def get(self, url: str) -> MockResponse:
+    def get(
+        self,
+        url: str,
+        headers: dict[str, str] | None = None,
+    ) -> MockResponse:
         """Record a GET request and return a mock response.
 
         Args:
             url: The URL to request.
-            **kwargs: Additional arguments passed to requests.get().
+            headers: Optional HTTP headers.
 
         Returns:
             A mock Response object.
         """
-        self._calls.append(RecordedRequest(method="get", url=url, json=None))
+        self._calls.append(
+            RecordedRequest(method="get", url=url, headers=headers),
+        )
         return self._next_response_or_default(url)
 
     def post(

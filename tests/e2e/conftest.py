@@ -48,5 +48,5 @@ def verifier() -> Verifier:
 
 @pytest.fixture(scope="session")
 def credential_configuration_input() -> str:
-    file = _FIXTURES_DIR / "credential_configuration_input.json"
+    file = _FIXTURES_DIR / "openbadge_credential_template.json"
     return file.read_text()

@@ -102,11 +102,12 @@ class _AwardsClientStub(AwardsClientPort):
         self._award: Award = award
 
     @override
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> Award:
         """Return the configured Award.
 
         Args:
             award_id: Ignored.
+            bearer_token: The caller's bearer token (unused).
 
         Returns:
             The configured Award.
@@ -118,11 +119,12 @@ class _AwardsClientNotFoundStub(AwardsClientPort):
     """Stub that always raises AwardNotFound."""
 
     @override
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> Award:
         """Raise AwardNotFound.
 
         Args:
             award_id: The identifier that was not found.
+            bearer_token: The caller's bearer token (unused).
 
         Raises:
             AwardNotFound: Always.
@@ -134,11 +136,12 @@ class _AwardsClientForbiddenStub(AwardsClientPort):
     """Stub that always raises AwardForbidden."""
 
     @override
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> Award:
         """Raise AwardForbidden.
 
         Args:
             award_id: The identifier for which access is denied.
+            bearer_token: The caller's bearer token (unused).
 
         Raises:
             AwardForbidden: Always.
@@ -150,11 +153,12 @@ class _AwardsClientErrorStub(AwardsClientPort):
     """Stub that always raises AwardsClientError."""
 
     @override
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> Award:
         """Raise AwardsClientError.
 
         Args:
             award_id: The identifier (unused).
+            bearer_token: The caller's bearer token (unused).
 
         Raises:
             AwardsClientError: Always.

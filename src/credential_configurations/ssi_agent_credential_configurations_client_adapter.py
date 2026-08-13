@@ -18,26 +18,13 @@ from .models import (
 )
 
 
-# Response model for issuer metadata
-@dataclass
-class _SsiAgentIssuerMetadata:
-    """SSI agent issuer metadata response."""
-
-    credential_issuer: str
-    credential_endpoint: str
-    credential_configurations_supported: dict[
-        str, object
-    ]
-
 
 @dataclass
 class _SsiAgentDisplay:
     """Display information for a credential configuration."""
 
     name: str | None = None
-    locale: str | None = None
     logo: dict[str, str | None] | None = None
-    description: str | None = None
 
     @staticmethod
     def from_display_info(display: Display) -> "_SsiAgentDisplay":
@@ -48,6 +35,11 @@ class _SsiAgentDisplay:
             name=display.name,
             logo=logo,
         )
+
+    def to_dict(self) -> dict[str, object] | None:
+        """Serialize to dict, excluding None values."""
+        data: dict[str, object] = asdict(self)
+        return {k: v for k, v in data.items() if v is not None}
 
 
 @dataclass
@@ -60,7 +52,7 @@ class _SsiAgentAddPayload:
     status: str | None = None
     description: str | None = None
     type: list[str] | None = None
-    display: _SsiAgentDisplay | None = None
+    display: dict[str, object] | None = None
     schema: dict[str, object] | None = None
     credentialExpiration: dict[str, str] = field(
         default_factory=lambda: {"type": "never"},
@@ -70,11 +62,12 @@ class _SsiAgentAddPayload:
     def from_credential_template(
         template: CredentialTemplate,
     ) -> "_SsiAgentAddPayload":
-        display_list: _SsiAgentDisplay | None = None
+        display_dict: dict[str, object] | None = None
         if template.display is not None:
-            display_list = _SsiAgentDisplay.from_display_info(template.display)
+            display_obj = _SsiAgentDisplay.from_display_info(template.display)
+            display_dict = display_obj.to_dict()
 
-        return _SsiAgentAddPayload(
+        payload = _SsiAgentAddPayload(
             title=template.title,
             dataModel=template.dataModel,
             holderType=template.holderType,
@@ -82,8 +75,10 @@ class _SsiAgentAddPayload:
             type=template.type,
             description=template.description,
             schema=template.schema,
-            display=display_list,
+            display=display_dict,
         )
+
+        return payload
 
 
 class SsiAgentCredentialTemplateClientAdapter(CredentialTemplateClientPort):
@@ -133,7 +128,8 @@ class SsiAgentCredentialTemplateClientAdapter(CredentialTemplateClientPort):
         response = self._http_client.post(url, json=payload_dict)
 
         if response.status_code == 404:
-            raise CredentialTemplateNotFound(f"Template {template.id} not found")
+            msg = f"Template {template.id} not found"
+            raise CredentialTemplateNotFound(msg)
 
         if 400 <= response.status_code < 600:
             raise CredentialTemplateClientError(
@@ -141,7 +137,7 @@ class SsiAgentCredentialTemplateClientAdapter(CredentialTemplateClientPort):
             )
 
         try:
-            template: CredentialTemplate = msgspec.json.decode(
+            result: CredentialTemplate = msgspec.json.decode(
                 response.content, type=CredentialTemplate
             )
         except msgspec.DecodeError as e:
@@ -149,7 +145,7 @@ class SsiAgentCredentialTemplateClientAdapter(CredentialTemplateClientPort):
                 f"Invalid response from upstream: {e}"
             ) from e
 
-        return template
+        return result
 
     @override
     def list(self) -> list[CredentialTemplate]:

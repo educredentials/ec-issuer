@@ -1,20 +1,19 @@
-"""Unit tests for SsiAgentCredentialConfigurationsClientAdapter."""
+"""Unit tests for SsiAgentCredentialTemplateClientAdapter."""
 
 import msgspec
 import pytest
 
 from src.credential_configurations.credential_configurations_client_port import (
-    CredentialConfigurationNotFound,
-    CredentialConfigurationsClientError,
+    CredentialTemplateNotFound,
+    CredentialTemplateClientError,
 )
 from src.credential_configurations.models import (
-    CredentialConfiguration,
-    CredentialDefinition,
-    CredentialMetadata,
-    ProofTypesSupportedJwt,
+    CredentialTemplate,
+    Display,
+    Logo,
 )
 from src.credential_configurations.ssi_agent_credential_configurations_client_adapter import (  # noqa: E501
-    SsiAgentCredentialConfigurationsClientAdapter,
+    SsiAgentCredentialTemplateClientAdapter,
 )
 from src.lib.http_client import HttpClient
 
@@ -27,35 +26,70 @@ def http_client():
 
 
 @pytest.fixture
-def subject(http_client: HttpClient) -> SsiAgentCredentialConfigurationsClientAdapter:
-    return SsiAgentCredentialConfigurationsClientAdapter(
+def subject(http_client: HttpClient) -> SsiAgentCredentialTemplateClientAdapter:
+    return SsiAgentCredentialTemplateClientAdapter(
         ssi_agent_url="http://agent.example.com", http_client=http_client
     )
 
 
 @pytest.fixture
-def credential_configuration() -> CredentialConfiguration:
-    return CredentialConfiguration(
-        format="jwt_vc_json",
-        credential_metadata=CredentialMetadata(display=None),
-        credential_configuration_id="credential_configuration_id",
-        credential_definition=CredentialDefinition(type=["VerifiableCredential"]),
-        cryptographic_binding_methods_supported=None,
-        credential_signing_alg_values_supported=None,
-        proof_types_supported=ProofTypesSupportedJwt(jwt={}),
+def credential_template() -> CredentialTemplate:
+    return CredentialTemplate(
+        type=["VerifiableCredential"],
+        id="credential_template_id",
+        display=Display(name="Test Credential"),
     )
 
 
+# Response from the list() endpoint — flat array of templates (each with its own ID)
+_VALID_TEMPLATES_JSON = msgspec.json.encode(
+    [
+        {
+            "type": ["VerifiableCredential"],
+            "format": "jwt_vc_json",
+            "id": "credential_template_id",
+            "display": {
+                "name": "Open Badge Credential",
+                "logo": {
+                    "alt_text": "Blue Logo",
+                    "uri": "https://example.com/images/logo.png",
+                },
+            },
+        }
+    ]
+)
+
+
+# Legacy metadata response — used for old well-known endpoint tests
 _VALID_METADATA_JSON = msgspec.json.encode(
     {
         "credential_issuer": "http://issuer.example.com",
         "credential_endpoint": "http://issuer.example.com/credential",
-        "credential_configurations_supported": {
-            "credential_configuration_id": {
+        "credential_templates_supported": {
+            "credential_template_id": {
+                "type": ["VerifiableCredential"],
                 "format": "jwt_vc_json",
-                "credential_metadata": {"type": ["VerifiableCredential"]},
-                "proof_types_supported": {"jwt": {}},
+                "display": {
+                    "name": "Open Badge Credential",
+                    "logo": {
+                        "alt_text": "Blue Logo",
+                        "uri": "https://example.com/images/logo.png",
+                    },
+                },
             }
+        },
+    }
+)
+
+# Response from the POST create endpoint — a bare CredentialTemplate
+_CREATE_RESPONSE_JSON = msgspec.json.encode(
+    {
+        "type": ["VerifiableCredential"],
+        "format": "jwt_vc_json",
+        "id": "credential_template_id",
+        "display": {
+            "name": "Test Credential",
+            "logo": None,
         },
     }
 )
@@ -63,240 +97,237 @@ _VALID_METADATA_JSON = msgspec.json.encode(
 
 @pytest.fixture
 def valid_metadata_response() -> MockResponse:
-    return MockResponse(status_code=200, _content=_VALID_METADATA_JSON)
+    return MockResponse(status_code=200, _content=_VALID_TEMPLATES_JSON)
 
 
-class TestSsiAgentCredentialConfigurationsClientAdapter:
-    """Tests for the SsiAgentCredentialConfigurationsClientAdapter class."""
+@pytest.fixture
+def create_response() -> MockResponse:
+    return MockResponse(status_code=200, _content=_CREATE_RESPONSE_JSON)
+
+
+def _expected_payload(_template_id: str) -> dict[str, object]:
+    return {
+        "title": None,
+        "dataModel": None,
+        "holderType": None,
+        "status": None,
+        "description": None,
+        "type": ["VerifiableCredential"],
+        "display": {
+            "name": "Test Credential",
+        },
+        "schema": {},
+        "credentialExpiration": {"type": "never"},
+    }
+
+
+class TestSsiAgentCredentialTemplateClientAdapter:
+    """Tests for the SsiAgentCredentialTemplateClientAdapter class."""
 
     def test_create_success(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-        credential_configuration: CredentialConfiguration,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+        credential_template: CredentialTemplate,
+        create_response: MockResponse,
     ):
-        # The create response
-        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
-        # The get/list response
-        http_client.set_response(
-            MockResponse(status_code=200, _content=_VALID_METADATA_JSON)
-        )
-        _ = subject.create(credential_configuration)
-        expected_payload = {
-            "format": "jwt_vc_json",
-            "display": [],
-            "credential_configuration_id": "credential_configuration_id",
-            "type": ["VerifiableCredential"],
-        }
+        http_client.set_response(create_response)
+        _ = subject.create(credential_template)
         expected_request = RecordedRequest(
             method="post",
-            url="http://agent.example.com/v0/credential-configurations",
-            json=expected_payload,
+            url="http://agent.example.com/v0/create-new-template",
+            json=_expected_payload(""),
         )
         assert http_client.calls[0] == expected_request
 
-    def test_create_returns_merged_configuration(
+    def test_create_returns_merged_template(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-        credential_configuration: CredentialConfiguration,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+        credential_template: CredentialTemplate,
+        create_response: MockResponse,
         valid_metadata_response: MockResponse,
     ):
-        # The create response
-        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
-        # The get/list response
+        # The create response contains a valid template
+        http_client.set_response(create_response)
         http_client.set_response(valid_metadata_response)
 
-        credential_configuration.format = "updated_vc_json"
-        result = subject.update(credential_configuration)
+        result = subject.update(credential_template)
 
-        assert result.credential_configuration_id == "credential_configuration_id"
-        # _VALID_METADATA_JSON has format set to jwt_vc_json, so this is what we expect
-        # in return, not the 'updated_vc_json' that we provided.
-        assert result.format == "jwt_vc_json"
+        assert result.id == "credential_template_id"
 
     def test_create_error(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-        credential_configuration: CredentialConfiguration,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+        credential_template: CredentialTemplate,
     ):
         http_client.set_response(
             MockResponse(status_code=400, _content=b'{"error": "error"}')
         )
-        with pytest.raises(CredentialConfigurationsClientError):
-            _ = subject.create(credential_configuration)
+        with pytest.raises(CredentialTemplateClientError):
+            _ = subject.create(credential_template)
 
-    def test_get_returns_matching_configuration(
+    def test_get_returns_matching_template(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
         valid_metadata_response: MockResponse,
     ):
-        http_client.set_response(valid_metadata_response)
-        result = subject.get("credential_configuration_id")
-        assert result == CredentialConfiguration(
-            format="jwt_vc_json",
-            credential_configuration_id="credential_configuration_id",
-            credential_metadata=CredentialMetadata(),
-            proof_types_supported=ProofTypesSupportedJwt(jwt={}),
+        expected_template = CredentialTemplate(
+            type=["VerifiableCredential"],
+            id="credential_template_id",
+            display=Display(
+                name="Open Badge Credential",
+                logo=Logo(
+                    alt_text="Blue Logo",
+                    uri="https://example.com/images/logo.png",
+                ),
+            ),
         )
+        http_client.set_response(valid_metadata_response)
+        result = subject.get("credential_template_id")
+        assert result == expected_template
 
-    def test_list_sends_get_to_wellknown_url(
+    def test_list_sends_get_to_templates_endpoint(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
         valid_metadata_response: MockResponse,
     ):
         http_client.set_response(valid_metadata_response)
         _ = subject.list()
         assert http_client.calls[0] == RecordedRequest(
             method="get",
-            url="http://agent.example.com/.well-known/openid-credential-issuer",
+            url="http://agent.example.com/v0/list-all-templates",
         )
 
-    def test_list_returns_configurations_with_id_from_metadata_key(
+    def test_list_returns_templates_with_ids_from_array(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
     ):
         http_client.set_response(
-            MockResponse(status_code=200, _content=_VALID_METADATA_JSON)
+            MockResponse(status_code=200, _content=_VALID_TEMPLATES_JSON)
         )
         results = subject.list()
         assert len(results) == 1
-        assert results[0] == CredentialConfiguration(
-            format="jwt_vc_json",
-            credential_configuration_id="credential_configuration_id",
-            credential_metadata=CredentialMetadata(),
-            proof_types_supported=ProofTypesSupportedJwt(jwt={}),
+        expected_template = CredentialTemplate(
+            type=["VerifiableCredential"],
+            id="credential_template_id",
+            display=Display(
+                name="Open Badge Credential",
+                logo=Logo(
+                    alt_text="Blue Logo",
+                    uri="https://example.com/images/logo.png",
+                ),
+            ),
         )
+        assert results[0] == expected_template
 
     def test_list_raises_client_error_on_upstream_error(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
     ):
         http_client.set_response(
             MockResponse(status_code=500, _content=b'"Server Error"')
         )
-        with pytest.raises(CredentialConfigurationsClientError):
+        with pytest.raises(CredentialTemplateClientError):
             _ = subject.list()
 
     def test_list_raises_client_error_on_invalid_response_json(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
     ):
         http_client.set_response(MockResponse(status_code=200, _content=b"not json"))
-        with pytest.raises(CredentialConfigurationsClientError):
+        with pytest.raises(CredentialTemplateClientError):
             _ = subject.list()
 
     def test_get_raises_not_found_when_id_absent(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
         valid_metadata_response: MockResponse,
     ):
         http_client.set_response(valid_metadata_response)
-        with pytest.raises(CredentialConfigurationNotFound):
+        with pytest.raises(CredentialTemplateNotFound):
             _ = subject.get("unknown-id")
 
     def test_get_propagates_client_error_from_list(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
     ):
         http_client.set_response(MockResponse(status_code=500, _content=b'"error"'))
-        with pytest.raises(CredentialConfigurationsClientError):
-            _ = subject.get("credential_configuration_id")
+        with pytest.raises(CredentialTemplateClientError):
+            _ = subject.get("credential_template_id")
 
     def test_get_raises_client_error_on_invalid_response_json(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
+        subject: SsiAgentCredentialTemplateClientAdapter,
     ):
         http_client.set_response(MockResponse(status_code=200, _content=b"not json"))
-        with pytest.raises(CredentialConfigurationsClientError):
-            _ = subject.get("credential_configuration_id")
+        with pytest.raises(CredentialTemplateClientError):
+            _ = subject.get("credential_template_id")
 
     def test_update_sends_post_with_correct_url_and_payload(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-        credential_configuration: CredentialConfiguration,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+        credential_template: CredentialTemplate,
+        create_response: MockResponse,
         valid_metadata_response: MockResponse,
     ):
-        # Response for put
-        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
-        # Response for following get metadata
+        # Create response needs valid template JSON so the adapter can decode it
+        http_client.set_response(create_response)
         http_client.set_response(valid_metadata_response)
 
-        _ = subject.update(credential_configuration)
-        expected_update_payload = {
-            "format": "jwt_vc_json",
-            "display": [],
-            "credential_configuration_id": "credential_configuration_id",
-            "type": ["VerifiableCredential"],
-        }
-        assert len(http_client.calls) == 2
-        # The first is the POST with expected payload
+        _ = subject.update(credential_template)
+        assert len(http_client.calls) == 1
         assert http_client.calls[0] == RecordedRequest(
             method="post",
-            url="http://agent.example.com/v0/credential-configurations",
-            json=expected_update_payload,
+            url="http://agent.example.com/v0/create-new-template",
+            json=_expected_payload(""),
         )
 
-    def test_update_returns_merged_configuration(
+    def test_update_returns_merged_template(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-        credential_configuration: CredentialConfiguration,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+        credential_template: CredentialTemplate,
+        create_response: MockResponse,
+        valid_metadata_response: MockResponse,
     ):
-        # Note: Implementation detail is that the update is
-        # exactly the same as create. We test it as different
-        # implementations to decouple implementation from test
+        # First call is create -> returns a valid template
+        http_client.set_response(create_response)
+        # Second call is get from create -> returns merged metadata
+        http_client.set_response(valid_metadata_response)
 
-        # The update response
-        http_client.set_response(MockResponse(status_code=200, _content=b"{}"))
-        # The get/list response
-        http_client.set_response(
-            MockResponse(status_code=200, _content=_VALID_METADATA_JSON)
-        )
+        result = subject.update(credential_template)
 
-        credential_configuration.format = "updated_vc_json"
-        result = subject.update(credential_configuration)
-
-        assert result.credential_configuration_id == "credential_configuration_id"
-        # _VALID_METADATA_JSON has format set to jwt_vc_json, so this is what we expect
-        # in return, not the 'updated_vc_json' that we provided.
-        assert result.format == "jwt_vc_json"
+        assert result.id == "credential_template_id"
 
     def test_update_raises_not_found_on_404(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-        credential_configuration: CredentialConfiguration,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+        credential_template: CredentialTemplate,
     ):
         http_client.set_response(MockResponse(status_code=404, _content=b'"Not Found"'))
-        with pytest.raises(CredentialConfigurationNotFound):
-            _ = subject.update(credential_configuration)
+        with pytest.raises(CredentialTemplateNotFound):
+            _ = subject.update(credential_template)
 
     def test_update_raises_client_error_on_upstream_error(
         self,
         http_client: RequestsSpy,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-        credential_configuration: CredentialConfiguration,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+        credential_template: CredentialTemplate,
     ):
         http_client.set_response(
             MockResponse(status_code=422, _content=b'"Unprocessable"')
         )
-        with pytest.raises(CredentialConfigurationsClientError):
-            _ = subject.update(credential_configuration)
-
-    def test_delete_raises_not_implemented_error(
-        self,
-        subject: SsiAgentCredentialConfigurationsClientAdapter,
-    ):
-        with pytest.raises(NotImplementedError):
-            subject.delete("credential_configuration_id")
+        with pytest.raises(CredentialTemplateClientError):
+            _ = subject.update(credential_template)

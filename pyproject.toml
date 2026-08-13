@@ -47,6 +47,9 @@ exclude = ["Justfile"]
 
 [tool.basedpyright]
 typeCheckingMode = "recommended"
+reportUnknownMemberType = "hint"
+reportUnknownArgumentType = "hint"
+reportUnknownVariableType = "hint"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

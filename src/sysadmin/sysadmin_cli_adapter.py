@@ -75,7 +75,7 @@ class SysadminCliAdapter(SysadminPort):
                 print(USAGE, file=sys.stderr)
                 sys.exit(1)
 
-    def _handle_create(self, config_id: str) -> None:
+    def _handle_create(self, _config_id: str) -> None:
         """Handle the create command."""
         try:
             input_json = sys.stdin.read()

@@ -3,58 +3,123 @@
 import msgspec
 
 from src.credential_configurations.models import (
-    CredentialConfiguration,
+    CredentialTemplate,
+    Logo,
+    Display,
 )
 
 
-class TestCredentialConfiguration:
-    def test_credential_configuration_from_metadata(self):
-        """
-        Test that credential_configuration_from handles an openid credential
-        configuration
-        """
-        supported_config_json = msgspec.json.encode(
+class TestCredentialTemplate:
+    def test_credential_template_from_obv3(self):
+        """Test decoding a CredentialTemplate from OBv3 JSON."""
+        config_json = msgspec.json.encode(
             {
                 "credential_definition": {
                     "type": ["VerifiableCredential", "OpenBadgeCredential"]
                 },
-                "credential_metadata": {
-                    "display": [
-                        {
-                            "locale": "en",
-                            "logo": {
-                                "alt_text": "Blue Logo",
-                                "uri": "https://example.com/images/logo.png",
-                            },
-                            "name": "Open Badge Credential",
-                        }
-                    ]
-                },
-                "credential_signing_alg_values_supported": ["ES256", "EdDSA"],
-                "cryptographic_binding_methods_supported": [
-                    "did:jwk",
-                    "did:key",
-                    "did:web",
-                ],
                 "format": "vc+sd-jwt",
-                "proof_types_supported": {
-                    "jwt": {"proof_signing_alg_values_supported": ["ES256", "EdDSA"]}
+                "type": ["VerifiableCredential", "OpenBadgeCredential"],
+            }
+        )
+
+        credential_template = msgspec.json.decode(config_json, type=CredentialTemplate)
+
+        assert credential_template.id == ""
+        assert credential_template.type == [
+            "VerifiableCredential",
+            "OpenBadgeCredential",
+        ]
+
+    def test_credential_template_with_obv3_metadata_fields(self):
+        """Test decoding OBv3 fields like dataModel, tags, etc."""
+        config_json = msgspec.json.encode(
+            {
+                "type": ["VerifiableCredential", "OpenBadgeCredential"],
+                "format": "vc+sd-jwt",
+                "dataModel": "open_badges_3-0",
+                "creator": "eduCredentials",
+                "holderType": "individual",
+                "description": "eduCredentials OBv3 credentials",
+                "tags": ["educredentials", "openbadge", "identity"],
+                "status": "published",
+                "visibility": "public",
+            }
+        )
+
+        credential_template = msgspec.json.decode(config_json, type=CredentialTemplate)
+
+        assert credential_template.type == [
+            "VerifiableCredential",
+            "OpenBadgeCredential",
+        ]
+        assert credential_template.dataModel == "open_badges_3-0"
+        assert credential_template.creator == "eduCredentials"
+        assert credential_template.holderType == "individual"
+        assert credential_template.description == "eduCredentials OBv3 credentials"
+        assert credential_template.tags == [
+            "educredentials",
+            "openbadge",
+            "identity",
+        ]
+        assert credential_template.status == "published"
+        assert credential_template.visibility == "public"
+
+    def test_credential_template_display_info(self):
+        """A credential template with a display section is decoded."""
+        config_json = msgspec.json.encode(
+            {
+                "type": ["VerifiableCredential"],
+                "format": "vc+sd-jwt",
+                "display": {
+                    "name": "eduCredential",
+                    "logo": {
+                        "uri": "https://example.com/logo.png",
+                        "alt_text": "Logo",
+                    },
                 },
             }
         )
 
-        credential_configuration = msgspec.json.decode(
-            supported_config_json, type=CredentialConfiguration
+        credential_template = msgspec.json.decode(config_json, type=CredentialTemplate)
+
+        assert credential_template.display is not None
+        assert isinstance(credential_template.display, Display)
+        assert credential_template.display.name == "eduCredential"
+        assert credential_template.display.logo is not None
+        assert isinstance(credential_template.display.logo, Logo)
+        assert credential_template.display.logo.uri == "https://example.com/logo.png"
+        assert credential_template.display.logo.alt_text == "Logo"
+
+    def test_credential_template_minimal(self):
+        """A credential template with only required fields is decoded."""
+        config_json = msgspec.json.encode(
+            {
+                "type": ["VerifiableCredential"],
+                "format": "jwt_vc_json",
+            }
         )
 
-        # When deserializing from credential issuer metadata, we don't have an
-        # id, so it's an empty string, the default
-        # That's the main difference.
-        assert credential_configuration.credential_configuration_id == ""
+        credential_template = msgspec.json.decode(config_json, type=CredentialTemplate)
 
-        assert credential_configuration.format == "vc+sd-jwt"
-        assert credential_configuration.credential_definition is not None
-        assert credential_configuration.credential_definition.type == [
-            "VerifiableCredential",
-            "OpenBadgeCredential",
-        ]
+        assert credential_template.type == ["VerifiableCredential"]
+        assert credential_template.id == ""
+        assert credential_template.dataModel is None
+        assert credential_template.creator is None
+        assert credential_template.holderType is None
+        assert credential_template.description is None
+        assert credential_template.tags is None
+        assert credential_template.status is None
+        assert credential_template.visibility is None
+
+    def test_credential_template_display_is_none_when_absent(self):
+        """Display is None when not present in JSON."""
+        config_json = msgspec.json.encode(
+            {
+                "type": ["VerifiableCredential"],
+                "format": "jwt_vc_json",
+            }
+        )
+
+        credential_template = msgspec.json.decode(config_json, type=CredentialTemplate)
+
+        assert credential_template.display is None

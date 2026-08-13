@@ -34,5 +34,5 @@ def offers_repo() -> Generator[PostgreSQLOffersRepositoryAdapter, None, None]:
 def offers_client() -> SsiAgentOffersClientAdapter:
     return SsiAgentOffersClientAdapter(
         ssi_agent_url=_SSI_AGENT_URL,
-        credential_configuration_id="openbadge_credential",
+        credential_template_id="openbadge_credential",
     )

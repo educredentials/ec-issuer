@@ -33,7 +33,7 @@ class ProofType:
 
 
 @dataclass
-class CredentialConfiguration:
+class CredentialTemplate:
     format: str
     scope: str | None = None
     cryptographic_binding_methods_supported: list[str] | None = None
@@ -58,7 +58,7 @@ class BatchCredentialIssuance:
 class CredentialIssuerMetadata:
     credential_issuer: str
     credential_endpoint: str
-    credential_configurations_supported: dict[str, CredentialConfiguration]
+    credential_configurations_supported: dict[str, CredentialTemplate]
     authorization_servers: list[str] | None = None
     nonce_endpoint: str | None = None
     deferred_credential_endpoint: str | None = None

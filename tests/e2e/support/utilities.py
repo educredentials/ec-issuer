@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from jsonpath_ng import (  # pyright: ignore[reportMissingTypeStubs]
-    parse as jsonpath_parse,  # pyright: ignore[reportUnknownVariableType]
+    parse as jsonpath_parse,
 )
 
 _TESTS_E2E_DIR = Path(__file__).parent.parent
@@ -53,5 +53,5 @@ def jsonpath_value(data: object, expression: str) -> object:
     Raises:
         IndexError: When the expression matches nothing.
     """
-    matches = jsonpath_parse(expression).find(data)  # pyright: ignore[reportUnknownMemberType]
-    return matches[0].value  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+    matches = jsonpath_parse(expression).find(data)
+    return matches[0].value

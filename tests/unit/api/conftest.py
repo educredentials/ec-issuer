@@ -38,5 +38,6 @@ def setup_http_client(offer_service: OfferService) -> FlaskClient:
         config=ConfigRepoStub(),
         offer_service=offer_service,
     )
-    adapter.flask_app.config.update({"TESTING": True})  # pyright: ignore[reportUnknownMemberType] We lack type stubs for Flask config
+    # We lack type stubs for Flask config
+    adapter.flask_app.config["TESTING"] = True
     return adapter.flask_app.test_client()

@@ -55,11 +55,12 @@ class _AwardsClientStub(AwardsClientPort):
     """Private stub: always returns STUB_AWARD."""
 
     @override
-    def get(self, award_id: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> Award:
         """Return the shared STUB_AWARD.
 
         Args:
             award_id: Ignored.
+            bearer_token: Ignored.
 
         Returns:
             STUB_AWARD.
@@ -258,7 +259,7 @@ class OffersRepositorySpy(OffersRepositoryPort):
 
 
 class ConfigRepoStub(ConfigRepoPort):
-    """Stub: ConfigRepoPort with hardcoded test values."""
+    """Stub: Config values for tests."""
 
     server_host: str = "localhost"
     server_port: int = 8888
@@ -267,6 +268,7 @@ class ConfigRepoStub(ConfigRepoPort):
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
     awards_service_url: str = "http://awards.example.com"
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com"
+    credential_configuration_id: str = "static-config-id"
 
 
 class AccessControlStub(AccessControlPort):
