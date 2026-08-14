@@ -44,6 +44,7 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu/libz.so.1 /usr/lib/x86_64-linux-gn
 COPY --from=builder /usr/bin/cat /usr/bin/cat
 COPY --from=builder /usr/bin/sh /usr/bin/sh
 COPY --from=builder --chown=65532:65532 /app/.venv /app/.venv
+COPY --from=curlimages/curl:latest /usr/bin/curl /usr/bin/curl
 COPY --chown=65532:65532 src/ /app/src/
 COPY --chown=65532:65532 templates/openbadge_credential_template.json /etc/openbadge_credential_template.json
 
