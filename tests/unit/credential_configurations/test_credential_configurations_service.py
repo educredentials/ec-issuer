@@ -73,6 +73,10 @@ class _CredentialTemplateClientStub(CredentialTemplateClientPort):
     def update(self, configuration: CredentialTemplate) -> CredentialTemplate:
         raise NotImplementedError
 
+    @override
+    def delete(self, template_id: str) -> None:
+        raise NotImplementedError
+
 
 def _make_stub(
     list_result: list[CredentialTemplate],

@@ -450,6 +450,28 @@ paths:
                   status: "published"
                   tags: ["educredentials", "openbadge", "identity"]
                   visibility: "public"
-                  credentialExpiration: { type: "never" }
                   description: "eduCredentials OBv3 credentials"
-                  credentialExpiration: { type: "never" }
+
+  /v0/templates/delete-template:
+    post:
+      summary: Delete a template
+      description: Marks a template as deleted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                templateId:
+                  type: string
+                  description: The ID of the template to delete
+              required:
+                - templateId
+            example:
+              templateId: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "204":
+          description: Template deleted successfully
+        "404":
+          description: Template not found

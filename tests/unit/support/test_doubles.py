@@ -6,7 +6,6 @@ See docs/src/test_doubles.md for naming conventions and rules.
 from typing import override
 
 from src.access_control.access_control_port import AccessControlPort
-from src.awards.award_service import AwardService
 from src.awards.awards_client_port import AwardsClientPort
 from src.awards.models import (
     Achievement,
@@ -51,8 +50,8 @@ STUB_AWARD: Award = Award(
 )
 
 
-class _AwardsClientStub(AwardsClientPort):
-    """Private stub: always returns STUB_AWARD."""
+class AwardsClientStub(AwardsClientPort):
+    """Stub for AwardsClientPort: always returns STUB_AWARD."""
 
     @override
     def get(self, award_id: str, bearer_token: str) -> Award:
@@ -66,14 +65,6 @@ class _AwardsClientStub(AwardsClientPort):
             STUB_AWARD.
         """
         return STUB_AWARD
-
-
-class AwardServiceStub(AwardService):
-    """Stub: AwardService that always returns STUB_AWARD."""
-
-    def __init__(self) -> None:
-        """Initialise with a stub client."""
-        super().__init__(client=_AwardsClientStub())
 
 
 class OffersClientStub(OffersClientPort):
@@ -362,7 +353,7 @@ class DenyingOfferServiceStub(OfferService):
             access_control=DenyingAccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
     @override
@@ -391,7 +382,7 @@ class OfferServiceSpy(OfferService):
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
     @override

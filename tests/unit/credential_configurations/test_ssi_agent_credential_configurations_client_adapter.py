@@ -331,3 +331,41 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         )
         with pytest.raises(CredentialTemplateClientError):
             _ = subject.update(credential_template)
+
+    def test_delete_success(
+        self,
+        http_client: RequestsSpy,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+    ) -> None:
+        """Delete succeeds on 204."""
+        http_client.set_response(MockResponse(status_code=204, _content=b""))
+        result = subject.delete("template-123")
+        assert result is None
+        assert len(http_client.calls) == 1
+        assert http_client.calls[0] == RecordedRequest(
+            method="post",
+            url="http://agent.example.com/v0/templates/delete-template",
+            json={"templateId": "template-123"},
+        )
+
+    def test_delete_raises_not_found_on_404(
+        self,
+        http_client: RequestsSpy,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+    ) -> None:
+        """Delete raises CredentialTemplateNotFound on 404."""
+        http_client.set_response(MockResponse(status_code=404, _content=b'"Not Found"'))
+        with pytest.raises(CredentialTemplateNotFound, match="template-123"):
+            subject.delete("template-123")
+
+    def test_delete_raises_client_error_on_upstream_error(
+        self,
+        http_client: RequestsSpy,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+    ) -> None:
+        """Delete raises ClientError on non-204/404 errors."""
+        http_client.set_response(
+            MockResponse(status_code=500, _content=b'"Server Error"')
+        )
+        with pytest.raises(CredentialTemplateClientError, match="Upstream error"):
+            subject.delete("template-123")

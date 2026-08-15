@@ -1,4 +1,4 @@
-"""Integration tests: OfferService + AwardService interaction.
+"""Integration tests: OfferService + AwardsClientPort interaction.
 
 Real modules wired together; AwardsClientPort and OffersClientPort
 are replaced with in-test doubles to avoid HTTP calls.
@@ -9,7 +9,6 @@ from typing import override
 import pytest
 
 from src.access_control.access_control_port import AccessControlPort
-from src.awards.award_service import AwardService
 from src.awards.awards_client_port import (
     AwardForbidden,
     AwardNotFound,
@@ -200,22 +199,18 @@ def sample_award() -> Award:
 
 
 class TestOfferAwardsServiceInteraction:
-    """Integration tests for the interaction between OfferService and AwardService."""
+    """Integration tests for OfferService and AwardsClientPort interaction."""
 
     def test_create_offer_fetches_award_and_passes_it_to_offers_client(
         self, sample_award: Award
     ) -> None:
-        """create_offer fetches award via AwardService and passes it to offers client.
-
-        Tracer bullet: verifies the full interaction path.
-        """
+        """create_offer fetches award via AwardsClientPort and passes it through."""
         offers_client = _OffersClientSpy()
-        award_service = AwardService(client=_AwardsClientStub(award=sample_award))
         service = OfferService(
             access_control=_AllowingAccessControl(),
             offers_repository=_OffersRepositoryStub(),
             offers_client=offers_client,
-            award_service=award_service,
+            awards_client=_AwardsClientStub(award=sample_award),
         )
 
         offer = service.create_offer(award_id="award-123", bearer_token="tok")
@@ -234,7 +229,7 @@ class TestOfferAwardsServiceInteraction:
             access_control=_AllowingAccessControl(),
             offers_repository=_OffersRepositoryStub(),
             offers_client=_OffersClientSpy(),
-            award_service=AwardService(client=_AwardsClientNotFoundStub()),
+            awards_client=_AwardsClientNotFoundStub(),
         )
 
         with pytest.raises(NotFoundError, match="Award unknown-award not found"):
@@ -248,7 +243,7 @@ class TestOfferAwardsServiceInteraction:
             access_control=_AllowingAccessControl(),
             offers_repository=_OffersRepositoryStub(),
             offers_client=_OffersClientSpy(),
-            award_service=AwardService(client=_AwardsClientForbiddenStub()),
+            awards_client=_AwardsClientForbiddenStub(),
         )
 
         with pytest.raises(PermissionDeniedError):
@@ -262,7 +257,7 @@ class TestOfferAwardsServiceInteraction:
             access_control=_AllowingAccessControl(),
             offers_repository=_OffersRepositoryStub(),
             offers_client=_OffersClientSpy(),
-            award_service=AwardService(client=_AwardsClientErrorStub()),
+            awards_client=_AwardsClientErrorStub(),
         )
 
         with pytest.raises(OfferServiceError):

@@ -3,11 +3,11 @@
 import uuid
 
 from src.access_control.access_control_port import AccessControlPort
-from src.awards.award_service import AwardService
 from src.awards.awards_client_port import (
     AwardForbidden,
     AwardNotFound,
     AwardsClientError,
+    AwardsClientPort,
 )
 
 from .models import Offer
@@ -40,29 +40,29 @@ class OfferService:
     """Service that orchestrates offer creation."""
 
     _access_control: AccessControlPort
-    _offers_client: OffersClientPort
+    _awards_client: AwardsClientPort
     _offers_repository: OffersRepositoryPort
-    _award_service: AwardService
+    _offers_client: OffersClientPort
 
     def __init__(
         self,
         access_control: AccessControlPort,
-        offers_client: OffersClientPort,
+        awards_client: AwardsClientPort,
         offers_repository: OffersRepositoryPort,
-        award_service: AwardService,
+        offers_client: OffersClientPort,
     ) -> None:
         """Initialise the service with its dependencies.
 
         Args:
             access_control: Adapter for checking resource permissions.
+            awards_client: Adapter for fetching awards from the external awards service.
             offers_repository: Adapter for persisting offers.
             offers_client: Adapter for interacting with oid4vci agent.
-            award_service: Service for fetching awards.
         """
         self._access_control = access_control
-        self._offers_client = offers_client
+        self._awards_client = awards_client
         self._offers_repository = offers_repository
-        self._award_service = award_service
+        self._offers_client = offers_client
 
     def create_offer(self, award_id: str, bearer_token: str) -> Offer:
         """Create, persist, and return a new credential offer.
@@ -86,7 +86,7 @@ class OfferService:
             raise PermissionDeniedError(award_id)
 
         try:
-            award = self._award_service.get(award_id, bearer_token)
+            award = self._awards_client.get(award_id, bearer_token)
         except AwardNotFound:
             raise NotFoundError(f"Award {award_id} not found")
         except AwardForbidden:

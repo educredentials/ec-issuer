@@ -4,7 +4,6 @@
 from src.access_control.hardcoded_adapter import HardcodedAccessControlAdapter
 from src.api.api_port import ApiPort
 from src.api.http_adapter import HttpApiAdapter
-from src.awards.award_service import AwardService
 from src.awards.http_awards_client_adapter import HttpAwardsClientAdapter
 from src.config.config import EnvConfigRepo
 from src.config.config_port import ConfigRepoPort
@@ -37,7 +36,6 @@ class App:
         awards_client = HttpAwardsClientAdapter(
             awards_service_url=self.config.awards_service_url,
         )
-        award_service = AwardService(client=awards_client)
 
         offers_client = SsiAgentOffersClientAdapter(
             ssi_agent_url=self.config.ssi_agent_url,
@@ -48,9 +46,9 @@ class App:
         )
         offer_service = OfferService(
             access_control=access_control,
-            offers_client=offers_client,
+            awards_client=awards_client,
             offers_repository=offers_repository,
-            award_service=award_service,
+            offers_client=offers_client,
         )
 
         self._api_port = HttpApiAdapter(

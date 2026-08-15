@@ -210,3 +210,30 @@ class SsiAgentCredentialTemplateClientAdapter(CredentialTemplateClientPort):
         See self.create()
         """
         return self.create(configuration)
+
+    @override
+    def delete(self, template_id: str) -> None:
+        """Delete a credential template.
+
+        Args:
+            template_id: The unique credential template identifier.
+
+        Raises:
+            CredentialTemplateNotFound: When the template is not found.
+            CredentialTemplateClientError: When deletion fails.
+        """
+        response = self._http_client.post(
+            f"{self._ssi_agent_admin_base_url}/v0/templates/delete-template",
+            json={"templateId": template_id},
+        )
+
+        if response.status_code == 404:
+            raise CredentialTemplateNotFound(template_id)
+
+        if response.status_code == 204:
+            return
+
+        if 400 <= response.status_code < 600:
+            raise CredentialTemplateClientError(
+                f"Upstream error: {response.status_code} - {response.text}"
+            )

@@ -74,3 +74,16 @@ class CredentialTemplateClientPort(ABC):
             CredentialTemplateClientError: When update fails.
         """
         ...
+
+    @abstractmethod
+    def delete(self, template_id: str) -> None:
+        """Delete a credential template by ID.
+
+        Args:
+            template_id: The unique credential template identifier.
+
+        Raises:
+            CredentialTemplateNotFound: When the template is not found.
+            CredentialTemplateClientError: When deletion fails.
+        """
+        ...

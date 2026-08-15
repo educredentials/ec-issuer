@@ -64,6 +64,10 @@ class _MockClientPort(CredentialTemplateClientPort):
     def update(self, configuration: CredentialTemplate) -> CredentialTemplate:
         raise NotImplementedError
 
+    @override
+    def delete(self, template_id: str) -> None:
+        raise NotImplementedError
+
     def ensure_by_title(
         self, _template: CredentialTemplate, _ssi_agent_url: str = ""
     ) -> CredentialTemplate:

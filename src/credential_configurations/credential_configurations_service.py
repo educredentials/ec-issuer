@@ -2,6 +2,8 @@
 
 from typing import TYPE_CHECKING
 
+import requests
+
 from .models import CredentialTemplate
 
 if TYPE_CHECKING:
@@ -99,8 +101,6 @@ class CredentialTemplateService:
         Raises:
             RuntimeError: When the SSI Agent is unreachable or creation fails.
         """
-        import requests
-
         from src.credential_configurations.credential_configurations_client_port import (  # noqa: E501
             CredentialTemplateClientError,
         )

@@ -163,3 +163,30 @@ class TestCredentialTemplateCli:
 
         assert nonexistent_process.returncode == 1
         assert "Error:" in stderr
+
+    def test_delete_credential_configuration(
+        self, credential_configuration_input: str
+    ) -> None:
+        """Test that delete removes a credential configuration."""
+        create_process = process("create", ["OpenbadgeCredential"])
+        stdout, stderr = create_process.communicate(
+            input=credential_configuration_input
+        )
+        assert create_process.returncode == 0, f"Create failed: {stderr}"
+
+        show_process = process("show", ["OpenbadgeCredential"])
+        stdout, _ = show_process.communicate()
+        assert show_process.returncode == 0
+
+        delete_process = process("delete", ["OpenbadgeCredential"])
+        stdout, stderr = delete_process.communicate()
+        assert delete_process.returncode == 0, f"Delete failed: {stderr}"
+        assert "deleted" in stdout.lower()
+
+    def test_delete_nonexistent_returns_success(self) -> None:
+        """Test that delete succeeds against the mock (always returns 204)."""
+        delete_process = process("delete", ["nonexistent-template-id"])
+        stdout, _ = delete_process.communicate()
+
+        assert delete_process.returncode == 0
+        assert "deleted" in stdout.lower()

@@ -12,7 +12,6 @@ from src.offers.offer_service import (
 from ..support.test_doubles import (
     AccessControlSpy,
     AccessControlStub,
-    AwardServiceStub,
     DenyingAccessControlStub,
     OffersClientSpy,
     OffersClientStub,
@@ -21,6 +20,7 @@ from ..support.test_doubles import (
     OffersRepositoryStub,
     OffersRepositoryStubNotFound,
     STUB_AWARD,
+    AwardsClientStub,
 )
 
 ISSUER_AGENT_URL = "http://issuer-agent.example.com"
@@ -35,7 +35,7 @@ class TestOfferServiceCreateOffer:
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         offer = service.create_offer(award_id="award-123", bearer_token="tok")
@@ -52,7 +52,7 @@ class TestOfferServiceCreateOffer:
             access_control=AccessControlStub(),
             offers_repository=offers_repository,
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         offer = service.create_offer(award_id="award-999", bearer_token="tok")
@@ -74,7 +74,7 @@ class TestOfferServiceCreateOffer:
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=offers_client,
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         offer = service.create_offer(award_id="award-999", bearer_token="tok")
@@ -91,7 +91,7 @@ class TestOfferServiceCreateOffer:
             access_control=DenyingAccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         with pytest.raises(PermissionDeniedError):
@@ -105,7 +105,7 @@ class TestOfferServiceCreateOffer:
             access_control=spy,
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         _ = service.create_offer(award_id="award-123", bearer_token="my-token")
@@ -122,7 +122,7 @@ class TestOfferServiceGetOffer:
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
         result = service.get_offer("offer-123")
 
@@ -139,7 +139,7 @@ class TestOfferServiceGetOffer:
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStubNotFound(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         with pytest.raises(NotFoundError, match="Offer nonexistent-id not found"):
@@ -151,7 +151,7 @@ class TestOfferServiceGetOffer:
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStubNotFound(),
             offers_client=OffersClientStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         with pytest.raises(NotFoundError, match="Offer nonexistent-id not found"):
@@ -172,7 +172,7 @@ class TestOfferServiceGetOffer:
             access_control=AccessControlStub(),
             offers_repository=OffersRepositoryStub(),
             offers_client=_OffersClientErrorStub(),
-            award_service=AwardServiceStub(),
+            awards_client=AwardsClientStub(),
         )
 
         with pytest.raises(OfferServiceError):
