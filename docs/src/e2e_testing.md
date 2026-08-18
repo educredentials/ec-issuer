@@ -4,7 +4,7 @@ End-to-end tests verify complete, user-visible journeys through the running syst
 
 ## When to write e2e tests
 
-Write an e2e test for new features and for user-facing bugs that are common or visible enough to affect users in production. See the [TDD skill](../../.agent/skills/python-tdd/SKILL.md) for the full decision guide on when to use e2e vs integration vs unit tests.
+Write an e2e test for new features and for user-facing bugs that are common or visible enough to affect users in production. See the TDD skill for the full decision guide on when to use e2e vs integration vs unit tests.
 
 ## Running Tests
 
