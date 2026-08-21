@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Main application entry point for the EC Issuer."""
 
+from flask import Flask
+
 from src.access_control.hardcoded_adapter import HardcodedAccessControlAdapter
-from src.api.api_port import ApiPort
 from src.api.http_adapter import HttpApiAdapter
 from src.awards.http_awards_client_adapter import HttpAwardsClientAdapter
 from src.config.config import EnvConfigRepo
@@ -14,12 +15,11 @@ from src.offers.postgresql_offers_repository_adapter import (
 )
 from src.offers.ssi_agent_offers_client_adapter import SsiAgentOffersClientAdapter
 
-
 class App:
     """Main application entry point."""
 
     config: ConfigRepoPort
-    _api_port: ApiPort
+    _api_port: HttpApiAdapter
 
     def __init__(self):
         """Initialise and wire all application dependencies."""
@@ -51,10 +51,16 @@ class App:
             offers_client=offers_client,
         )
 
-        self._api_port = HttpApiAdapter(
+        api_adapter = HttpApiAdapter(
             config=self.config,
             offer_service=offer_service,
         )
+        self._api_port = api_adapter
+
+    @property
+    def wsgi_app(self) -> Flask:
+        """WSGI application, for use with gunicorn."""
+        return self._api_port.flask_app
 
     def run(self):
         """Start the application."""
@@ -66,6 +72,11 @@ def main() -> None:
     app = App()
     app.run()
 
+
+def __getattr__(name: str):
+    if name == "wsgi_app":
+        return App().wsgi_app
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 if __name__ == "__main__":
     main()

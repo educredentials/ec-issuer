@@ -142,5 +142,5 @@ class RequestsHttpClient:
         return requests.request(
             method=method,
             url=url,
-            **kwargs,  # pyright: ignore[reportArgumentType]
+            **kwargs,
         )

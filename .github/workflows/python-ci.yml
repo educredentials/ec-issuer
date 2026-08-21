@@ -151,11 +151,12 @@ jobs:
             echo "HAS_TAG=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push Docker image (web service)
+      - name: Build and push Docker image (web dev service)
         uses: docker/build-push-action@v7
         with:
           context: .
-          target: web
+          file: Dockerfile
+          target: web-dev
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -163,6 +164,20 @@ jobs:
             cr.surf.nl/edubadges-educredentials/ec-issuer:latest
             cr.surf.nl/edubadges-educredentials/ec-issuer:${{ steps.version.outputs.VERSION }}
             ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
+
+      - name: Build and push Docker image (web gunicorn service)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.gunicorn
+          target: web-gunicorn
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:latest
+            cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:${{ steps.version.outputs.VERSION }}
+            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
 
       - name: Build and push Docker image (cli, init container)
         uses: docker/build-push-action@v7
@@ -173,6 +188,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            cr.surf.nl/edubadges-educredentials/ec-issuer-init:latest
-            cr.surf.nl/edubadges-educredentials/ec-issuer-init:${{ steps.version.outputs.VERSION }}
-            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer-init:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
+            cr.surf.nl/edubadges-educredentials/ec-issuer-cli:latest
+            cr.surf.nl/edubadges-educredentials/ec-issuer-cli:${{ steps.version.outputs.VERSION }}
+            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer-cli:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}

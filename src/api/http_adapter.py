@@ -48,6 +48,7 @@ class CredentialRequestBody:
 class HttpApiAdapter(ApiPort):
     """HTTP REST API adapter"""
 
+    _prometheus_metrics: PrometheusMetrics
     flask_app: Flask
     offer_service: OfferService
     config: ConfigRepoPort
@@ -78,12 +79,11 @@ class HttpApiAdapter(ApiPort):
 
         # Metrics endpoint is only relevant to HttpAdapter
         # no need for service/domain models
-        metrics: PrometheusMetrics = PrometheusMetrics(app)
+        self._prometheus_metrics = PrometheusMetrics(app)
         # PrometheusMetrics has no typing
-        _ = metrics.info("app_info", "Application info", version="1.0.3")
 
         @app.route("/health")
-        @metrics.do_not_track()
+        @self._prometheus_metrics.do_not_track()
         def health() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Health check endpoint."""
             return "OK"

@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: web
+      target: web-dev
     ports:
       - "8008:8008"
     env_file:
