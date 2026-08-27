@@ -1,30 +1,25 @@
 [project]
-site_url = "https://https://www.educredentials.eu/ec-issuer/"
+site_url = "https://www.educredentials.eu/ec-issuer/"
 site_name = "Educredentials Issuer"
-# site_description = "Your project description"
 site_author = "Daniel Ostkamp, Bèr Kessels"
 
-# copyright = "Copyright &copy; 2026 Your name"
-
-# repo_url = "https://github.com/user/repo"
-# repo_name = "user/repo"
-# edit_uri = "edit/main/docs/"
+docs_dir = "docs/src/"
 
 nav = [
-  { "Get started" = "src/README.md" },
-  { "Features" = "src/features.md" },
-  { "Architecture" = "src/architecture.md" },
-  { "Ports & adapters" = "src/ports_adapters.md" },
-  { "Ports & adapters test" = "src/ports_adapters_test.md" },
-  { "Configuration" = "src/configuration.md" },
-  { "API reference" = "src/api.md" },
-  { "Credential configuration" = "src/credential_configuration.md" },
-  { "OIDC4VCI Issuer Agent" = "src/oidc4vci_issuer_agent.md" },
-  { "Import in Wallet" = "src/import_in_wallet.md" },
-  { "ADR" = "src/adr.md" },
-  { "Agents" = "src/agent_context.md" },
-  { "Glossary" = "src/glossary.md" },
-  { "Definition of Done" = "src/definition_of_done.md" }
+  { "Get started" = "README.md" },
+  { "Features" = "features.md" },
+  { "Architecture" = "architecture.md" },
+  { "Ports & adapters" = "ports_adapters.md" },
+  { "Ports & adapters test" = "ports_adapters_test.md" },
+  { "Configuration" = "configuration.md" },
+  { "API reference" = "api.md" },
+  { "Credential configuration" = "credential_configuration.md" },
+  { "OIDC4VCI Issuer Agent" = "oidc4vci_issuer_agent.md" },
+  { "Import in Wallet" = "import_in_wallet.md" },
+  { "ADR" = "adr.md" },
+  { "Agents" = "agent_context.md" },
+  { "Glossary" = "glossary.md" },
+  { "Definition of Done" = "definition_of_done.md" }
 ]
 
 [project.theme]

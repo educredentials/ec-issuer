@@ -43,7 +43,7 @@ ADRs may be superceded, in which case the ADR is no longer valid and replaced by
 
 ### Integrate
 
-Add the new ADR to the docs, by linkin it in ./docs/src/SUMMARY.md
+Add the new ADR to the docs, by linkin it in ./docs/src/adr.md
 
 ## Guidelines
 

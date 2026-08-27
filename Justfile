@@ -46,9 +46,9 @@ docs-api:
     cp docs/api/openapi.yaml docs/book/openapi/openapi.yaml
     cp docs/api/index.html docs/book/openapi/index.html
 
-# Run mdbook to preview the docs. See https://rust-lang.github.io/mdBook/
+# Run zensical to preview the docs. See https://zensical.org/docs/get-started/
 docs:
-    mdbook serve docs
+    uv run zensical serve
 
 bump_value_default := 'minor'
 
