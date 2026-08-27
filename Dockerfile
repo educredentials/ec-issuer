@@ -30,8 +30,9 @@ USER nonroot
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:$PATH"
-
+ENV DEBUG=true
 ENV PYTHONPATH="/app/src"
+
 CMD ["ec-issuer-web"]
 
 FROM gcr.io/distroless/base-debian12 AS cli
@@ -52,7 +53,6 @@ USER nonroot
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:$PATH"
-
 ENV PYTHONPATH="/app/src"
 
 ENTRYPOINT [ "/usr/bin/sh", "-c" ]

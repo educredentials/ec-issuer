@@ -30,8 +30,9 @@ USER nonroot
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:$PATH"
-
+ENV DEBUG=false
 ENV PYTHONPATH="/app/src"
+
 CMD ["gunicorn", "src.web:wsgi_app", "--bind", "0.0.0.0:8000"]
 
 FROM gcr.io/distroless/base-debian12 AS cli
@@ -53,7 +54,6 @@ USER nonroot
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:$PATH"
-
 ENV PYTHONPATH="/app/src"
 
 ENTRYPOINT [ "/usr/bin/sh", "-c" ]
