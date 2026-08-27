@@ -51,5 +51,5 @@ tmp/
 .ruff_cache/
 .mypy_cache/
 
-# Docs, mdbook
-docs/book
+# Zensical
+site

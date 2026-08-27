@@ -4,6 +4,17 @@ All important technical decisions are recorded in an ADR. The [ADR github organi
 
 Higher level ADRs, like business- or domain logic, requirements and other team-wide decisions are kept in [EduCredentials ADRs on Confluence](https://confluence.ia.surf.nl/pages/viewpage.action?pageId=260738661&spaceKey=EDUCRED&title=EduCredentials%2BADRs).
 
+## List of ADRs
+
+| ADR | Title | Status | Date |
+|---|---|---|---|
+| [ADR001](adr/ADR001-python.md) | Python and Flask for service | accepted | 2025-04-30 |
+| [ADR002](adr/ADR002-abc-over-protocol.md) | Use ABC instead of Protocol for Interface Definition | accepted | 2024-07-15 |
+| [ADR003](adr/ADR003-ssi-agent-as-peer-service.md) | Expose ssi-agent as peer service alongside ec-issuer | accepted | 2025-05-08 |
+| [ADR004](adr/ADR004-database-library.md) | Use psycopg for PostgreSQL database access | draft | 2026-05-20 |
+| [ADR005](adr/ADR005-Badgr-award-serialization.md) | Serialize Badgr API response as DTO before mapping to Award | accepted | 2026-08-07 |
+| [ADR006](adr/ADR006-bearer-token-passthrough.md) | Pass bearer token through awards client chain | accepted | 2026-08-07 |
+
 ## Developers: Template
 
 When adding an ADR here, use the following template, but keep it simple: remove anything but the bare necessary parts.
