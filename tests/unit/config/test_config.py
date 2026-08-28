@@ -61,6 +61,32 @@ class TestEnvConfigRepo:
         )
         assert config.credential_configuration_id == ""
 
+    def test_debug_defaults_to_false_when_absent(self) -> None:
+        """DEBUG env var is optional and defaults to false."""
+        env = _make_env()
+        del env["DEBUG"]
+
+        config = EnvConfigRepo(env=env)
+
+        assert config.debug is False
+
+    def test_debug_parses_false_string(self) -> None:
+        """Non-truthy DEBUG string values resolve to false."""
+        env = _make_env(debug=False)
+
+        config = EnvConfigRepo(env=env)
+
+        assert config.debug is False
+
+    def test_debug_parses_true_string(self) -> None:
+        """Truthy DEBUG string values resolve to true."""
+        env = _make_env(debug=True)
+        env["DEBUG"] = "true"
+
+        config = EnvConfigRepo(env=env)
+
+        assert config.debug is True
+
     def test_invalid_server_port(self) -> None:
         """Invalid SERVER_PORT raises ValueError."""
         env = _make_env()

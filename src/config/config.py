@@ -31,7 +31,7 @@ class EnvConfigRepo:
         self.server_port = int(env["SERVER_PORT"])
         self.ssi_agent_url = env["SSI_AGENT_URL"]
         self.awards_service_url = env["AWARDS_SERVICE_URL"]
-        self.debug = env["DEBUG"].lower() in ("true", "1", "yes")
+        self.debug = env.get("DEBUG", "false").lower() in ("true", "1", "yes")
         self.postgresql_connection_string = env["POSTGRES_CONNECTION_STRING"]
         self.allowed_cors_domains = env["ALLOWED_CORS_DOMAINS"]
         self.credential_configuration_id = credential_configuration_id
