@@ -27,6 +27,7 @@ class TestEnvConfigRepo:
             "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
             "AWARDS_SERVICE_URL": "http://awards.example.com",
             "ALLOWED_CORS_DOMAINS": "https://example.com,http://localhost:8000",
+            "DEBUG": "false",
         }
         config = EnvConfigRepo(env=env)
 
@@ -40,6 +41,7 @@ class TestEnvConfigRepo:
         assert (
             config.allowed_cors_domains == "https://example.com,http://localhost:8000"
         )
+        assert not config.debug
 
     def test_invalid_server_port(self):
         """Test that invalid server port raises ValueError."""
@@ -67,6 +69,7 @@ class TestEnvConfigRepo:
         monkeypatch.setenv(
             "ALLOWED_CORS_DOMAINS", "http://localhost:8000,https://app.example.com"
         )
+        monkeypatch.setenv("DEBUG", "True")
 
         config = EnvConfigRepo()
 
@@ -80,3 +83,4 @@ class TestEnvConfigRepo:
             config.allowed_cors_domains
             == "http://localhost:8000,https://app.example.com"
         )
+        assert config.debug

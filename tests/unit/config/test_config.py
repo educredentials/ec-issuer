@@ -14,6 +14,7 @@ def _make_env(
     awards_service_url: str = "http://awards.example.com",
     postgresql_connection_string: str = "postgresql://localhost/test",
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com",
+    debug: bool = True,
 ) -> dict[str, str]:
     """Return a minimal env dict with required keys."""
     return {
@@ -23,6 +24,7 @@ def _make_env(
         "AWARDS_SERVICE_URL": awards_service_url,
         "POSTGRES_CONNECTION_STRING": postgresql_connection_string,
         "ALLOWED_CORS_DOMAINS": allowed_cors_domains,
+        "DEBUG": str(debug),
     }
 
 
@@ -87,4 +89,3 @@ class TestEnvConfigRepo:
         config = EnvConfigRepo(env=env)
 
         assert config.credential_configuration_id == ""
-
