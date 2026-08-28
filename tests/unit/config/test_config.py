@@ -59,7 +59,7 @@ class TestEnvConfigRepo:
             config.allowed_cors_domains
             == "http://localhost:8000,https://app.example.com"
         )
-        assert config.credential_configuration_id == ""
+        assert config.credential_configuration_ids == []
 
     def test_debug_defaults_to_false_when_absent(self) -> None:
         """DEBUG env var is optional and defaults to false."""
@@ -105,13 +105,15 @@ class TestEnvConfigRepo:
     def test_pre_resolved_id(self) -> None:
         """Credential template id can be pre-resolved."""
         env = _make_env()
-        config = EnvConfigRepo(env=env, credential_configuration_id="pre-resolved-id")
+        config = EnvConfigRepo(
+            env=env, credential_configuration_ids=["pre-resolved-id"]
+        )
 
-        assert config.credential_configuration_id == "pre-resolved-id"
+        assert config.credential_configuration_ids == ["pre-resolved-id"]
 
-    def test_default_credential_configuration_id_is_empty(self) -> None:
-        """credential_configuration_id defaults to empty string."""
+    def test_default_credential_configuration_ids_is_empty(self) -> None:
+        """credential_configuration_ids defaults to empty list."""
         env = _make_env()
         config = EnvConfigRepo(env=env)
 
-        assert config.credential_configuration_id == ""
+        assert config.credential_configuration_ids == []

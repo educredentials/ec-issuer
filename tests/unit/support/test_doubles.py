@@ -15,7 +15,6 @@ from src.awards.models import (
     Issuer,
 )
 from src.config.config_port import ConfigRepoPort
-
 from src.offers.models import Offer
 from src.offers.offer_service import (
     OfferService,
@@ -175,7 +174,6 @@ class OffersRepositoryStub(OffersRepositoryPort):
         Args:
             offer: Ignored.
         """
-        pass
 
     @override
     def get(self, offer_id: str) -> Offer:
@@ -259,7 +257,10 @@ class ConfigRepoStub(ConfigRepoPort):
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
     awards_service_url: str = "http://awards.example.com"
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com"
-    credential_configuration_id: str = "static-config-id"
+
+    def __init__(self) -> None:
+        """Initialize with default test values."""
+        self.credential_configuration_ids: list[str] = ["static-config-id"]
 
 
 class AccessControlStub(AccessControlPort):

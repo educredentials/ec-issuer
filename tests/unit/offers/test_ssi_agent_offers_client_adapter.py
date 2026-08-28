@@ -9,10 +9,10 @@ from src.awards.models import (
     Criteria,
     Issuer,
 )
+from src.lib.http_client import HttpClient
 from src.offers.models import Offer
 from src.offers.offers_client_port import OfferNotFound, OffersClientError
 from src.offers.ssi_agent_offers_client_adapter import SsiAgentOffersClientAdapter
-from src.lib.http_client import HttpClient
 
 from ..support.requests_doubles import MockResponse, RecordedRequest, RequestsSpy
 
@@ -48,7 +48,7 @@ def subject(http_client: HttpClient) -> SsiAgentOffersClientAdapter:
     """Provide the adapter wired to the spy."""
     return SsiAgentOffersClientAdapter(
         ssi_agent_url="http://agent.example.com",
-        credential_template_id="openbadge_credential",
+        credential_template_ids=["openbadge_credential"],
         http_client=http_client,
     )
 
@@ -206,27 +206,31 @@ class TestSsiAgentOffersClientAdapter:
         with pytest.raises(OffersClientError):
             _ = subject.create("offer-123", sample_award)
 
-    def test_create_uses_credential_template_id(
+    def test_create_uses_credential_template_ids(
         self,
         http_client: RequestsSpy,
         sample_award: Award,
     ):
-        """create() uses the provided credential_configuration_id in requests."""
+        """create() uses the provided credential_template_ids in requests."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_id="test_credential_config",
+            credential_template_ids=["test_credential_config", "european_credential"],
             http_client=http_client,
         )
         _ = adapter.create("offer-123", sample_award)
-        # Check that templateId in credential creation uses the ID
+        # Check that templateId in credential creation uses first ID
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
         json_dict = credential_call.json  # type: ignore[reportAny]
         assert isinstance(json_dict, dict)
         assert json_dict["templateId"] == "test_credential_config"
-        # Check that templateIds in offer creation uses the ID
+        # Check that templateIds in offer creation uses the full list
         offer_call = http_client.calls[1]
         assert offer_call.json is not None
         offer_dict = offer_call.json  # type: ignore[reportAny]
         assert isinstance(offer_dict, dict)
         assert offer_dict["offerId"] == "offer-123"
+        assert offer_dict["templateIds"] == [
+            "test_credential_config",
+            "european_credential",
+        ]

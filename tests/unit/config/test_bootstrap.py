@@ -7,8 +7,12 @@ from unittest.mock import patch
 
 import pytest
 
-from src.credential_configurations.bootstrap import resolve_credential_template_id
-from src.credential_configurations.bootstrap import load_from_json
+from src.credential_configurations.bootstrap import (
+    load_from_directory,
+    load_from_json,
+    resolve_credential_template_id,
+    resolve_credential_template_ids,
+)
 from src.credential_configurations.credential_configurations_client_port import (
     CredentialTemplateClientError,
     CredentialTemplateClientPort,
@@ -101,9 +105,7 @@ class TestResolveCredentialTemplateId:
             "CREDENTIAL_TEMPLATE_ID": "env-fallback-id",
             "SSI_AGENT_URL": "http://agent.example.com",
         }
-        mock_client = _MockClientPort(
-            create_result=_make_template("", "json-id")
-        )
+        mock_client = _MockClientPort(create_result=_make_template("", "json-id"))
         with patch.dict("os.environ", env_with_json):
             with _patch_adapter(mock_client):
                 resolved_id = resolve_credential_template_id()
@@ -155,19 +157,19 @@ class TestResolveCredentialTemplateId:
         json_file = tmp_path / "template.json"
         _ = json_file.write_text('{"title": "Test", "type": []}')
 
-        mock_client = _MockClientPort(
-            create_result=_make_template("", "json-id")
-        )
-        with patch.dict(
-            "os.environ",
-            {
-                "CREDENTIAL_TEMPLATE_JSON_FILE": str(json_file),
-                "CREDENTIAL_TEMPLATE_ID": "env-fallback-id",
-                "SSI_AGENT_URL": "http://agent.example.com",
-            },
+        mock_client = _MockClientPort(create_result=_make_template("", "json-id"))
+        with (
+            patch.dict(
+                "os.environ",
+                {
+                    "CREDENTIAL_TEMPLATE_JSON_FILE": str(json_file),
+                    "CREDENTIAL_TEMPLATE_ID": "env-fallback-id",
+                    "SSI_AGENT_URL": "http://agent.example.com",
+                },
+            ),
+            _patch_adapter(mock_client),
         ):
-            with _patch_adapter(mock_client):
-                resolved_id = resolve_credential_template_id()
+            resolved_id = resolve_credential_template_id()
 
         assert resolved_id == "json-id"
 
@@ -226,9 +228,11 @@ class TestLoadFromJson:
             list_result=[return_template],
         )
 
-        with patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}):
-            with _patch_adapter(mock_client):
-                result = load_from_json(str(json_file))
+        with (
+            patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}),
+            _patch_adapter(mock_client),
+        ):
+            result = load_from_json(str(json_file))
 
         assert mock_client.list_called
         assert not mock_client.create_called
@@ -245,9 +249,11 @@ class TestLoadFromJson:
             create_result=return_template,
         )
 
-        with patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}):
-            with _patch_adapter(mock_client):
-                result = load_from_json(str(json_file))
+        with (
+            patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}),
+            _patch_adapter(mock_client),
+        ):
+            result = load_from_json(str(json_file))
 
         assert mock_client.list_called
         assert mock_client.create_called
@@ -267,16 +273,18 @@ class TestLoadFromJson:
             ),
         )
 
-        with patch.dict(
-            "os.environ",
-            {"SSI_AGENT_URL": "http://broken.example.com"},
+        with (
+            patch.dict(
+                "os.environ",
+                {"SSI_AGENT_URL": "http://broken.example.com"},
+            ),
+            _patch_adapter(mock_client),
         ):
-            with _patch_adapter(mock_client):
-                with pytest.raises(RuntimeError) as exc_info:
-                    _ = load_from_json(str(json_file))
+            with pytest.raises(RuntimeError) as exc_info:
+                _ = load_from_json(str(json_file))
 
-                assert "Failed to reach SSI Agent" in str(exc_info.value)
-                assert "broken.example.com" in str(exc_info.value)
+            assert "Failed to reach SSI Agent" in str(exc_info.value)
+            assert "broken.example.com" in str(exc_info.value)
 
     def test_fails_on_ssi_agent_create_error(self, tmp_path: Path) -> None:
         """Create failure is wrapped in RuntimeError."""
@@ -316,3 +324,203 @@ class TestLoadFromJson:
                     _ = load_from_json(str(json_file))
 
                 assert "with no ID" in str(exc_info.value)
+
+
+class TestResolveCredentialTemplateIds:
+    """Tests for resolve_credential_template_ids function."""
+
+    def test_uses_json_dir_when_set(self, tmp_path: Path) -> None:
+        """CREDENTIAL_TEMPLATE_JSON_DIR is preferred over single-file mode."""
+        json_dir = tmp_path / "templates"
+        json_dir.mkdir()
+        json_files = [
+            json_dir / "template1.json",
+            json_dir / "template2.json",
+        ]
+        json_files[0].write_text('{"title": "Template One", "type": []}')
+        json_files[1].write_text('{"title": "Template Two", "type": []}')
+
+        mock_client = _MockClientPort(
+            list_result=[
+                _make_template("Template One", "id-one"),
+                _make_template("Template Two", "id-two"),
+            ],
+        )
+
+        with (
+            patch.dict(
+                "os.environ",
+                {
+                    "CREDENTIAL_TEMPLATE_JSON_DIR": str(json_dir),
+                    "CREDENTIAL_TEMPLATE_JSON_FILE": "",
+                    "CREDENTIAL_TEMPLATE_ID": "",
+                    "SSI_AGENT_URL": "http://agent.example.com",
+                },
+            ),
+            _patch_adapter(mock_client),
+        ):
+            resolved_ids = resolve_credential_template_ids()
+
+        assert resolved_ids == ["id-one", "id-two"]
+
+    def test_falls_back_to_single_file_mode(self, tmp_path: Path) -> None:
+        """Without JSON_DIR, falls back to single-file resolve."""
+        json_file = tmp_path / "template.json"
+        json_file.write_text('{"title": "Single", "type": []}')
+
+        mock_client = _MockClientPort(
+            create_result=_make_template("Single", "single-id"),
+        )
+
+        with (
+            patch.dict(
+                "os.environ",
+                {
+                    "CREDENTIAL_TEMPLATE_JSON_DIR": "",
+                    "CREDENTIAL_TEMPLATE_JSON_FILE": str(json_file),
+                    "CREDENTIAL_TEMPLATE_ID": "",
+                    "SSI_AGENT_URL": "http://agent.example.com",
+                },
+            ),
+            _patch_adapter(mock_client),
+        ):
+            resolved_ids = resolve_credential_template_ids()
+
+        assert resolved_ids == ["single-id"]
+
+    def test_falls_back_to_env_var_when_no_json(self) -> None:
+        """Without any JSON config, falls back to CREDENTIAL_TEMPLATE_ID."""
+        with patch.dict(
+            "os.environ",
+            {
+                "CREDENTIAL_TEMPLATE_JSON_DIR": "",
+                "CREDENTIAL_TEMPLATE_JSON_FILE": "",
+                "CREDENTIAL_TEMPLATE_ID": "env-fallback-id",
+            },
+        ):
+            resolved_ids = resolve_credential_template_ids()
+            assert resolved_ids == ["env-fallback-id"]
+
+
+class TestLoadFromDirectory:
+    """Tests for load_from_directory function."""
+
+    def test_missing_directory_raises_runtime_error(self) -> None:
+        """Non-existent directory raises RuntimeError with directory path."""
+        with pytest.raises(RuntimeError) as exc_info:
+            _ = load_from_directory("/nonexistent/path")
+
+        assert "/nonexistent/path" in str(exc_info.value)
+
+    def test_empty_directory_raises_runtime_error(self, tmp_path: Path) -> None:
+        """Directory with no .json files raises RuntimeError."""
+        json_dir = tmp_path / "empty_templates"
+        json_dir.mkdir()
+
+        with pytest.raises(RuntimeError) as exc_info:
+            _ = load_from_directory(str(json_dir))
+
+        assert str(json_dir) in str(exc_info.value)
+
+    def test_loads_all_json_files(self, tmp_path: Path) -> None:
+        """All .json files in directory are loaded."""
+        json_dir = tmp_path / "templates"
+        json_dir.mkdir()
+
+        template1 = json_dir.joinpath("template1.json")
+        template2 = json_dir.joinpath("template2.json")
+        template3 = json_dir.joinpath("template3.json")
+        # Non-JSON file should be ignored
+        json_dir.joinpath("readme.txt").write_text("not a template")
+
+        template1.write_text('{"title": "One", "type": []}')
+        template2.write_text('{"title": "Two", "type": []}')
+        template3.write_text('{"title": "Three", "type": []}')
+
+        mock_client = _MockClientPort(
+            list_result=[
+                _make_template("One", "id-one"),
+                _make_template("Two", "id-two"),
+                _make_template("Three", "id-three"),
+            ],
+        )
+
+        with (
+            patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}),
+            _patch_adapter(mock_client),
+        ):
+            result = load_from_directory(str(json_dir))
+
+        assert len(result) == 3
+        assert result == ["id-one", "id-two", "id-three"]
+
+    def test_json_files_loaded_in_sorted_order(self, tmp_path: Path) -> None:
+        """Files are loaded in sorted filename order."""
+        json_dir = tmp_path / "templates"
+        json_dir.mkdir()
+
+        # Create files that won't sort alphabetically
+        json_dir.joinpath("z_template.json").write_text('{"title": "Z", "type": []}')
+        json_dir.joinpath("a_template.json").write_text('{"title": "A", "type": []}')
+
+        mock_client = _MockClientPort(
+            list_result=[
+                _make_template("A", "a-id"),
+                _make_template("Z", "z-id"),
+            ],
+        )
+
+        with (
+            patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}),
+            _patch_adapter(mock_client),
+        ):
+            result = load_from_directory(str(json_dir))
+
+        # Sorted alphabetically: a_template.json before z_template.json
+        assert result == ["a-id", "z-id"]
+
+    def test_missing_title_in_any_file_raises(self, tmp_path: Path) -> None:
+        """Missing title in any file raises RuntimeError."""
+        json_dir = tmp_path / "templates"
+        json_dir.mkdir()
+
+        json_dir.joinpath("good.json").write_text('{"title": "Good", "type": []}')
+        json_dir.joinpath("no_title.json").write_text('{"type": []}')
+
+        # Mock create with a valid ID so "no ID" error doesn't mask the
+        # "missing title" error we're testing for (second file)
+        mock_client = _MockClientPort(
+            list_result=[],
+            create_result=_make_template("Good", "good-id"),
+        )
+
+        with (
+            patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}),
+            _patch_adapter(mock_client),
+        ):
+            with pytest.raises(RuntimeError) as exc_info:
+                _ = load_from_directory(str(json_dir))
+
+            assert "missing a non-empty 'title'" in str(exc_info.value)
+            assert "no_title.json" in str(exc_info.value)
+
+    def test_creates_templates_when_not_found(self, tmp_path: Path) -> None:
+        """Templates are created when they don't exist on SSI Agent."""
+        json_dir = tmp_path / "templates"
+        json_dir.mkdir()
+        json_dir.joinpath("new.json").write_text('{"title": "New", "type": []}')
+
+        mock_client = _MockClientPort(
+            list_result=[],
+            create_result=_make_template("New", "new-id"),
+        )
+
+        with (
+            patch.dict("os.environ", {"SSI_AGENT_URL": "http://agent.example.com"}),
+            _patch_adapter(mock_client),
+        ):
+            result = load_from_directory(str(json_dir))
+
+        assert mock_client.list_called
+        assert mock_client.create_called
+        assert result == ["new-id"]

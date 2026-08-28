@@ -46,25 +46,27 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
 
     _ssi_agent_admin_base_url: str
     _http_client: HttpClient
-    _credential_template_id: str
+    _credential_template_ids: list[str]
+
+    _credential_template_ids: list[str]
 
     def __init__(
         self,
         ssi_agent_url: str,
-        credential_template_id: str,
+        credential_template_ids: list[str] | None = None,
         http_client: HttpClient | None = None,
     ) -> None:
         """Initialize the adapter.
 
         Args:
             ssi_agent_url: The admin base URL of the SSI agent.
-            credential_configuration_id: The credential configuration ID to use
+            credential_template_ids: The credential template IDs to use
                 for offers.
             http_client: The HTTP client to use for requests.
                 Defaults to requests module.
         """
         self._ssi_agent_admin_base_url = ssi_agent_url.rstrip("/")
-        self._credential_template_id = credential_template_id
+        self._credential_template_ids = credential_template_ids or []
         if http_client is not None:
             self._http_client = http_client
         else:
@@ -132,7 +134,11 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             json={
                 "offerId": offer_id,
                 "credential": asdict(award),
-                "templateId": self._credential_template_id,
+                "templateId": (
+                    self._credential_template_ids[0]
+                    if self._credential_template_ids
+                    else ""
+                ),
                 "expiresAt": "never",
             },
         )
@@ -147,7 +153,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             f"{self._ssi_agent_admin_base_url}/v0/offers",
             json={
                 "offerId": offer_id,
-                "templateIds": [self._credential_template_id],
+                "templateIds": self._credential_template_ids,
             },
         )
 
