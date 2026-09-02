@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
 import msgspec
 
 
@@ -39,9 +40,12 @@ class _BadgrAwardResponse(msgspec.Struct):
     name: str | None = None
     issued_on: str | None = None
     badgeclass: _BadgrBadgeclass | None = None
+    # Person/learner fields (populated when the awards service returns them).
+    given_name: str | None = None
+    family_name: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> "_BadgrAwardResponse":
+    def from_dict(cls, data: dict[str, object]) -> _BadgrAwardResponse:
         """Deserialize a dict to this DTO.
 
         Args:
@@ -53,7 +57,7 @@ class _BadgrAwardResponse(msgspec.Struct):
         return msgspec.convert(data, type=cls)
 
 
-def _to_ob3_award(dto: "_BadgrAwardResponse") -> Award:
+def _to_ob3_award(dto: _BadgrAwardResponse) -> OB3Award:
     """Convert a BadgrAwardResponse DTO to an OB3 Award domain model.
 
     Args:
@@ -68,7 +72,7 @@ def _to_ob3_award(dto: "_BadgrAwardResponse") -> Award:
     valid_from = _resolve_valid_from(dto)
     achievement_data = _resolve_achievement_data(dto)
 
-    return Award(
+    return OB3Award(
         id=entity_id,
         type=["VerifiableCredential", "AchievementCredential"],
         name=badge_name,
@@ -148,14 +152,14 @@ def _resolve_valid_from(dto: _BadgrAwardResponse) -> str:
     return ""
 
 
-def award_from_badgr_api_response(raw: dict[str, object]) -> Award:
+def ob3_award_from_badgr_api_response(raw: dict[str, object]) -> OB3Award:
     """Convert a Badgr API response to an OB3 Award domain model.
 
     Args:
         raw: The parsed JSON response from the Badgr awards API.
 
     Returns:
-        A fully-structured Award.
+        A fully-structured OB3 Award.
     """
     dto = _BadgrAwardResponse.from_dict(raw)
     return _to_ob3_award(dto)
@@ -208,8 +212,8 @@ def _ob3_default_schema() -> list[dict[str, str]]:
 
 
 @dataclass
-class Award:
-    """Minimal OB3 AchievementCredential (unsigned)."""
+class OB3Award:
+    """Open Badges 3.0 AchievementCredential (unsigned)."""
 
     id: str
     type: list[str]
@@ -218,3 +222,19 @@ class Award:
     validFrom: str
     credentialSubject: AchievementSubject
     credentialSchema: list[dict[str, str]] = field(default_factory=_ob3_default_schema)
+
+
+@dataclass
+class EDCAward:
+    """European Digital Credential claim set.
+
+    Flat structure matching SD-JWT VC claims — no nested credentialSubject.
+    birth_date is intentionally omitted for this iteration.
+    Person fields (given_name, family_name) come from the awards service.
+    """
+
+    given_name: str
+    family_name: str
+    learning_achievement: dict[str, str]
+    awarding_body: dict[str, str]
+    awarding_opportunity: dict[str, str]

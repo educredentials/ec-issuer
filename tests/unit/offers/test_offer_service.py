@@ -2,6 +2,7 @@
 
 import pytest
 
+from src.awards.models import EDCAward
 from src.offers.models import Offer
 from src.offers.offer_service import (
     NotFoundError,
@@ -9,9 +10,13 @@ from src.offers.offer_service import (
     OfferServiceError,
     PermissionDeniedError,
 )
+
 from ..support.test_doubles import (
+    STUB_EDC_AWARD,
+    STUB_OB3_AWARD,
     AccessControlSpy,
     AccessControlStub,
+    AwardsClientStub,
     DenyingAccessControlStub,
     OffersClientSpy,
     OffersClientStub,
@@ -19,8 +24,6 @@ from ..support.test_doubles import (
     OffersRepositorySpy,
     OffersRepositoryStub,
     OffersRepositoryStubNotFound,
-    STUB_AWARD,
-    AwardsClientStub,
 )
 
 ISSUER_AGENT_URL = "http://issuer-agent.example.com"
@@ -38,7 +41,7 @@ class TestOfferServiceCreateOffer:
             awards_client=AwardsClientStub(),
         )
 
-        offer = service.create_offer(award_id="award-123", bearer_token="tok")
+        offer = service.create_offer(award_id="award-123", bearer_token="test-token")
         assert offer.offer_id is not None
         assert offer.uri is not None
         assert offer.uri.startswith(
@@ -55,7 +58,7 @@ class TestOfferServiceCreateOffer:
             awards_client=AwardsClientStub(),
         )
 
-        offer = service.create_offer(award_id="award-999", bearer_token="tok")
+        offer = service.create_offer(award_id="award-999", bearer_token="test-token")
 
         # We test against a fixed offer, testing against the return value could
         # give false positives
@@ -77,12 +80,12 @@ class TestOfferServiceCreateOffer:
             awards_client=AwardsClientStub(),
         )
 
-        offer = service.create_offer(award_id="award-999", bearer_token="tok")
+        offer = service.create_offer(award_id="award-999", bearer_token="test-token")
 
         assert len(offers_client.calls) == 1
         assert offers_client.calls[0] == (
-            "create",
-            {"offer_id": offer.offer_id, "award": STUB_AWARD},
+            "create_ob3",
+            {"offer_id": offer.offer_id, "award": STUB_OB3_AWARD},
         )
 
     def test_raises_permission_denied_when_access_control_denies(self):
@@ -95,7 +98,7 @@ class TestOfferServiceCreateOffer:
         )
 
         with pytest.raises(PermissionDeniedError):
-            _ = service.create_offer(award_id="award-123", bearer_token="tok")
+            _ = service.create_offer(award_id="award-123", bearer_token="test-token")
 
     def test_checks_access_control_with_correct_arguments(self):
         """create_offer passes bearer token and resource details to access control."""
@@ -111,6 +114,57 @@ class TestOfferServiceCreateOffer:
         _ = service.create_offer(award_id="award-123", bearer_token="my-token")
 
         assert spy.calls == [("my-token", "award-123", "Award", "import")]
+
+    def test_create_offer_dispatches_create_edc_when_credential_type_is_edc(
+        self,
+    ):
+        """create_offer with credential_type='edc' dispatches to create_edc."""
+        offers_client = OffersClientSpy()
+
+        service = OfferService(
+            access_control=AccessControlStub(),
+            offers_repository=OffersRepositoryStub(),
+            offers_client=offers_client,
+            awards_client=AwardsClientStub(),
+        )
+
+        _ = service.create_offer(
+            award_id="award-999",
+            bearer_token="test-token",
+            credential_type="edc",
+        )
+
+        assert len(offers_client.calls) == 1
+        call_name, call_args = offers_client.calls[0]
+        assert call_name == "create_edc"
+        assert call_args["offer_id"] is not None
+        assert isinstance(call_args["award"], STUB_EDC_AWARD.__class__)
+
+    def test_create_edc_passes_mapped_edc_claims_to_client(self):
+        """create_offer with credential_type='edc' maps OB3Award to EDCAward."""
+        offers_client = OffersClientSpy()
+
+        service = OfferService(
+            access_control=AccessControlStub(),
+            offers_repository=OffersRepositoryStub(),
+            offers_client=offers_client,
+            awards_client=AwardsClientStub(),
+        )
+
+        _ = service.create_offer(
+            award_id="award-999",
+            bearer_token="test-token",
+            credential_type="edc",
+        )
+
+        call_name, call_args = offers_client.calls[0]
+        assert call_name == "create_edc"
+        edc_award: EDCAward = call_args["award"]  # type: ignore[assignment]
+        assert edc_award.given_name == "Learner"
+        assert edc_award.family_name == "Example"
+        assert edc_award.learning_achievement["name"] == "Stub Achievement"
+        assert edc_award.awarding_body["name"] == "Stub Issuer"
+        assert edc_award.awarding_opportunity["name"] == "Stub Award"
 
 
 class TestOfferServiceGetOffer:

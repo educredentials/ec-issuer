@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from src.awards.models import Award
+from src.awards.models import EDCAward, OB3Award
 
 from .models import Offer
 
@@ -19,12 +19,25 @@ class OffersClientPort(ABC):
     """Port: repository interface for persisting and retrieving offers."""
 
     @abstractmethod
-    def create(self, offer_id: str, award: Award) -> str:
-        """Create a credential offer on the SSI agent.
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+        """Create an OB3 credential offer on the SSI agent.
 
         Args:
             offer_id: The offer identifier to create.
-            award: The award (OB3 AchievementCredential) for this offer.
+            award: The OB3 AchievementCredential to issue.
+
+        Returns:
+            The offer URI.
+        """
+        ...
+
+    @abstractmethod
+    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+        """Create an EDC credential offer on the SSI agent.
+
+        Args:
+            offer_id: The offer identifier to create.
+            award: The EDC claim set to issue.
 
         Returns:
             The offer URI.

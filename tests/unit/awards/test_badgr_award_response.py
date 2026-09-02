@@ -2,21 +2,20 @@
 
 from __future__ import annotations
 
+import json
 from textwrap import dedent
 
-import json
-
 from src.awards.models import (
+    Achievement,
+    AchievementSubject,
+    Criteria,
+    Issuer,
+    OB3Award,
     _BadgrAwardResponse,  # pyright:ignore[reportPrivateUsage]
     _BadgrBadgeclass,  # pyright:ignore[reportPrivateUsage]
     _BadgrIssuer,  # pyright:ignore[reportPrivateUsage]
     _ob3_default_schema,  # pyright:ignore[reportPrivateUsage]
     _to_ob3_award,  # pyright:ignore[reportPrivateUsage]
-    Award,
-    Achievement,
-    AchievementSubject,
-    Criteria,
-    Issuer,
 )
 
 
@@ -179,7 +178,7 @@ class TestToOb3Award:
 
         result = _to_ob3_award(dto)
 
-        assert result == Award(
+        assert result == OB3Award(
             id="I41eovHQReGI_SG5KM6dSQ",
             type=["VerifiableCredential", "AchievementCredential"],
             name="Edubadge account complete",

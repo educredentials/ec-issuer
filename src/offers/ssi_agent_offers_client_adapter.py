@@ -5,7 +5,7 @@ from typing import override
 
 import msgspec
 
-from src.awards.models import Award
+from src.awards.models import EDCAward, OB3Award
 from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .models import Offer
@@ -48,8 +48,6 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
     _http_client: HttpClient
     _credential_template_ids: list[str]
 
-    _credential_template_ids: list[str]
-
     def __init__(
         self,
         ssi_agent_url: str,
@@ -73,17 +71,42 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             self._http_client = RequestsHttpClient()
 
     @override
-    def create(self, offer_id: str, award: Award) -> str:
-        """Create an offer in the SSI agent.
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+        """Create an OB3 credential offer in the SSI agent.
 
         Args:
             offer_id: The offer identifier to create.
-            award: The award to issue as a credential.
+            award: The OB3 AchievementCredential to issue.
 
         Returns:
             The credential offer URI.
         """
-        self._create_credential_for_subject(offer_id, award)
+        self._create_credential_for_subject(
+            offer_id,
+            award,
+            self._credential_template_ids[0] if self._credential_template_ids else "",
+        )
+        offer_uri = self._create_offer(offer_id)
+        return offer_uri
+
+    @override
+    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+        """Create an EDC credential offer in the SSI agent.
+
+        Args:
+            offer_id: The offer identifier to create.
+            award: The EDC claim set to issue.
+
+        Returns:
+            The credential offer URI.
+        """
+        self._create_credential_for_subject(
+            offer_id,
+            award,
+            self._credential_template_ids[1]
+            if len(self._credential_template_ids) > 1
+            else "",
+        )
         offer_uri = self._create_offer(offer_id)
         return offer_uri
 
@@ -128,17 +151,18 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             uri=uri,
         )
 
-    def _create_credential_for_subject(self, offer_id: str, award: Award) -> None:
+    def _create_credential_for_subject(
+        self,
+        offer_id: str,
+        award: OB3Award | EDCAward,
+        template_id: str,
+    ) -> None:
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credentials",
             json={
                 "offerId": offer_id,
                 "credential": asdict(award),
-                "templateId": (
-                    self._credential_template_ids[0]
-                    if self._credential_template_ids
-                    else ""
-                ),
+                "templateId": template_id,
                 "expiresAt": "never",
             },
         )

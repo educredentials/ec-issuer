@@ -11,9 +11,9 @@ from src.awards.http_awards_client_adapter import HttpAwardsClientAdapter
 from src.awards.models import (
     Achievement,
     AchievementSubject,
-    Award,
     Criteria,
     Issuer,
+    OB3Award,
     _ob3_default_schema,  # pyright:ignore[reportPrivateUsage]
 )
 from src.lib.http_client import HttpClient
@@ -36,7 +36,7 @@ _BADGR_AWARD_JSON = (
     b'"faculty":null}}}'
 )
 
-_EXPECTED_BADGR_AWARD = Award(
+_EXPECTED_BADGR_AWARD = OB3Award(
     id="http://example.com/awards/3527",
     type=["VerifiableCredential", "AchievementCredential"],
     name="Teamwork Badge",

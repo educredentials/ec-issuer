@@ -25,6 +25,7 @@ class CreateOfferBody:
     """Parsed request body for the create offer endpoint."""
 
     award_id: str
+    credential_type: str = "ob3"
 
 
 @dataclass
@@ -102,12 +103,16 @@ class HttpApiAdapter(ApiPort):
                 return json.dumps({"error": "Unauthorized"}), 401
 
             raw: dict[str, str] = request.get_json(silent=True) or {}
-            body = CreateOfferBody(award_id=raw.get("award_id", ""))
+            body = CreateOfferBody(
+                award_id=raw.get("award_id", ""),
+                credential_type=raw.get("credential_type", "ob3"),
+            )
 
             try:
                 offer = self.offer_service.create_offer(
                     award_id=body.award_id,
                     bearer_token=bearer_token,
+                    credential_type=body.credential_type,
                 )
             except PermissionDeniedError:
                 return json.dumps({"error": "Forbidden"}), 403

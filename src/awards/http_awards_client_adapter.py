@@ -12,7 +12,11 @@ from .awards_client_port import (
     AwardsClientError,
     AwardsClientPort,
 )
-from .models import Award, _BadgrAwardResponse, _to_ob3_award  # pyright: ignore[reportPrivateUsage]
+from .models import (  # pyright: ignore[reportPrivateUsage]
+    OB3Award,
+    _BadgrAwardResponse,
+    _to_ob3_award,
+)
 
 
 class HttpAwardsClientAdapter(AwardsClientPort):
@@ -42,7 +46,7 @@ class HttpAwardsClientAdapter(AwardsClientPort):
             self._http_client = RequestsHttpClient()
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> OB3Award:
         """Fetch an award by ID from the awards HTTP service.
 
         Args:

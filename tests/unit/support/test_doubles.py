@@ -10,9 +10,10 @@ from src.awards.awards_client_port import AwardsClientPort
 from src.awards.models import (
     Achievement,
     AchievementSubject,
-    Award,
     Criteria,
+    EDCAward,
     Issuer,
+    OB3Award,
 )
 from src.config.config_port import ConfigRepoPort
 from src.offers.models import Offer
@@ -23,9 +24,9 @@ from src.offers.offer_service import (
 from src.offers.offers_client_port import OfferNotFound, OffersClientPort
 from src.offers.offers_repository_port import OffersRepositoryPort
 
-# A fixed Award returned by AwardServiceStub and _AwardsClientStub.
+# A fixed OB3 Award returned by AwardServiceStub and _AwardsClientStub.
 # Tests that need to assert on the exact award being passed can import this.
-STUB_AWARD: Award = Award(
+STUB_OB3_AWARD: OB3Award = OB3Award(
     id="http://example.com/awards/stub-award",
     type=["VerifiableCredential", "OpenBadgeCredential"],
     name="Stub Award",
@@ -49,29 +50,55 @@ STUB_AWARD: Award = Award(
 )
 
 
+STUB_EDC_AWARD: EDCAward = EDCAward(
+    given_name="Learner",
+    family_name="Example",
+    learning_achievement={
+        "name": "Stub Achievement",
+        "description": "Stub achievement description.",
+        "type": "achievement",
+    },
+    awarding_body={"name": "Stub Issuer", "id": "http://example.com/issuers/stub"},
+    awarding_opportunity={"name": "Stub Award"},
+)
+
+
 class AwardsClientStub(AwardsClientPort):
-    """Stub for AwardsClientPort: always returns STUB_AWARD."""
+    """Stub for AwardsClientPort: always returns STUB_OB3_AWARD."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> Award:
-        """Return the shared STUB_AWARD.
+    def get(self, award_id: str, bearer_token: str) -> OB3Award:
+        """Return the shared STUB_OB3_AWARD.
 
         Args:
             award_id: Ignored.
             bearer_token: Ignored.
 
         Returns:
-            STUB_AWARD.
+            STUB_OB3_AWARD.
         """
-        return STUB_AWARD
+        return STUB_OB3_AWARD
 
 
 class OffersClientStub(OffersClientPort):
     """Stub: OffersClientPort that returns fixed offers."""
 
     @override
-    def create(self, offer_id: str, award: Award) -> str:
-        """Return a stub offer URI.
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+        """Return a stub OB3 offer URI.
+
+        Args:
+            offer_id: The offer identifier.
+            award: Ignored.
+
+        Returns:
+            A stub offer URI.
+        """
+        return f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}"
+
+    @override
+    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+        """Return a stub EDC offer URI.
 
         Args:
             offer_id: The offer identifier.
@@ -132,17 +159,31 @@ class OffersClientSpy(OffersClientPort):
         return self._calls
 
     @override
-    def create(self, offer_id: str, award: Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
         """Record the call and return a stub URI.
 
         Args:
             offer_id: The offer identifier.
-            award: The award passed to create.
+            award: The OB3 award passed to create.
 
         Returns:
             A stub offer URI.
         """
-        self._calls.append(("create", {"offer_id": offer_id, "award": award}))
+        self._calls.append(("create_ob3", {"offer_id": offer_id, "award": award}))
+        return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
+
+    @override
+    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+        """Record the call and return a stub URI.
+
+        Args:
+            offer_id: The offer identifier.
+            award: The EDC award passed to create.
+
+        Returns:
+            A stub offer URI.
+        """
+        self._calls.append(("create_edc", {"offer_id": offer_id, "award": award}))
         return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
 
     @override
@@ -358,12 +399,19 @@ class DenyingOfferServiceStub(OfferService):
         )
 
     @override
-    def create_offer(self, award_id: str, bearer_token: str) -> Offer:
+    def create_offer(
+        self,
+        award_id: str,
+        bearer_token: str,
+        *,
+        credential_type: str = "ob3",
+    ) -> Offer:
         """Always raise PermissionDeniedError.
 
         Args:
             award_id: Ignored.
             bearer_token: Ignored.
+            credential_type: Ignored.
 
         Raises:
             PermissionDeniedError: Always.
@@ -374,7 +422,7 @@ class DenyingOfferServiceStub(OfferService):
 class OfferServiceSpy(OfferService):
     """Spy: records create_offer calls and delegates to the real OfferService."""
 
-    calls: list[tuple[str, str, str]]
+    calls: list[tuple[str, str, str, str]]
 
     def __init__(self) -> None:
         """Initialise with stub dependencies and an empty call log."""
@@ -387,15 +435,24 @@ class OfferServiceSpy(OfferService):
         )
 
     @override
-    def create_offer(self, award_id: str, bearer_token: str) -> Offer:
+    def create_offer(
+        self,
+        award_id: str,
+        bearer_token: str,
+        *,
+        credential_type: str = "ob3",
+    ) -> Offer:
         """Record call then delegate to the real implementation.
 
         Args:
             award_id: The achievement identifier.
             bearer_token: The caller's bearer token.
+            credential_type: The credential type.
 
         Returns:
             The created Offer.
         """
-        self.calls.append(("create_offer", award_id, bearer_token))
-        return super().create_offer(award_id, bearer_token)
+        self.calls.append(("create_offer", award_id, bearer_token, credential_type))
+        return super().create_offer(
+            award_id, bearer_token, credential_type=credential_type
+        )

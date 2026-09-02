@@ -4,6 +4,9 @@
 # Annoying "tip" that flask prints, but we cannot and should not implement
 export FLASK_SKIP_DOTENV := "true"
 
+# Load environment variables from .env into the environment (for `just develop`)
+set dotenv-load
+
 # Default target
 default:
     @just --list
@@ -13,6 +16,7 @@ runtime := `(command -v docker >/dev/null 2>&1 && echo docker || echo podman)`
 
 # Start development server
 develop:
+    {{runtime}} compose up --wait --wait-timeout 10 --detach postgresql mock-ssi-agent mock-oidc-auth mock-awards
     uv run ec-issuer-web
 
 # (re)start all dependency services - everything except the ec-issuer

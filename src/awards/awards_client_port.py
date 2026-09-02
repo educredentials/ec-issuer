@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from .models import Award
+from .models import OB3Award
 
 
 class AwardNotFound(Exception):
@@ -21,7 +21,7 @@ class AwardsClientPort(ABC):
     """Port: fetches awards from the external awards service."""
 
     @abstractmethod
-    def get(self, award_id: str, bearer_token: str) -> Award:
+    def get(self, award_id: str, bearer_token: str) -> OB3Award:
         """Fetch an award by its identifier.
 
         Args:
