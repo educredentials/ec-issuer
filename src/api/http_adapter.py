@@ -1,6 +1,5 @@
 """HTTP REST API adapter"""
 
-import json
 from dataclasses import dataclass
 from typing import Literal, cast, override
 
@@ -104,7 +103,7 @@ class HttpApiAdapter(ApiPort):
             try:
                 bearer_token = self._bearer_token(request)
             except MissingTokenError:
-                return json.dumps({"error": "Unauthorized"}), 401
+                return jsonify({"error": "Unauthorized"}), 401
 
             _raw = request.get_json(silent=True) or {}
             body = CreateOfferBody(
@@ -121,11 +120,11 @@ class HttpApiAdapter(ApiPort):
                     credential_type=body.credential_type,
                 )
             except PermissionDeniedError:
-                return json.dumps({"error": "Forbidden"}), 403
+                return jsonify({"error": "Forbidden"}), 403
             except UnknownCredentialTypeError as exc:
                 return jsonify({"error": str(exc)}), 400
 
-            return json.dumps({"offer_id": offer.offer_id, "uri": offer.uri}), 201
+            return jsonify({"offer_id": offer.offer_id, "uri": offer.uri}), 201
 
         return app
 
