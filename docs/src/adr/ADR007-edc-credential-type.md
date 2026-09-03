@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | Status | proposed |
-| Date | 2025-07-14 |
+| Date | 2026-09-02 |
 | Deciders | Engineering Team |
-| Consulted | Product, Standards Team |
+| Consulted | - |
 | Informed | All stakeholders |
 
 ## Context and Problem Statement
@@ -39,7 +39,7 @@ Chosen option: **"Option A — Add credential_type to request body"**, because:
 
 - It extends the existing API without adding routes, keeping the surface minimal.
 - The default `"ob3"` preserves backward compatibility — callers omitting the field get OBv3 as before.
-- The service-layer dispatch (`_dispatch_create_offer`) cleanly routes to the correct port method.
+- The service-layer dispatch uses a simple inline `if` on `credential_type`, avoiding an extra method layer.
 - E2E tests can be parameterized over `credential_type` from a single test function.
 
 ### Consequences
@@ -47,14 +47,16 @@ Chosen option: **"Option A — Add credential_type to request body"**, because:
 - **Good**: Single endpoint, backward compatible, clean port split, easy to extend with future credential types.
 - **Good**: Template discovery is order-independent (sorted JSON files in a directory guarantee index 0 = OB3, index 1 = EDC).
 - **Bad**: The offers client port now has two methods instead of one — a small increase in interface complexity.
-- **Bad**: The service-layer `_ob3_to_edc` mapping function adds a transient transformation layer that must stay in sync with both models.
+- **Good**: The OB3→EDC mapping function was removed in favour of an independent EDC conversion path (`_to_edc_award` in `models.py`), so the two credential types have no shared transformation logic.
 
 ## Validation
 
-- All 110 unit tests pass (including tests for both `create_ob3` and `create_edc` flows).
+- 156 tests pass (including EDC parameterized flows for both `create_ob3` and `create_edc`).
 - Integration tests parameterized to exercise both credential types.
 - E2E tests use `credential_type` parameterization.
 - `just lint` passes (ruff + basedpyright).
+- Security review: `credential_type` now validated at API layer (`Literal["ob3", "edc"]`) and service layer (runtime check with `UnknownCredentialTypeError`).
+- Conversion functions fully covered (13 new unit tests for `_resolve_*` helpers and `ob3_award_from_badgr_api_response` / `edc_award_from_badgr_api_response`).
 
 ## Pros and Cons of the Options
 
@@ -75,3 +77,25 @@ Chosen option: **"Option A — Add credential_type to request body"**, because:
 - Good, because: keeps request body clean for OBv3-only callers.
 - Bad, because: less discoverable, harder to test with `curl`/Postman.
 - Bad, because: headers are often invisible to API documentation tools.
+
+## Appendix A: Test Summary
+
+| File | Tests |
+| ------ | ------- |
+| `tests/unit/offers/test_offer_service.py` | 4 (create_ob3, create_edc, unknown type ×2) |
+| `tests/unit/offers/test_ssi_agent_offers_client_adapter.py` | 6 (3 ob3, 3 edc) |
+| `tests/unit/api/test_http_adapter.py` | 2 (edc dispatch, unsupported rejection) |
+| `tests/unit/awards/test_awards_models.py` | 13 (resolve helpers, ob3/edc conversion) |
+| `tests/integration/` | 12 (3 × 4 scenarios) |
+| `tests/e2e/test_offer.py` | 4 parameterized (2 credential types × 2 assertions) |
+| `tests/e2e/test_oid4vci.py` | 2 parameterized |
+| Total | 43 new tests |
+
+## Appendix B: Differential Security Review Summary
+
+- Risk level: MEDIUM → resolved to LOW
+- MEDIUM-1: `credential_type` unvalidated → **RESOLVED**: `Literal["ob3", "edc"]` on `CreateOfferBody` + runtime `credential_type not in ("ob3", "edc")` check
+- MEDIUM-2: silent OB3 fallback → **RESOLVED**: explicit validation raises `UnknownCredentialTypeError`
+- LOW-1: raw dict flow → **RESOLVED**: typed conversion functions now have 13 unit tests
+- LOW-2: zero coverage on conversion functions → **RESOLVED**: `test_awards_models.py` covers `_resolve_*` helpers and both conversion functions
+- LOW-3: no error handler for `UnknownCredentialTypeError` → **POSTPONED**: exception propagation verified via test; Flask `@errorhandler` to be added in follow-up
