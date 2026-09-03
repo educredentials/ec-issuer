@@ -337,8 +337,8 @@ class TestResolveCredentialTemplateIds:
             json_dir / "template1.json",
             json_dir / "template2.json",
         ]
-        json_files[0].write_text('{"title": "Template One", "type": []}')
-        json_files[1].write_text('{"title": "Template Two", "type": []}')
+        _ = json_files[0].write_text('{"title": "Template One", "type": []}')
+        _ = json_files[1].write_text('{"title": "Template Two", "type": []}')
 
         mock_client = _MockClientPort(
             list_result=[
@@ -366,7 +366,7 @@ class TestResolveCredentialTemplateIds:
     def test_falls_back_to_single_file_mode(self, tmp_path: Path) -> None:
         """Without JSON_DIR, falls back to single-file resolve."""
         json_file = tmp_path / "template.json"
-        json_file.write_text('{"title": "Single", "type": []}')
+        _ = json_file.write_text('{"title": "Single", "type": []}')
 
         mock_client = _MockClientPort(
             create_result=_make_template("Single", "single-id"),
@@ -431,11 +431,11 @@ class TestLoadFromDirectory:
         template2 = json_dir.joinpath("template2.json")
         template3 = json_dir.joinpath("template3.json")
         # Non-JSON file should be ignored
-        json_dir.joinpath("readme.txt").write_text("not a template")
+        _ = json_dir.joinpath("readme.txt").write_text("not a template")
 
-        template1.write_text('{"title": "One", "type": []}')
-        template2.write_text('{"title": "Two", "type": []}')
-        template3.write_text('{"title": "Three", "type": []}')
+        _ = template1.write_text('{"title": "One", "type": []}')
+        _ = template2.write_text('{"title": "Two", "type": []}')
+        _ = template3.write_text('{"title": "Three", "type": []}')
 
         mock_client = _MockClientPort(
             list_result=[
@@ -460,8 +460,12 @@ class TestLoadFromDirectory:
         json_dir.mkdir()
 
         # Create files that won't sort alphabetically
-        json_dir.joinpath("z_template.json").write_text('{"title": "Z", "type": []}')
-        json_dir.joinpath("a_template.json").write_text('{"title": "A", "type": []}')
+        _ = json_dir.joinpath("z_template.json").write_text(
+            '{"title": "Z", "type": []}'
+        )
+        _ = json_dir.joinpath("a_template.json").write_text(
+            '{"title": "A", "type": []}'
+        )
 
         mock_client = _MockClientPort(
             list_result=[
@@ -484,8 +488,8 @@ class TestLoadFromDirectory:
         json_dir = tmp_path / "templates"
         json_dir.mkdir()
 
-        json_dir.joinpath("good.json").write_text('{"title": "Good", "type": []}')
-        json_dir.joinpath("no_title.json").write_text('{"type": []}')
+        _ = json_dir.joinpath("good.json").write_text('{"title": "Good", "type": []}')
+        _ = json_dir.joinpath("no_title.json").write_text('{"type": []}')
 
         # Mock create with a valid ID so "no ID" error doesn't mask the
         # "missing title" error we're testing for (second file)
@@ -508,7 +512,7 @@ class TestLoadFromDirectory:
         """Templates are created when they don't exist on SSI Agent."""
         json_dir = tmp_path / "templates"
         json_dir.mkdir()
-        json_dir.joinpath("new.json").write_text('{"title": "New", "type": []}')
+        _ = json_dir.joinpath("new.json").write_text('{"title": "New", "type": []}')
 
         mock_client = _MockClientPort(
             list_result=[],

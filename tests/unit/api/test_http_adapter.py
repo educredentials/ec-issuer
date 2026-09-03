@@ -1,8 +1,7 @@
 """Unit tests for the API Port HTTP Adapter - aka the Flask app"""
 
-from typing import override
+from typing import cast, override
 
-import pytest
 from flask.testing import FlaskClient
 
 from src.offers.models import Offer
@@ -95,11 +94,11 @@ class TestHttpAdapter:
         assert call[0] == "create_offer"
         assert call[3] == "edc"
 
-    def test_offers_unsupported_credential_type_raises_exception(self):
-        """POST /api/v1/offers with unrecognized credential_type raises.
+    def test_offers_unsupported_credential_type_returns_400(self):
+        """POST /api/v1/offers with unrecognized credential_type returns 400.
 
-        The service layer (and Literal type gate) rejects unsupported values.
-        In production a Flask error handler should map this to 400.
+        The service layer rejects unsupported values and the Flask error
+        handler maps UnknownCredentialTypeError to a 400 response.
         """
 
         class _UnsupportedCredentialTypeService(OfferServiceSpy):
@@ -119,11 +118,13 @@ class TestHttpAdapter:
 
         service = _UnsupportedCredentialTypeService()
         http_client = setup_http_client(service)
-        with pytest.raises(
-            UnknownCredentialTypeError, match="Unsupported credential_type"
-        ):
-            _ = http_client.post(
-                "/api/v1/offers",
-                headers={"Authorization": "Bearer t0k3n"},
-                json={"award_id": "achievement-1", "credential_type": "foobar"},
-            )
+        response = http_client.post(
+            "/api/v1/offers",
+            headers={"Authorization": "Bearer t0k3n"},
+            json={"award_id": "achievement-1", "credential_type": "foobar"},
+        )
+        assert response.status_code == 400
+        body = cast(dict[str, str], response.get_json(force=True))
+        assert "error" in body
+        assert "Unsupported credential_type" in body["error"]
+        assert "foobar" in body["error"]

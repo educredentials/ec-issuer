@@ -98,4 +98,4 @@ Chosen option: **"Option A — Add credential_type to request body"**, because:
 - MEDIUM-2: silent OB3 fallback → **RESOLVED**: explicit validation raises `UnknownCredentialTypeError`
 - LOW-1: raw dict flow → **RESOLVED**: typed conversion functions now have 13 unit tests
 - LOW-2: zero coverage on conversion functions → **RESOLVED**: `test_awards_models.py` covers `_resolve_*` helpers and both conversion functions
-- LOW-3: no error handler for `UnknownCredentialTypeError` → **POSTPONED**: exception propagation verified via test; Flask `@errorhandler` to be added in follow-up
+- LOW-3: no error handler for `UnknownCredentialTypeError` → **RESOLVED**: `@app.errorhandler(UnknownCredentialTypeError)` returns 400 with error message
