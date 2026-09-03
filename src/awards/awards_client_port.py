@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from .models import OB3Award
+from .models import EDCAward, OB3Award
 
 
 class AwardNotFound(Exception):
@@ -18,18 +18,40 @@ class AwardsClientError(Exception):
 
 
 class AwardsClientPort(ABC):
-    """Port: fetches awards from the external awards service."""
+    """Port: fetches awards from the external awards service.
+
+    Split into credential-type-specific methods so that each path has its own
+    conversion from the raw Badgr response — EDCAward never depends on OB3Award.
+    """
 
     @abstractmethod
-    def get(self, award_id: str, bearer_token: str) -> OB3Award:
-        """Fetch an award by its identifier.
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
+        """Fetch and convert an award to an OB3 AchievementCredential.
 
         Args:
             award_id: The unique award identifier.
             bearer_token: The caller's bearer token for authentication.
 
         Returns:
-            The matching Award.
+            The matching OB3 Award.
+
+        Raises:
+            AwardNotFound: When the award does not exist.
+            AwardForbidden: When access to the award is denied.
+            AwardsClientError: When the service returns an error or invalid response.
+        """
+        ...
+
+    @abstractmethod
+    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
+        """Fetch and convert an award to an EDC claim set.
+
+        Args:
+            award_id: The unique award identifier.
+            bearer_token: The caller's bearer token for authentication.
+
+        Returns:
+            The matching EDC Award.
 
         Raises:
             AwardNotFound: When the award does not exist.

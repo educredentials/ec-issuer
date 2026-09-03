@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import dataclass
-from typing import override
+from typing import Literal, override
 
 from flask import Flask, Request, request
 from flask_cors import CORS
@@ -25,7 +25,7 @@ class CreateOfferBody:
     """Parsed request body for the create offer endpoint."""
 
     award_id: str
-    credential_type: str = "ob3"
+    credential_type: Literal["ob3", "edc"] = "ob3"
 
 
 @dataclass

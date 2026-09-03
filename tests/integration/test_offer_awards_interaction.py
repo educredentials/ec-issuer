@@ -32,6 +32,7 @@ from src.offers.offer_service import (
 )
 from src.offers.offers_client_port import OffersClientPort
 from src.offers.offers_repository_port import OffersRepositoryPort
+from tests.unit.support.test_doubles import STUB_EDC_AWARD
 
 
 class _AllowingAccessControl(AccessControlPort):
@@ -78,7 +79,7 @@ class _OffersClientSpy(OffersClientPort):
         return f"openid-credential-offer://?credential_offer_uri=http://example.com/offers/{offer_id}"
 
     @override
-    def create_edc(self, offer_id: str, award) -> str:
+    def create_edc(self, offer_id: str, award: EDCAward) -> str:
         """Record the call and return a stub URI.
 
         Args:
@@ -105,18 +106,18 @@ class _OffersClientSpy(OffersClientPort):
 
 
 class _AwardsClientStub(AwardsClientPort):
-    """Stub that always returns the configured OB3Award."""
+    """Stub that returns configured awards for both credential types."""
 
     def __init__(self, award: OB3Award) -> None:
-        """Initialise with the OB3Award to return.
+        """Initialise with the OB3Award to return from get_ob3().
 
         Args:
-            award: The award to return from get().
+            award: The award to return from get_ob3().
         """
         self._award: OB3Award = award
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> OB3Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
         """Return the configured OB3Award.
 
         Args:
@@ -128,12 +129,38 @@ class _AwardsClientStub(AwardsClientPort):
         """
         return self._award
 
+    @override
+    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
+        """Return the shared STUB_EDC_AWARD.
+
+        Args:
+            award_id: Ignored.
+            bearer_token: The caller's bearer token (unused).
+
+        Returns:
+            STUB_EDC_AWARD.
+        """
+        return STUB_EDC_AWARD
+
 
 class _AwardsClientNotFoundStub(AwardsClientPort):
     """Stub that always raises AwardNotFound."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> OB3Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
+        """Raise AwardNotFound.
+
+        Args:
+            award_id: The identifier that was not found.
+            bearer_token: The caller's bearer token (unused).
+
+        Raises:
+            AwardNotFound: Always.
+        """
+        raise AwardNotFound(award_id)
+
+    @override
+    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
         """Raise AwardNotFound.
 
         Args:
@@ -150,7 +177,20 @@ class _AwardsClientForbiddenStub(AwardsClientPort):
     """Stub that always raises AwardForbidden."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> OB3Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
+        """Raise AwardForbidden.
+
+        Args:
+            award_id: The identifier for which access is denied.
+            bearer_token: The caller's bearer token (unused).
+
+        Raises:
+            AwardForbidden: Always.
+        """
+        raise AwardForbidden(award_id)
+
+    @override
+    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
         """Raise AwardForbidden.
 
         Args:
@@ -167,7 +207,20 @@ class _AwardsClientErrorStub(AwardsClientPort):
     """Stub that always raises AwardsClientError."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> OB3Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
+        """Raise AwardsClientError.
+
+        Args:
+            award_id: The identifier (unused).
+            bearer_token: The caller's bearer token (unused).
+
+        Raises:
+            AwardsClientError: Always.
+        """
+        raise AwardsClientError("upstream service unavailable")
+
+    @override
+    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
         """Raise AwardsClientError.
 
         Args:
@@ -307,6 +360,9 @@ class TestOfferAwardsServiceInteraction:
         call_name, call_args = offers_client.calls[0]
         assert call_name == "create_edc"
         assert call_args["offer_id"] is not None
-        edc_award: EDCAward = call_args["award"]  # type: ignore[assignment]
+        edc_award = call_args["award"]  # type: ignore[assignment]
+        assert isinstance(edc_award, EDCAward)
         assert edc_award.given_name == "Learner"
         assert edc_award.family_name == "Example"
+        assert edc_award.valid_from == "2024-01-01T00:00:00Z"
+        assert edc_award.credential_schema["type"] == "sd-jwt_vc+json"

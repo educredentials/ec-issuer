@@ -2,13 +2,13 @@
 
 import pytest
 
-from src.awards.models import EDCAward
 from src.offers.models import Offer
 from src.offers.offer_service import (
     NotFoundError,
     OfferService,
     OfferServiceError,
     PermissionDeniedError,
+    UnknownCredentialTypeError,
 )
 
 from ..support.test_doubles import (
@@ -140,8 +140,11 @@ class TestOfferServiceCreateOffer:
         assert call_args["offer_id"] is not None
         assert isinstance(call_args["award"], STUB_EDC_AWARD.__class__)
 
-    def test_create_edc_passes_mapped_edc_claims_to_client(self):
-        """create_offer with credential_type='edc' maps OB3Award to EDCAward."""
+    def test_create_edc_uses_independent_edc_award(self):
+        """create_offer with credential_type='edc' uses the independent STUB_EDC_AWARD.
+
+        EDCAward has its own conversion path and does not derive from OB3Award.
+        """
         offers_client = OffersClientSpy()
 
         service = OfferService(
@@ -159,12 +162,11 @@ class TestOfferServiceCreateOffer:
 
         call_name, call_args = offers_client.calls[0]
         assert call_name == "create_edc"
-        edc_award: EDCAward = call_args["award"]  # type: ignore[assignment]
-        assert edc_award.given_name == "Learner"
-        assert edc_award.family_name == "Example"
-        assert edc_award.learning_achievement["name"] == "Stub Achievement"
-        assert edc_award.awarding_body["name"] == "Stub Issuer"
-        assert edc_award.awarding_opportunity["name"] == "Stub Award"
+        edc_award = call_args["award"]  # type: ignore[assignment]
+        assert isinstance(edc_award, STUB_EDC_AWARD.__class__)
+        assert edc_award.valid_from == "2024-01-01T00:00:00Z"
+        assert edc_award.subject_id == "did:example:stub-subject"
+        assert edc_award.credential_schema["type"] == "sd-jwt_vc+json"
 
 
 class TestOfferServiceGetOffer:
@@ -230,4 +232,42 @@ class TestOfferServiceGetOffer:
         )
 
         with pytest.raises(OfferServiceError):
-            _ = service.get_offer("offer-123")
+            _ = service.get_offer("test-123")
+
+
+class TestOfferServiceCreateOfferCredentialType:
+    """Tests for credential_type validation in create_offer."""
+
+    def test_raises_unknown_credential_type_for_invalid_value(self):
+        """create_offer raises UnknownCredentialTypeError for unsupported values."""
+        service = OfferService(
+            access_control=AccessControlStub(),
+            offers_repository=OffersRepositoryStub(),
+            offers_client=OffersClientStub(),
+            awards_client=AwardsClientStub(),
+        )
+
+        with pytest.raises(
+            UnknownCredentialTypeError, match="Unsupported credential_type"
+        ):
+            _ = service.create_offer(
+                award_id="award-123",
+                bearer_token="test-token",
+                credential_type="unsupported",
+            )
+
+    def test_edc_credential_type_rejected_when_invalid(self):
+        """create_offer rejects 'EDC' (capitalized) and other case variants."""
+        service = OfferService(
+            access_control=AccessControlStub(),
+            offers_repository=OffersRepositoryStub(),
+            offers_client=OffersClientStub(),
+            awards_client=AwardsClientStub(),
+        )
+
+        with pytest.raises(UnknownCredentialTypeError):
+            _ = service.create_offer(
+                award_id="award-123",
+                bearer_token="test-token",
+                credential_type="EDC",
+            )

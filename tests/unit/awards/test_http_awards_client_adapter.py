@@ -86,87 +86,87 @@ def valid_badgr_award_response() -> MockResponse:
 class TestHttpAwardsClientAdapter:
     """Tests for the HttpAwardsClientAdapter class."""
 
-    def test_get_sends_get_to_correct_url(
+    def test_get_ob3_sends_get_to_correct_url(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
         valid_badgr_award_response: MockResponse,
     ) -> None:
-        """get() sends a GET request to /awards/{award_id}."""
+        """get_ob3() sends a GET request to /awards/{award_id}."""
         http_client.set_response(valid_badgr_award_response)
-        _ = subject.get("award-123", "fake_token")
+        _ = subject.get_ob3("award-123", "fake_token")
         call = http_client.calls[0]
         assert call.method == "get"
         assert call.url == "http://awards.example.com/awards/award-123"
         assert call.headers == {"Authorization": "Bearer fake_token"}
 
-    def test_get_returns_award_from_response(
+    def test_get_ob3_returns_award_from_response(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
         valid_badgr_award_response: MockResponse,
     ) -> None:
-        """get() decodes and returns the Award from a 200 response."""
+        """get_ob3() decodes and returns the Award from a 200 response."""
         http_client.set_response(valid_badgr_award_response)
-        result = subject.get("award-123", "fake_token")
+        result = subject.get_ob3("award-123", "fake_token")
         assert result == _EXPECTED_BADGR_AWARD
 
-    def test_get_raises_award_not_found_on_404(
+    def test_get_ob3_raises_award_not_found_on_404(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
     ) -> None:
-        """get() raises AwardNotFound when the service returns 404."""
+        """get_ob3() raises AwardNotFound when the service returns 404."""
         http_client.set_response(
             MockResponse(status_code=404, _content=b'{"error": "Award not found"}')
         )
         with pytest.raises(AwardNotFound):
-            _ = subject.get("award-999", "fake_token")
+            _ = subject.get_ob3("award-999", "fake_token")
 
-    def test_get_raises_award_forbidden_on_403(
+    def test_get_ob3_raises_award_forbidden_on_403(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
     ) -> None:
-        """get() raises AwardForbidden when the service returns 403."""
+        """get_ob3() raises AwardForbidden when the service returns 403."""
         http_client.set_response(
             MockResponse(status_code=403, _content=b'{"error": "Forbidden"}')
         )
         with pytest.raises(AwardForbidden):
-            _ = subject.get("award-123", "fake_token")
+            _ = subject.get_ob3("award-123", "fake_token")
 
-    def test_get_raises_awards_client_error_on_500(
+    def test_get_ob3_raises_awards_client_error_on_500(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
     ) -> None:
-        """get() raises AwardsClientError when the service returns a 5xx error."""
+        """get_ob3() raises AwardsClientError when the service returns a 5xx error."""
         http_client.set_response(
             MockResponse(status_code=500, _content=b'"Internal Server Error"')
         )
         with pytest.raises(AwardsClientError):
-            _ = subject.get("award-123", "fake_token")
+            _ = subject.get_ob3("award-123", "fake_token")
 
-    def test_get_raises_awards_client_error_on_4xx(
+    def test_get_ob3_raises_awards_client_error_on_4xx(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
     ) -> None:
-        """get() raises AwardsClientError on unexpected 4xx (not 403 or 404)."""
+        """get_ob3() raises AwardsClientError on unexpected 4xx (not 403 or 404)."""
         http_client.set_response(
             MockResponse(status_code=422, _content=b'"Unprocessable"')
         )
         with pytest.raises(AwardsClientError):
-            _ = subject.get("award-123", "fake_token")
+            _ = subject.get_ob3("award-123", "fake_token")
 
-    def test_get_raises_awards_client_error_on_invalid_json(
+    def test_get_ob3_raises_awards_client_error_on_invalid_json(
         self,
         http_client: RequestsSpy,
         subject: HttpAwardsClientAdapter,
     ) -> None:
-        """get() raises AwardsClientError when the response is not valid JSON."""
+        """get_ob3() raises AwardsClientError when the response is not valid JSON."""
         http_client.set_response(
             MockResponse(status_code=200, _content=b"not valid json")
         )
         with pytest.raises(AwardsClientError):
-            _ = subject.get("award-123", "fake_token")
+            _ = subject.get_ob3("award-123", "fake_token")

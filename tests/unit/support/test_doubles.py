@@ -49,25 +49,37 @@ STUB_OB3_AWARD: OB3Award = OB3Award(
     ),
 )
 
-
 STUB_EDC_AWARD: EDCAward = EDCAward(
     given_name="Learner",
     family_name="Example",
+    valid_from="2024-01-01T00:00:00Z",
     learning_achievement={
         "name": "Stub Achievement",
         "description": "Stub achievement description.",
         "type": "achievement",
     },
-    awarding_body={"name": "Stub Issuer", "id": "http://example.com/issuers/stub"},
-    awarding_opportunity={"name": "Stub Award"},
+    awarding_body={
+        "name": "Stub Issuer",
+        "id": "http://example.com/issuers/stub",
+        "type": "http://publications.europa.eu/ontology/authority#Authority",
+    },
+    awarding_opportunity={
+        "name": "Stub Award",
+        "type": "http://data.europa.eu/snb/credential/25831c2",
+    },
+    credential_schema={
+        "id": "http://data.europa.eu/snb/credential/25831c2",
+        "type": "sd-jwt_vc+json",
+    },
+    subject_id="did:example:stub-subject",
 )
 
 
 class AwardsClientStub(AwardsClientPort):
-    """Stub for AwardsClientPort: always returns STUB_OB3_AWARD."""
+    """Stub for AwardsClientPort: always returns STUB_OB3_AWARD / STUB_EDC_AWARD."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> OB3Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
         """Return the shared STUB_OB3_AWARD.
 
         Args:
@@ -78,6 +90,19 @@ class AwardsClientStub(AwardsClientPort):
             STUB_OB3_AWARD.
         """
         return STUB_OB3_AWARD
+
+    @override
+    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
+        """Return the shared STUB_EDC_AWARD.
+
+        Args:
+            award_id: Ignored.
+            bearer_token: Ignored.
+
+        Returns:
+            STUB_EDC_AWARD.
+        """
+        return STUB_EDC_AWARD
 
 
 class OffersClientStub(OffersClientPort):

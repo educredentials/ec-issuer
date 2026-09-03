@@ -1,5 +1,7 @@
 """Unit tests for SsiAgentOffersClientAdapter."""
 
+from typing import cast
+
 import pytest
 
 from src.awards.models import (
@@ -222,13 +224,13 @@ class TestSsiAgentOffersClientAdapter:
         # Check that templateId in credential creation uses first ID
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
-        json_dict = credential_call.json  # type: ignore[reportAny]
+        json_dict = cast(dict[str, object], credential_call.json)
         assert isinstance(json_dict, dict)
         assert json_dict["templateId"] == "test_credential_config"
         # Check that templateIds in offer creation uses the full list
         offer_call = http_client.calls[1]
         assert offer_call.json is not None
-        offer_dict = offer_call.json  # type: ignore[reportAny]
+        offer_dict = cast(dict[str, object], offer_call.json)
         assert isinstance(offer_dict, dict)
         assert offer_dict["offerId"] == "offer-123"
         assert offer_dict["templateIds"] == [
@@ -253,9 +255,12 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_award = EDCAward(
             given_name="Learner",
             family_name="Example",
+            valid_from="2024-01-01T00:00:00Z",
             learning_achievement={"name": "Badge"},
             awarding_body={"name": "Issuer"},
             awarding_opportunity={"name": "Opportunity"},
+            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
+            subject_id="did:example:subject",
         )
         _ = adapter.create_edc("offer-123", edc_award)
         assert http_client.calls[0].method == "post"
@@ -276,9 +281,12 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_award = EDCAward(
             given_name="Learner",
             family_name="Example",
+            valid_from="2024-01-01T00:00:00Z",
             learning_achievement={"name": "Badge"},
             awarding_body={"name": "Issuer"},
             awarding_opportunity={"name": "Opportunity"},
+            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
+            subject_id="did:example:subject",
         )
         # First call (credential): default 200; second call (offer): returns the URI
         http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
@@ -301,18 +309,21 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_award = EDCAward(
             given_name="Learner",
             family_name="Example",
+            valid_from="2024-01-01T00:00:00Z",
             learning_achievement={"name": "Badge"},
             awarding_body={"name": "Issuer"},
             awarding_opportunity={"name": "Opportunity"},
+            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
+            subject_id="did:example:subject",
         )
         _ = adapter.create_edc("offer-123", edc_award)
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
-        json_dict = credential_call.json  # type: ignore[reportAny]
+        json_dict = cast(dict[str, object], credential_call.json)
         assert json_dict["templateId"] == "edc_config"
         offer_call = http_client.calls[1]
         assert offer_call.json is not None
-        offer_dict = offer_call.json  # type: ignore[reportAny]
+        offer_dict = cast(dict[str, object], offer_call.json)
         assert offer_dict["templateIds"] == ["ob3_config", "edc_config"]
 
     def test_create_edc_raises_client_error_when_credential_creation_fails(
@@ -328,9 +339,12 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_award = EDCAward(
             given_name="Learner",
             family_name="Example",
+            valid_from="2024-01-01T00:00:00Z",
             learning_achievement={"name": "Badge"},
             awarding_body={"name": "Issuer"},
             awarding_opportunity={"name": "Opportunity"},
+            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
+            subject_id="did:example:subject",
         )
         http_client.set_response(
             MockResponse(status_code=422, _content=b'"Unprocessable"')
@@ -351,9 +365,12 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_award = EDCAward(
             given_name="Learner",
             family_name="Example",
+            valid_from="2024-01-01T00:00:00Z",
             learning_achievement={"name": "Badge"},
             awarding_body={"name": "Issuer"},
             awarding_opportunity={"name": "Opportunity"},
+            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
+            subject_id="did:example:subject",
         )
         # First call (credential) succeeds, second call (offer) fails
         http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
@@ -380,6 +397,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_award = EDCAward(
             given_name="Jan",
             family_name="Jansen",
+            valid_from="2024-01-01T00:00:00Z",
             learning_achievement={
                 "name": "Badge",
                 "description": "A badge",
@@ -387,13 +405,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             },
             awarding_body={"name": "Issuer", "id": "http://issuer.example.com"},
             awarding_opportunity={"name": "Opportunity"},
+            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
+            subject_id="did:example:subject",
         )
         _ = adapter.create_edc("offer-123", edc_award)
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
-        json_dict = credential_call.json  # type: ignore[reportAny]
+        json_dict = cast(dict[str, object], credential_call.json)
         assert isinstance(json_dict, dict)
-        assert json_dict["credential"]["given_name"] == "Jan"
-        assert json_dict["credential"]["family_name"] == "Jansen"
-        assert "learning_achievement" in json_dict["credential"]
-        assert "awarding_body" in json_dict["credential"]
+        credential = cast(dict[str, object], json_dict["credential"])
+        assert credential["given_name"] == "Jan"
+        assert credential["family_name"] == "Jansen"
+        assert "learning_achievement" in credential
+        assert "awarding_body" in credential

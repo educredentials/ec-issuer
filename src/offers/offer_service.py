@@ -9,11 +9,14 @@ from src.awards.awards_client_port import (
     AwardsClientError,
     AwardsClientPort,
 )
-from src.awards.models import EDCAward, OB3Award
 
 from .models import Offer
 from .offers_client_port import OfferNotFound, OffersClientError, OffersClientPort
 from .offers_repository_port import OffersRepositoryPort
+
+
+class UnknownCredentialTypeError(Exception):
+    """Raised when an unsupported credential_type value is provided."""
 
 
 class PermissionDeniedError(Exception):
@@ -88,14 +91,29 @@ class OfferService:
                 or when the awards service denies access.
             NotFoundError: When the award does not exist in the awards service.
             OfferServiceError: When an upstream service returns an unexpected error.
+            UnknownCredentialTypeError: When credential_type is not "ob3" or "edc".
         """
+        if credential_type not in ("ob3", "edc"):
+            raise UnknownCredentialTypeError(
+                "Unsupported credential_type: "
+                + f"{credential_type!r}. "
+                + "Must be 'ob3' or 'edc'."
+            )
+
         if not self._access_control.may_import(
             bearer_token, award_id, "Award", "import"
         ):
             raise PermissionDeniedError(award_id)
 
+        offer_id = str(uuid.uuid4())
+
         try:
-            award = self._awards_client.get(award_id, bearer_token)
+            if credential_type == "edc":
+                award = self._awards_client.get_edc(award_id, bearer_token)
+                uri = self._offers_client.create_edc(offer_id, award)
+            else:
+                award = self._awards_client.get_ob3(award_id, bearer_token)
+                uri = self._offers_client.create_ob3(offer_id, award)
         except AwardNotFound as e:
             raise NotFoundError(f"Award {award_id} not found") from e
         except AwardForbidden as e:
@@ -103,66 +121,11 @@ class OfferService:
         except AwardsClientError as e:
             raise OfferServiceError(str(e)) from e
 
-        offer_id = str(uuid.uuid4())
-
         # TODO: wrap in transaction
-        uri = self._dispatch_create_offer(offer_id, award, credential_type)
         offer = Offer(offer_id=offer_id, award_id=award_id, uri=uri)
         self._offers_repository.store(offer)
 
         return offer
-
-    def _dispatch_create_offer(
-        self,
-        offer_id: str,
-        award: OB3Award,
-        credential_type: str,
-    ) -> str:
-        """Dispatch offer creation to the correct client method.
-
-        Args:
-            offer_id: The offer identifier.
-            award: The OB3 award fetched from the awards service.
-            credential_type: The target credential type.
-
-        Returns:
-            The offer URI from the SSI agent.
-        """
-        if credential_type == "edc":
-            edc_award = self._ob3_to_edc(award)
-            return self._offers_client.create_edc(offer_id, edc_award)
-
-        return self._offers_client.create_ob3(offer_id, award)
-
-    @staticmethod
-    def _ob3_to_edc(award: OB3Award) -> EDCAward:
-        """Map an OB3 award to an EDC claim set.
-
-        Only the name is mapped from the OB3 award; person and body data
-        use placeholder values until the awards service exposes them.
-
-        Args:
-            award: The OB3 AchievementCredential.
-
-        Returns:
-            An EDC claim set ready for SD-JWT issuance.
-        """
-        return EDCAward(
-            given_name="Learner",
-            family_name="Example",
-            learning_achievement={
-                "name": award.credentialSubject.achievement.name,
-                "description": award.credentialSubject.achievement.description,
-                "type": "achievement",
-            },
-            awarding_body={
-                "name": award.issuer.name,
-                "id": award.issuer.id,
-            },
-            awarding_opportunity={
-                "name": award.name,
-            },
-        )
 
     def get_offer(self, offer_id: str) -> Offer:
         """Retrieve an offer by its identifier.
