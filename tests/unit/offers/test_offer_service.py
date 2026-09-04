@@ -1,5 +1,7 @@
 """Unit tests for OfferService."""
 
+from dataclasses import asdict
+
 import pytest
 
 from src.offers.models import Offer
@@ -12,11 +14,11 @@ from src.offers.offer_service import (
 )
 
 from ..support.test_doubles import (
-    STUB_EDC_AWARD,
     STUB_OB3_AWARD,
     AccessControlSpy,
     AccessControlStub,
     AwardsClientStub,
+    CredentialConverterStub,
     DenyingAccessControlStub,
     OffersClientSpy,
     OffersClientStub,
@@ -25,6 +27,15 @@ from ..support.test_doubles import (
     OffersRepositoryStub,
     OffersRepositoryStubNotFound,
 )
+
+# Minimal ELM/EDC credential dict that the converter would return.
+_SAMPLE_ELM_CREDENTIAL: dict[str, object] = {
+    "@context": ["https://www.w3.org/ns/credentials/v2"],
+    "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
+    "credentialSubject": {"id": "did:example:subject"},
+}
+
+_CONVERTER = CredentialConverterStub(sample_response=_SAMPLE_ELM_CREDENTIAL)
 
 ISSUER_AGENT_URL = "http://issuer-agent.example.com"
 
@@ -39,6 +50,7 @@ class TestOfferServiceCreateOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         offer = service.create_offer(award_id="award-123", bearer_token="test-token")
@@ -56,6 +68,7 @@ class TestOfferServiceCreateOffer:
             offers_repository=offers_repository,
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         offer = service.create_offer(award_id="award-999", bearer_token="test-token")
@@ -78,6 +91,7 @@ class TestOfferServiceCreateOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=offers_client,
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         offer = service.create_offer(award_id="award-999", bearer_token="test-token")
@@ -95,6 +109,7 @@ class TestOfferServiceCreateOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         with pytest.raises(PermissionDeniedError):
@@ -109,6 +124,7 @@ class TestOfferServiceCreateOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         _ = service.create_offer(award_id="award-123", bearer_token="my-token")
@@ -126,6 +142,7 @@ class TestOfferServiceCreateOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=offers_client,
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         _ = service.create_offer(
@@ -138,13 +155,12 @@ class TestOfferServiceCreateOffer:
         call_name, call_args = offers_client.calls[0]
         assert call_name == "create_edc"
         assert call_args["offer_id"] is not None
-        assert isinstance(call_args["award"], STUB_EDC_AWARD.__class__)
+        assert call_args["credential"] == _SAMPLE_ELM_CREDENTIAL
 
-    def test_create_edc_uses_independent_edc_award(self):
-        """create_offer with credential_type='edc' uses the independent STUB_EDC_AWARD.
-
-        EDCAward has its own conversion path and does not derive from OB3Award.
-        """
+    def test_edc_path_converts_ob3_award_through_converter(self):
+        """EDC path calls the converter with the OB3 award,
+        passes result to create_edc."""
+        converter = CredentialConverterStub(sample_response=_SAMPLE_ELM_CREDENTIAL)
         offers_client = OffersClientSpy()
 
         service = OfferService(
@@ -152,6 +168,7 @@ class TestOfferServiceCreateOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=offers_client,
             awards_client=AwardsClientStub(),
+            credential_converter=converter,
         )
 
         _ = service.create_offer(
@@ -160,13 +177,15 @@ class TestOfferServiceCreateOffer:
             credential_type="edc",
         )
 
+        # Converter should have received the OB3 award as dict
+        assert converter.calls == [
+            ("convert", {"credential": asdict(STUB_OB3_AWARD)})
+        ]
+
+        # create_edc should have received the converter's output
         call_name, call_args = offers_client.calls[0]
         assert call_name == "create_edc"
-        edc_award = call_args["award"]  # type: ignore[assignment]
-        assert isinstance(edc_award, STUB_EDC_AWARD.__class__)
-        assert edc_award.valid_from == "2024-01-01T00:00:00Z"
-        assert edc_award.subject_id == "did:example:stub-subject"
-        assert edc_award.credential_schema["type"] == "sd-jwt_vc+json"
+        assert call_args["credential"] == _SAMPLE_ELM_CREDENTIAL
 
 
 class TestOfferServiceGetOffer:
@@ -179,6 +198,7 @@ class TestOfferServiceGetOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
         result = service.get_offer("offer-123")
 
@@ -196,6 +216,7 @@ class TestOfferServiceGetOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStubNotFound(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         with pytest.raises(NotFoundError, match="Offer nonexistent-id not found"):
@@ -208,6 +229,7 @@ class TestOfferServiceGetOffer:
             offers_repository=OffersRepositoryStubNotFound(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         with pytest.raises(NotFoundError, match="Offer nonexistent-id not found"):
@@ -229,6 +251,7 @@ class TestOfferServiceGetOffer:
             offers_repository=OffersRepositoryStub(),
             offers_client=_OffersClientErrorStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         with pytest.raises(OfferServiceError):
@@ -245,6 +268,7 @@ class TestOfferServiceCreateOfferCredentialType:
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         with pytest.raises(
@@ -263,6 +287,7 @@ class TestOfferServiceCreateOfferCredentialType:
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
         )
 
         with pytest.raises(UnknownCredentialTypeError):

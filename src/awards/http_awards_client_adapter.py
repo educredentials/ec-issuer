@@ -12,12 +12,7 @@ from .awards_client_port import (
     AwardsClientError,
     AwardsClientPort,
 )
-from .models import (
-    EDCAward,
-    OB3Award,
-    edc_award_from_badgr_api_response,
-    ob3_award_from_badgr_api_response,
-)
+from .models import OB3Award, ob3_award_from_badgr_api_response
 
 
 class HttpAwardsClientAdapter(AwardsClientPort):
@@ -64,25 +59,6 @@ class HttpAwardsClientAdapter(AwardsClientPort):
         """
         raw = self._fetch_and_decode(award_id, bearer_token)
         return ob3_award_from_badgr_api_response(raw)
-
-    @override
-    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
-        """Fetch and convert an award to an EDC claim set.
-
-        Args:
-            award_id: The unique award identifier.
-            bearer_token: The caller's bearer token for authentication.
-
-        Returns:
-            The matching EDC Award.
-
-        Raises:
-            AwardNotFound: On 404.
-            AwardForbidden: On 403.
-            AwardsClientError: On other errors or invalid response.
-        """
-        raw = self._fetch_and_decode(award_id, bearer_token)
-        return edc_award_from_badgr_api_response(raw)
 
     def _fetch_and_decode(self, award_id: str, bearer_token: str) -> dict[str, object]:
         """Fetch an award from the upstream service and decode its JSON body.

@@ -1,6 +1,7 @@
 """Offer service for creating and retrieving credential offers."""
 
 import uuid
+from dataclasses import asdict
 
 from src.access_control.access_control_port import AccessControlPort
 from src.awards.awards_client_port import (
@@ -8,6 +9,10 @@ from src.awards.awards_client_port import (
     AwardNotFound,
     AwardsClientError,
     AwardsClientPort,
+)
+from src.credential_converter.credential_converter_port import (
+    CredentialConverterClientError,
+    CredentialConverterPort,
 )
 
 from .models import Offer
@@ -47,6 +52,7 @@ class OfferService:
     _awards_client: AwardsClientPort
     _offers_repository: OffersRepositoryPort
     _offers_client: OffersClientPort
+    _credential_converter: CredentialConverterPort
 
     def __init__(
         self,
@@ -54,6 +60,7 @@ class OfferService:
         awards_client: AwardsClientPort,
         offers_repository: OffersRepositoryPort,
         offers_client: OffersClientPort,
+        credential_converter: CredentialConverterPort,
     ) -> None:
         """Initialise the service with its dependencies.
 
@@ -62,11 +69,35 @@ class OfferService:
             awards_client: Adapter for fetching awards from the external awards service.
             offers_repository: Adapter for persisting offers.
             offers_client: Adapter for interacting with oid4vci agent.
+            credential_converter: Adapter for converting OB3 to ELM/EDC.
         """
         self._access_control = access_control
         self._awards_client = awards_client
         self._offers_repository = offers_repository
         self._offers_client = offers_client
+        self._credential_converter = credential_converter
+
+    def _check_access_control(
+        self,
+        award_id: str,
+        bearer_token: str,
+    ) -> None:
+        """Check that the caller is permitted to import the award.
+
+        Args:
+            award_id: The award identifier to check.
+            bearer_token: The caller's bearer token.
+
+        Raises:
+            PermissionDeniedError: When access control denies the request.
+        """
+        if not self._access_control.may_import(
+            bearer_token=bearer_token,
+            resource_id=award_id,
+            resource_type="Award",
+            permission="import",
+        ):
+            raise PermissionDeniedError(award_id)
 
     def create_offer(
         self,
@@ -100,17 +131,15 @@ class OfferService:
                 + "Must be 'ob3' or 'edc'."
             )
 
-        if not self._access_control.may_import(
-            bearer_token, award_id, "Award", "import"
-        ):
-            raise PermissionDeniedError(award_id)
-
+        self._check_access_control(award_id, bearer_token)
         offer_id = str(uuid.uuid4())
 
         try:
             if credential_type == "edc":
-                award = self._awards_client.get_edc(award_id, bearer_token)
-                uri = self._offers_client.create_edc(offer_id, award)
+                ob3_award = self._awards_client.get_ob3(award_id, bearer_token)
+                raw_ob3 = asdict(ob3_award)
+                edc_credential = self._credential_converter.convert(raw_ob3)
+                uri = self._offers_client.create_edc(offer_id, edc_credential)
             else:
                 award = self._awards_client.get_ob3(award_id, bearer_token)
                 uri = self._offers_client.create_ob3(offer_id, award)
@@ -119,6 +148,8 @@ class OfferService:
         except AwardForbidden as e:
             raise PermissionDeniedError(award_id) from e
         except AwardsClientError as e:
+            raise OfferServiceError(str(e)) from e
+        except CredentialConverterClientError as e:
             raise OfferServiceError(str(e)) from e
 
         # TODO: wrap in transaction

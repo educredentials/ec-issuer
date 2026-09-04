@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from src.awards.models import EDCAward, OB3Award
+from src.awards.models import OB3Award
 
 from .models import Offer
 
@@ -32,12 +32,14 @@ class OffersClientPort(ABC):
         ...
 
     @abstractmethod
-    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+    def create_edc(
+        self, offer_id: str, credential: dict[str, object]
+    ) -> str:
         """Create an EDC credential offer on the SSI agent.
 
         Args:
             offer_id: The offer identifier to create.
-            award: The EDC claim set to issue.
+            credential: The ELM/EDC credential as a dict.
 
         Returns:
             The offer URI.

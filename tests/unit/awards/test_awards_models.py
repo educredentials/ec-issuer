@@ -1,17 +1,15 @@
 """Unit tests for award conversion functions (models module).
 
-Tests the data flow from raw Badgr API JSON through DTOs to OB3Award and EDCAward
+Tests the data flow from raw Badgr API JSON through DTOs to OB3Award
 domain models. Covers edge cases: missing fields, None badgeclass, fallback chains.
 """
 
 from src.awards.models import (
-    EDCAward,
     OB3Award,
     _BadgrAwardResponse,  # pyright:ignore[reportPrivateUsage]
     _resolve_badge_name,  # pyright:ignore[reportPrivateUsage]
     _resolve_entity_id,  # pyright:ignore[reportPrivateUsage]
     _resolve_valid_from,  # pyright:ignore[reportPrivateUsage]
-    edc_award_from_badgr_api_response,
     ob3_award_from_badgr_api_response,
 )
 
@@ -114,56 +112,3 @@ class TestOb3AwardFromBadgrApi:
         assert award.validFrom == ""
 
 
-class TestEdcAwardFromBadgrApi:
-    """Tests for edc_award_from_badgr_api_response."""
-
-    def test_produces_valid_edc_award(self):
-        """Full response produces an EDCAward with all required fields."""
-        award = edc_award_from_badgr_api_response(_VALID_BADGR_RESPONSE)
-        assert isinstance(award, EDCAward)
-        assert award.given_name == "Jan"
-        assert award.family_name == "Jansen"
-        assert award.valid_from == "2024-06-15T10:00:00Z"
-        assert award.learning_achievement["name"] == "Teamwork Badge"
-        assert award.learning_achievement["description"] == (
-            "Demonstrates teamwork ability"
-        )
-        assert award.learning_achievement["type"] == "achievement"
-        assert award.awarding_body["name"] == "Test Corp"
-        assert award.awarding_body["id"] == "http://example.com/issuers/1"
-        assert award.awarding_body["type"] == (
-            "http://publications.europa.eu/ontology/authority#Authority"
-        )
-        assert award.credential_schema == {
-            "id": "http://data.europa.eu/snb/credential/25831c2",
-            "type": "sd-jwt_vc+json",
-        }
-
-    def test_handles_minimal_response(self):
-        """Minimal response produces an EDCAward with empty-string defaults."""
-        award = edc_award_from_badgr_api_response(_MINIMAL_BADGR_RESPONSE)
-        assert isinstance(award, EDCAward)
-        assert award.given_name == ""
-        assert award.family_name == ""
-        assert award.valid_from == ""
-        assert award.learning_achievement["name"] == ""
-        assert award.awarding_body["id"] == ""
-        assert award.subject_id == "1"
-
-    def test_falls_back_to_dutch_issuer_name(self):
-        """_to_edc_award prefers English, falls back to Dutch when English is None."""
-        response = {
-            "id": 5,
-            "entity_id": "http://example.com/awards/5",
-            "name": "Dutch Badge",
-            "badgeclass": {
-                "id": 2,
-                "name": "Dutch Badge",
-                "issuer": {
-                    "name_dutch": "Test NL",
-                    "name_english": None,
-                },
-            },
-        }
-        award = edc_award_from_badgr_api_response(response)
-        assert award.awarding_body["name"] == "Test NL"

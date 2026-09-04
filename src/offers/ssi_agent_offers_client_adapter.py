@@ -5,7 +5,7 @@ from typing import override
 
 import msgspec
 
-from src.awards.models import EDCAward, OB3Award
+from src.awards.models import OB3Award
 from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .models import Offer
@@ -83,26 +83,28 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         """
         self._create_credential_for_subject(
             offer_id,
-            award,
+            asdict(award),
             self._credential_template_ids[0] if self._credential_template_ids else "",
         )
         offer_uri = self._create_offer(offer_id)
         return offer_uri
 
     @override
-    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+    def create_edc(
+        self, offer_id: str, credential: dict[str, object]
+    ) -> str:
         """Create an EDC credential offer in the SSI agent.
 
         Args:
             offer_id: The offer identifier to create.
-            award: The EDC claim set to issue.
+            credential: The ELM/EDC credential as a dict.
 
         Returns:
             The credential offer URI.
         """
         self._create_credential_for_subject(
             offer_id,
-            award,
+            credential,
             self._credential_template_ids[1]
             if len(self._credential_template_ids) > 1
             else "",
@@ -154,14 +156,14 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
     def _create_credential_for_subject(
         self,
         offer_id: str,
-        award: OB3Award | EDCAward,
+        credential: dict[str, object],
         template_id: str,
     ) -> None:
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credentials",
             json={
                 "offerId": offer_id,
-                "credential": asdict(award),
+                "credential": credential,
                 "templateId": template_id,
                 "expiresAt": "never",
             },

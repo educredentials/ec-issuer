@@ -11,9 +11,11 @@ from src.awards.models import (
     Achievement,
     AchievementSubject,
     Criteria,
-    EDCAward,
     Issuer,
     OB3Award,
+)
+from src.credential_converter.credential_converter_port import (
+    CredentialConverterPort,
 )
 from src.config.config_port import ConfigRepoPort
 from src.offers.models import Offer
@@ -49,34 +51,11 @@ STUB_OB3_AWARD: OB3Award = OB3Award(
     ),
 )
 
-STUB_EDC_AWARD: EDCAward = EDCAward(
-    given_name="Learner",
-    family_name="Example",
-    valid_from="2024-01-01T00:00:00Z",
-    learning_achievement={
-        "name": "Stub Achievement",
-        "description": "Stub achievement description.",
-        "type": "achievement",
-    },
-    awarding_body={
-        "name": "Stub Issuer",
-        "id": "http://example.com/issuers/stub",
-        "type": "http://publications.europa.eu/ontology/authority#Authority",
-    },
-    awarding_opportunity={
-        "name": "Stub Award",
-        "type": "http://data.europa.eu/snb/credential/25831c2",
-    },
-    credential_schema={
-        "id": "http://data.europa.eu/snb/credential/25831c2",
-        "type": "sd-jwt_vc+json",
-    },
-    subject_id="did:example:stub-subject",
-)
+
 
 
 class AwardsClientStub(AwardsClientPort):
-    """Stub for AwardsClientPort: always returns STUB_OB3_AWARD / STUB_EDC_AWARD."""
+    """Stub for AwardsClientPort: always returns STUB_OB3_AWARD."""
 
     @override
     def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
@@ -90,19 +69,6 @@ class AwardsClientStub(AwardsClientPort):
             STUB_OB3_AWARD.
         """
         return STUB_OB3_AWARD
-
-    @override
-    def get_edc(self, award_id: str, bearer_token: str) -> EDCAward:
-        """Return the shared STUB_EDC_AWARD.
-
-        Args:
-            award_id: Ignored.
-            bearer_token: Ignored.
-
-        Returns:
-            STUB_EDC_AWARD.
-        """
-        return STUB_EDC_AWARD
 
 
 class OffersClientStub(OffersClientPort):
@@ -122,12 +88,12 @@ class OffersClientStub(OffersClientPort):
         return f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}"
 
     @override
-    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
         """Return a stub EDC offer URI.
 
         Args:
             offer_id: The offer identifier.
-            award: Ignored.
+            credential: Ignored.
 
         Returns:
             A stub offer URI.
@@ -198,17 +164,19 @@ class OffersClientSpy(OffersClientPort):
         return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
 
     @override
-    def create_edc(self, offer_id: str, award: EDCAward) -> str:
+    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
         """Record the call and return a stub URI.
 
         Args:
             offer_id: The offer identifier.
-            award: The EDC award passed to create.
+            credential: The credential dict passed to create.
 
         Returns:
             A stub offer URI.
         """
-        self._calls.append(("create_edc", {"offer_id": offer_id, "award": award}))
+        self._calls.append(
+            ("create_edc", {"offer_id": offer_id, "credential": credential})
+        )
         return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
 
     @override
@@ -323,6 +291,7 @@ class ConfigRepoStub(ConfigRepoPort):
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
     awards_service_url: str = "http://awards.example.com"
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com"
+    credential_converter_url: str = "http://credential-converter:8000"
 
     def __init__(self) -> None:
         """Initialize with default test values."""
@@ -421,6 +390,7 @@ class DenyingOfferServiceStub(OfferService):
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=CredentialConverterStub(),
         )
 
     @override
@@ -457,6 +427,7 @@ class OfferServiceSpy(OfferService):
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=CredentialConverterStub(),
         )
 
     @override
@@ -481,3 +452,45 @@ class OfferServiceSpy(OfferService):
         return super().create_offer(
             award_id, bearer_token, credential_type=credential_type
         )
+
+
+class CredentialConverterStub(CredentialConverterPort):
+    """Stub for CredentialConverterPort: returns a fixed credential dict."""
+
+    def __init__(self, sample_response: dict[str, object] | None = None) -> None:
+        """Initialize with optional sample credential.
+
+        Args:
+            sample_response: The credential dict to return. Defaults to a minimal
+                ELM credential.
+        """
+        self._sample_response: dict[str, object] = sample_response or {
+            "@context": ["https://www.w3.org/ns/credentials/v2"],
+            "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
+            "credentialSubject": {"id": "did:example:stub"},
+        }
+        self._calls: list[tuple[str, dict[str, object]]] = []
+
+    @property
+    def calls(self) -> list[tuple[str, dict[str, object]]]:
+        """Return all calls made to this stub.
+
+        Returns:
+            A list of recorded call tuples.
+        """
+        return self._calls
+
+    @override
+    def convert(self, credential: dict[str, object]) -> dict[str, object]:
+        """Record the call and return the sample response.
+
+        Args:
+            credential: The OB3 credential dict to convert.
+
+        Returns:
+            The sample ELM credential dict.
+        """
+        self._calls.append(("convert", {"credential": credential}))
+        return self._sample_response
+
+

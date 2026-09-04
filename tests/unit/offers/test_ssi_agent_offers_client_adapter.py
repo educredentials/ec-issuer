@@ -8,7 +8,6 @@ from src.awards.models import (
     Achievement,
     AchievementSubject,
     Criteria,
-    EDCAward,
     Issuer,
     OB3Award,
 )
@@ -242,6 +241,21 @@ class TestSsiAgentOffersClientAdapter:
 class TestSsiAgentOffersClientAdapterCreateEDC:
     """Tests for SsiAgentOffersClientAdapter.create_edc()."""
 
+    _SAMPLE_ELM_CREDENTIAL: dict[str, object] = {
+        "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "http://data.europa.eu/snb/model/context/edc-ap",
+        ],
+        "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
+        "credentialSubject": {
+            "id": "did:example:subject",
+            "type": "Person",
+            "givenName": {"en": ["Jan"]},
+            "familyName": {"en": ["Jansen"]},
+            "hasClaim": [{"title": {"en": ["Badge"]}}],
+        },
+    }
+
     def test_create_edc_posts_credential_then_offer(
         self,
         http_client: RequestsSpy,
@@ -252,17 +266,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             credential_template_ids=["openbadge_credential", "european_credential"],
             http_client=http_client,
         )
-        edc_award = EDCAward(
-            given_name="Learner",
-            family_name="Example",
-            valid_from="2024-01-01T00:00:00Z",
-            learning_achievement={"name": "Badge"},
-            awarding_body={"name": "Issuer"},
-            awarding_opportunity={"name": "Opportunity"},
-            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
-            subject_id="did:example:subject",
-        )
-        _ = adapter.create_edc("offer-123", edc_award)
+        _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
         assert http_client.calls[0].method == "post"
         assert http_client.calls[0].url == "http://agent.example.com/v0/credentials"
         assert http_client.calls[1].method == "post"
@@ -278,22 +282,12 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             credential_template_ids=["openbadge_credential", "european_credential"],
             http_client=http_client,
         )
-        edc_award = EDCAward(
-            given_name="Learner",
-            family_name="Example",
-            valid_from="2024-01-01T00:00:00Z",
-            learning_achievement={"name": "Badge"},
-            awarding_body={"name": "Issuer"},
-            awarding_opportunity={"name": "Opportunity"},
-            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
-            subject_id="did:example:subject",
-        )
         # First call (credential): default 200; second call (offer): returns the URI
         http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
         )
-        result = adapter.create_edc("offer-123", edc_award)
+        result = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
         assert result == _OFFER_URI
 
     def test_create_edc_uses_second_template_id(
@@ -306,17 +300,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             credential_template_ids=["ob3_config", "edc_config"],
             http_client=http_client,
         )
-        edc_award = EDCAward(
-            given_name="Learner",
-            family_name="Example",
-            valid_from="2024-01-01T00:00:00Z",
-            learning_achievement={"name": "Badge"},
-            awarding_body={"name": "Issuer"},
-            awarding_opportunity={"name": "Opportunity"},
-            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
-            subject_id="did:example:subject",
-        )
-        _ = adapter.create_edc("offer-123", edc_award)
+        _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
         json_dict = cast(dict[str, object], credential_call.json)
@@ -336,21 +320,11 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             credential_template_ids=["ob3_config", "edc_config"],
             http_client=http_client,
         )
-        edc_award = EDCAward(
-            given_name="Learner",
-            family_name="Example",
-            valid_from="2024-01-01T00:00:00Z",
-            learning_achievement={"name": "Badge"},
-            awarding_body={"name": "Issuer"},
-            awarding_opportunity={"name": "Opportunity"},
-            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
-            subject_id="did:example:subject",
-        )
         http_client.set_response(
             MockResponse(status_code=422, _content=b'"Unprocessable"')
         )
         with pytest.raises(OffersClientError):
-            _ = adapter.create_edc("offer-123", edc_award)
+            _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
 
     def test_create_edc_raises_client_error_when_offer_creation_fails(
         self,
@@ -362,29 +336,19 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             credential_template_ids=["ob3_config", "edc_config"],
             http_client=http_client,
         )
-        edc_award = EDCAward(
-            given_name="Learner",
-            family_name="Example",
-            valid_from="2024-01-01T00:00:00Z",
-            learning_achievement={"name": "Badge"},
-            awarding_body={"name": "Issuer"},
-            awarding_opportunity={"name": "Opportunity"},
-            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
-            subject_id="did:example:subject",
-        )
         # First call (credential) succeeds, second call (offer) fails
         http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
         http_client.set_response(
             MockResponse(status_code=500, _content=b'"Server Error"')
         )
         with pytest.raises(OffersClientError):
-            _ = adapter.create_edc("offer-123", edc_award)
+            _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
 
-    def test_create_edc_posts_flat_claims_to_credential_endpoint(
+    def test_create_edc_posts_raw_vcdm_to_credential_endpoint(
         self,
         http_client: RequestsSpy,
     ):
-        """create_edc() posts flat dict claims (no nested OB3 structure)."""
+        """create_edc() posts the raw VCDM credential dict as-is."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
             credential_template_ids=["ob3_config", "edc_config"],
@@ -394,27 +358,13 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
         )
-        edc_award = EDCAward(
-            given_name="Jan",
-            family_name="Jansen",
-            valid_from="2024-01-01T00:00:00Z",
-            learning_achievement={
-                "name": "Badge",
-                "description": "A badge",
-                "type": "achievement",
-            },
-            awarding_body={"name": "Issuer", "id": "http://issuer.example.com"},
-            awarding_opportunity={"name": "Opportunity"},
-            credential_schema={"id": "http://example.com", "type": "sd-jwt_vc+json"},
-            subject_id="did:example:subject",
-        )
-        _ = adapter.create_edc("offer-123", edc_award)
+        _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
         json_dict = cast(dict[str, object], credential_call.json)
         assert isinstance(json_dict, dict)
         credential = cast(dict[str, object], json_dict["credential"])
-        assert credential["given_name"] == "Jan"
-        assert credential["family_name"] == "Jansen"
-        assert "learning_achievement" in credential
-        assert "awarding_body" in credential
+        assert credential["type"] == [
+            "VerifiableCredential", "EuropeanDigitalCredential"
+        ]
+        assert "credentialSubject" in credential
