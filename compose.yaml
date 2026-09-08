@@ -12,16 +12,20 @@ services:
     environment:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8008
-      - SSI_AGENT_URL=http://mock-ssi-agent:4010 # Internal URL
-      - AWARDS_SERVICE_URL=http://mock-awards:4010
+      - SSI_AGENT_URL=http://real-ssi-agent:3033 # Internal URL
+      - AWARDS_SERVICE_URL=http://172.17.0.1:8000/earner
+      - CREDENTIAL_CONVERTER_URL=http://real-credential-converter:8080
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
       - ALLOWED_CORS_DOMAINS=http://localhost:8080,http://localhost:3000
-      # Credential template resolution:
-      # - CREDENTIAL_TEMPLATE_JSON_FILE: path to a JSON file with the template definition
-      #   (the app will parse it and ensure it exists on the SSI Agent)
+      # Credential template resolution (templates are baked into /etc/templates/):
+      # - CREDENTIAL_TEMPLATE_JSON_DIR
+      #   Directory of .json template files (baked into /etc/templates/)
+      # - CREDENTIAL_TEMPLATE_JSON_FILE: path to a single JSON file (legacy)
       # - CREDENTIAL_TEMPLATE_ID: raw template ID (used if JSON_FILE is not set)
-      # Set CREDENTIAL_TEMPLATE_ID when the template already exists on the SSI Agent.
-      # Set CREDENTIAL_TEMPLATE_JSON_FILE when you want the app to create/verify it.
+      # Set CREDENTIAL_TEMPLATE_JSON_DIR to load multiple templates from
+      # a directory. Set CREDENTIAL_TEMPLATE_JSON_FILE for a single file,
+      # or CREDENTIAL_TEMPLATE_ID when the template already exists.
+      - CREDENTIAL_TEMPLATE_JSON_DIR=/etc/templates
     depends_on:
       postgresql:
         condition: service_healthy
@@ -31,9 +35,13 @@ services:
         condition: service_started
       mock-awards:
         condition: service_started
+      mock-converter:
+        condition: service_started
+      real-credential-converter:
+        condition: service_started
     volumes:
       - ./src:/app/src/:Z
-      - ./templates:/templates/:Z
+      - ./templates:/etc/templates/:Z
     working_dir: /app
 
   real-ssi-agent:
@@ -79,6 +87,29 @@ services:
     command: mock -h 0.0.0.0 /app/mock.yaml
     volumes:
       - ./dependencies/prism/awards-mock.yaml:/app/mock.yaml:Z
+
+  mock-converter:
+    platform: "linux/amd64"
+    image: stoplight/prism:4
+    ports:
+      - "8004:4010"
+    command: mock -h 0.0.0.0 /app/mock.yaml
+    volumes:
+      - ./dependencies/prism/converter-mock.yaml:/app/mock.yaml:Z
+
+  real-credential-converter:
+    platform: "linux/amd64"
+    image: cr.surf.nl/edubadges-educredentials/credential-converter:latest
+    ports:
+      - "8080:8080"
+    environment:
+      RUST_BACKTRACE: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
 
   postgresql:
     platform: "linux/amd64"

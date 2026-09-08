@@ -384,21 +384,32 @@ paths:
                 display:
                   type: object
                   properties:
-                    name: { type: string }
-                    locale: { type: string }
-                    description: { type: string }
+                    name:
+                      type: string
+                    locale:
+                      type: string
+                    description:
+                      type: string
                     logo:
                       type: object
                       properties:
-                        uri: { type: string }
-                        alt_text: { type: string }
-                tags: { type: array, items: { type: string } }
-                schema: { type: object }
-                credentialExpiration: { type: object }
+                        uri:
+                          type: string
+                        alt_text:
+                          type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                schema:
+                  type: object
+                credentialExpiration:
+                  type: object
             example:
               title: "eduCredentials OBv3 Credential"
               display:
-                { name: "Open Badge Credential", locale: "en" }
+                - name: "Open Badge Credential"
+                  locale: "en"
               dataModel: "open_badges_3-0"
               holderType: "individual"
               status: "published"
@@ -406,7 +417,8 @@ paths:
               schema:
                 $schema: "https://json-schema.org/draft/2020-12/schema"
                 type: object
-              credentialExpiration: { type: "never" }
+              credentialExpiration:
+                type: "never"
       responses:
         "200":
           description: Credential template created
@@ -418,7 +430,9 @@ paths:
                 title: "eduCredentials OBv3 Credential"
                 display:
                   name: "Open Badge Credential"
-                  logo: { uri: "https://example.com/images/logo.png", alt_text: "Blue Logo" }
+                  logo:
+                    uri: "https://example.com/images/logo.png"
+                    alt_text: "Blue Logo"
                 dataModel: "open_badges_3-0"
                 holderType: "individual"
                 status: "published"
@@ -428,7 +442,8 @@ paths:
                 schema:
                   $schema: "https://json-schema.org/draft/2020-12/schema"
                   type: object
-                credentialExpiration: { type: "never" }
+                credentialExpiration:
+                  type: "never"
 
   /v0/list-all-templates:
     get:
@@ -444,13 +459,31 @@ paths:
                   title: "eduCredentials OBv3 Credential"
                   display:
                     name: "Open Badge Credential"
-                    logo: { uri: "https://example.com/images/logo.png", alt_text: "Blue Logo" }
+                    logo:
+                      uri: "https://example.com/images/logo.png"
+                      alt_text: "Blue Logo"
                   dataModel: "open_badges_3-0"
                   holderType: "individual"
                   status: "published"
                   tags: ["educredentials", "openbadge", "identity"]
                   visibility: "public"
                   description: "eduCredentials OBv3 credentials"
+                - type: ["VerifiableCredential", "EuropeanDigitalCredential"]
+                  id: "EuropeanDigitalCredential"
+                  title: "eduCredentials European Credential"
+                  display:
+                    name: "eduCredential EDC"
+                    logo:
+                      uri: >-
+                        https://ec-static.playground.sdp.surf.nl/
+                        logo_edubadges.png
+                      alt_text: "eduCredential Logo"
+                  dataModel: "european_learning_model_v3-3"
+                  holderType: "individual"
+                  status: "published"
+                  tags: ["educredentials", "edc", "elm", "identity"]
+                  visibility: "public"
+                  description: "eduCredentials European Digital Credential"
 
   /v0/templates/delete-template:
     post:

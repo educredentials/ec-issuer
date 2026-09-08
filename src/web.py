@@ -8,12 +8,14 @@ from src.api.http_adapter import HttpApiAdapter
 from src.awards.http_awards_client_adapter import HttpAwardsClientAdapter
 from src.config.config import EnvConfigRepo
 from src.config.config_port import ConfigRepoPort
-from src.credential_configurations.bootstrap import resolve_credential_template_id
+from src.credential_configurations.bootstrap import resolve_credential_template_ids
+from src.credential_converter.http_adapter import HttpCredentialConverterAdapter
 from src.offers.offer_service import OfferService
 from src.offers.postgresql_offers_repository_adapter import (
     PostgreSQLOffersRepositoryAdapter,
 )
 from src.offers.ssi_agent_offers_client_adapter import SsiAgentOffersClientAdapter
+
 
 class App:
     """Main application entry point."""
@@ -23,12 +25,12 @@ class App:
 
     def __init__(self):
         """Initialise and wire all application dependencies."""
-        # Resolve credential template ID
-        credential_configuration_id = resolve_credential_template_id()
+        # Resolve credential template IDs (supports multiple from a directory)
+        credential_configuration_ids = resolve_credential_template_ids()
 
-        # Create config with resolved ID
+        # Create config with resolved IDs
         self.config = EnvConfigRepo(
-            credential_configuration_id=credential_configuration_id,
+            credential_configuration_ids=credential_configuration_ids,
         )
 
         access_control = HardcodedAccessControlAdapter()
@@ -39,16 +41,20 @@ class App:
 
         offers_client = SsiAgentOffersClientAdapter(
             ssi_agent_url=self.config.ssi_agent_url,
-            credential_template_id=self.config.credential_configuration_id,
+            credential_template_ids=self.config.credential_configuration_ids,
         )
         offers_repository = PostgreSQLOffersRepositoryAdapter(
             self.config.postgresql_connection_string,
+        )
+        credential_converter = HttpCredentialConverterAdapter(
+            converter_base_url=self.config.credential_converter_url,
         )
         offer_service = OfferService(
             access_control=access_control,
             awards_client=awards_client,
             offers_repository=offers_repository,
             offers_client=offers_client,
+            credential_converter=credential_converter,
         )
 
         api_adapter = HttpApiAdapter(
@@ -77,6 +83,7 @@ def __getattr__(name: str):
     if name == "wsgi_app":
         return App().wsgi_app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 if __name__ == "__main__":
     main()

@@ -10,12 +10,14 @@ from src.awards.awards_client_port import AwardsClientPort
 from src.awards.models import (
     Achievement,
     AchievementSubject,
-    Award,
     Criteria,
     Issuer,
+    OB3Award,
+)
+from src.credential_converter.credential_converter_port import (
+    CredentialConverterPort,
 )
 from src.config.config_port import ConfigRepoPort
-
 from src.offers.models import Offer
 from src.offers.offer_service import (
     OfferService,
@@ -24,9 +26,9 @@ from src.offers.offer_service import (
 from src.offers.offers_client_port import OfferNotFound, OffersClientPort
 from src.offers.offers_repository_port import OffersRepositoryPort
 
-# A fixed Award returned by AwardServiceStub and _AwardsClientStub.
+# A fixed OB3 Award returned by AwardServiceStub and _AwardsClientStub.
 # Tests that need to assert on the exact award being passed can import this.
-STUB_AWARD: Award = Award(
+STUB_OB3_AWARD: OB3Award = OB3Award(
     id="http://example.com/awards/stub-award",
     type=["VerifiableCredential", "OpenBadgeCredential"],
     name="Stub Award",
@@ -50,33 +52,48 @@ STUB_AWARD: Award = Award(
 )
 
 
+
+
 class AwardsClientStub(AwardsClientPort):
-    """Stub for AwardsClientPort: always returns STUB_AWARD."""
+    """Stub for AwardsClientPort: always returns STUB_OB3_AWARD."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> Award:
-        """Return the shared STUB_AWARD.
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
+        """Return the shared STUB_OB3_AWARD.
 
         Args:
             award_id: Ignored.
             bearer_token: Ignored.
 
         Returns:
-            STUB_AWARD.
+            STUB_OB3_AWARD.
         """
-        return STUB_AWARD
+        return STUB_OB3_AWARD
 
 
 class OffersClientStub(OffersClientPort):
     """Stub: OffersClientPort that returns fixed offers."""
 
     @override
-    def create(self, offer_id: str, award: Award) -> str:
-        """Return a stub offer URI.
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+        """Return a stub OB3 offer URI.
 
         Args:
             offer_id: The offer identifier.
             award: Ignored.
+
+        Returns:
+            A stub offer URI.
+        """
+        return f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}"
+
+    @override
+    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
+        """Return a stub EDC offer URI.
+
+        Args:
+            offer_id: The offer identifier.
+            credential: Ignored.
 
         Returns:
             A stub offer URI.
@@ -133,17 +150,33 @@ class OffersClientSpy(OffersClientPort):
         return self._calls
 
     @override
-    def create(self, offer_id: str, award: Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
         """Record the call and return a stub URI.
 
         Args:
             offer_id: The offer identifier.
-            award: The award passed to create.
+            award: The OB3 award passed to create.
 
         Returns:
             A stub offer URI.
         """
-        self._calls.append(("create", {"offer_id": offer_id, "award": award}))
+        self._calls.append(("create_ob3", {"offer_id": offer_id, "award": award}))
+        return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
+
+    @override
+    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
+        """Record the call and return a stub URI.
+
+        Args:
+            offer_id: The offer identifier.
+            credential: The credential dict passed to create.
+
+        Returns:
+            A stub offer URI.
+        """
+        self._calls.append(
+            ("create_edc", {"offer_id": offer_id, "credential": credential})
+        )
         return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
 
     @override
@@ -175,7 +208,6 @@ class OffersRepositoryStub(OffersRepositoryPort):
         Args:
             offer: Ignored.
         """
-        pass
 
     @override
     def get(self, offer_id: str) -> Offer:
@@ -259,7 +291,11 @@ class ConfigRepoStub(ConfigRepoPort):
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
     awards_service_url: str = "http://awards.example.com"
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com"
-    credential_configuration_id: str = "static-config-id"
+    credential_converter_url: str = "http://credential-converter:8000"
+
+    def __init__(self) -> None:
+        """Initialize with default test values."""
+        self.credential_configuration_ids: list[str] = ["static-config-id"]
 
 
 class AccessControlStub(AccessControlPort):
@@ -354,15 +390,23 @@ class DenyingOfferServiceStub(OfferService):
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=CredentialConverterStub(),
         )
 
     @override
-    def create_offer(self, award_id: str, bearer_token: str) -> Offer:
+    def create_offer(
+        self,
+        award_id: str,
+        bearer_token: str,
+        *,
+        credential_type: str = "ob3",
+    ) -> Offer:
         """Always raise PermissionDeniedError.
 
         Args:
             award_id: Ignored.
             bearer_token: Ignored.
+            credential_type: Ignored.
 
         Raises:
             PermissionDeniedError: Always.
@@ -373,7 +417,7 @@ class DenyingOfferServiceStub(OfferService):
 class OfferServiceSpy(OfferService):
     """Spy: records create_offer calls and delegates to the real OfferService."""
 
-    calls: list[tuple[str, str, str]]
+    calls: list[tuple[str, str, str, str]]
 
     def __init__(self) -> None:
         """Initialise with stub dependencies and an empty call log."""
@@ -383,18 +427,70 @@ class OfferServiceSpy(OfferService):
             offers_repository=OffersRepositoryStub(),
             offers_client=OffersClientStub(),
             awards_client=AwardsClientStub(),
+            credential_converter=CredentialConverterStub(),
         )
 
     @override
-    def create_offer(self, award_id: str, bearer_token: str) -> Offer:
+    def create_offer(
+        self,
+        award_id: str,
+        bearer_token: str,
+        *,
+        credential_type: str = "ob3",
+    ) -> Offer:
         """Record call then delegate to the real implementation.
 
         Args:
             award_id: The achievement identifier.
             bearer_token: The caller's bearer token.
+            credential_type: The credential type.
 
         Returns:
             The created Offer.
         """
-        self.calls.append(("create_offer", award_id, bearer_token))
-        return super().create_offer(award_id, bearer_token)
+        self.calls.append(("create_offer", award_id, bearer_token, credential_type))
+        return super().create_offer(
+            award_id, bearer_token, credential_type=credential_type
+        )
+
+
+class CredentialConverterStub(CredentialConverterPort):
+    """Stub for CredentialConverterPort: returns a fixed credential dict."""
+
+    def __init__(self, sample_response: dict[str, object] | None = None) -> None:
+        """Initialize with optional sample credential.
+
+        Args:
+            sample_response: The credential dict to return. Defaults to a minimal
+                ELM credential.
+        """
+        self._sample_response: dict[str, object] = sample_response or {
+            "@context": ["https://www.w3.org/ns/credentials/v2"],
+            "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
+            "credentialSubject": {"id": "did:example:stub"},
+        }
+        self._calls: list[tuple[str, dict[str, object]]] = []
+
+    @property
+    def calls(self) -> list[tuple[str, dict[str, object]]]:
+        """Return all calls made to this stub.
+
+        Returns:
+            A list of recorded call tuples.
+        """
+        return self._calls
+
+    @override
+    def convert(self, credential: dict[str, object]) -> dict[str, object]:
+        """Record the call and return the sample response.
+
+        Args:
+            credential: The OB3 credential dict to convert.
+
+        Returns:
+            The sample ELM credential dict.
+        """
+        self._calls.append(("convert", {"credential": credential}))
+        return self._sample_response
+
+

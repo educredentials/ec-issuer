@@ -1,6 +1,11 @@
 """Unit tests for the API Port HTTP Adapter - aka the Flask app"""
 
+from typing import cast, override
+
 from flask.testing import FlaskClient
+
+from src.offers.models import Offer
+from src.offers.offer_service import UnknownCredentialTypeError
 
 from ..api.conftest import setup_http_client
 from ..support.test_doubles import DenyingOfferServiceStub, OfferServiceSpy
@@ -36,7 +41,12 @@ class TestHttpAdapter:
             json={"award_id": "achievement-1"},
         )
         assert response.status_code == 201
-        assert ("create_offer", "achievement-1", "t0k3n") in offer_service_spy.calls
+        assert (
+            "create_offer",
+            "achievement-1",
+            "t0k3n",
+            "ob3",
+        ) in offer_service_spy.calls
 
     def test_offers_missing_authorization_header_returns_401(
         self, http_client: FlaskClient
@@ -67,3 +77,54 @@ class TestHttpAdapter:
             json={"award_id": "achievement-1"},
         )
         assert response.status_code == 403
+
+    def test_offers_edc_credential_type_passes_edc_to_service(
+        self, http_client: FlaskClient, offer_service_spy: OfferServiceSpy
+    ):
+        """POST /api/v1/offers with credential_type='edc' dispatches to EDC path."""
+        response = http_client.post(
+            "/api/v1/offers",
+            headers={"Authorization": "Bearer t0k3n"},
+            json={"award_id": "achievement-1", "credential_type": "edc"},
+        )
+        assert response.status_code == 201
+        calls = offer_service_spy.calls
+        assert len(calls) == 1
+        call = calls[0]
+        assert call[0] == "create_offer"
+        assert call[3] == "edc"
+
+    def test_offers_unsupported_credential_type_returns_400(self):
+        """POST /api/v1/offers with unrecognized credential_type returns 400.
+
+        The service layer rejects unsupported values and the Flask error
+        handler maps UnknownCredentialTypeError to a 400 response.
+        """
+
+        class _UnsupportedCredentialTypeService(OfferServiceSpy):
+            @override
+            def create_offer(
+                self,
+                award_id: str,
+                bearer_token: str,
+                *,
+                credential_type: str = "ob3",
+            ) -> Offer:
+                raise UnknownCredentialTypeError(
+                    "Unsupported credential_type: "
+                    + f"{credential_type!r}. "
+                    + "Must be 'ob3' or 'edc'."
+                )
+
+        service = _UnsupportedCredentialTypeService()
+        http_client = setup_http_client(service)
+        response = http_client.post(
+            "/api/v1/offers",
+            headers={"Authorization": "Bearer t0k3n"},
+            json={"award_id": "achievement-1", "credential_type": "foobar"},
+        )
+        assert response.status_code == 400
+        body = cast(dict[str, str], response.get_json(force=True))
+        assert "error" in body
+        assert "Unsupported credential_type" in body["error"]
+        assert "foobar" in body["error"]

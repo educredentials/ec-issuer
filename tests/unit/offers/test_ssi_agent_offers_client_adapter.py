@@ -1,18 +1,20 @@
 """Unit tests for SsiAgentOffersClientAdapter."""
 
+from typing import cast
+
 import pytest
 
 from src.awards.models import (
     Achievement,
     AchievementSubject,
-    Award,
     Criteria,
     Issuer,
+    OB3Award,
 )
+from src.lib.http_client import HttpClient
 from src.offers.models import Offer
 from src.offers.offers_client_port import OfferNotFound, OffersClientError
 from src.offers.ssi_agent_offers_client_adapter import SsiAgentOffersClientAdapter
-from src.lib.http_client import HttpClient
 
 from ..support.requests_doubles import MockResponse, RecordedRequest, RequestsSpy
 
@@ -48,7 +50,7 @@ def subject(http_client: HttpClient) -> SsiAgentOffersClientAdapter:
     """Provide the adapter wired to the spy."""
     return SsiAgentOffersClientAdapter(
         ssi_agent_url="http://agent.example.com",
-        credential_template_id="openbadge_credential",
+        credential_template_ids=["openbadge_credential"],
         http_client=http_client,
     )
 
@@ -60,9 +62,9 @@ def valid_offer_response() -> MockResponse:
 
 
 @pytest.fixture
-def sample_award() -> Award:
-    """Provide a minimal Award for create() calls."""
-    return Award(
+def sample_award() -> OB3Award:
+    """Provide a minimal OB3Award for create_ob3() calls."""
+    return OB3Award(
         id="http://example.com/credentials/3527",
         type=["VerifiableCredential", "OpenBadgeCredential"],
         name="Teamwork Badge",
@@ -150,83 +152,219 @@ class TestSsiAgentOffersClientAdapter:
         with pytest.raises(OffersClientError):
             _ = subject.get("offer-123")
 
-    def test_create_posts_credential_then_offer(
+    def test_create_ob3_posts_credential_then_offer(
         self,
         http_client: RequestsSpy,
         subject: SsiAgentOffersClientAdapter,
-        sample_award: Award,
+        sample_award: OB3Award,
     ):
-        """create() first POSTs to /v0/credentials then to /v0/offers."""
-        _ = subject.create("offer-123", sample_award)
+        """create_ob3() first POSTs to /v0/credentials then to /v0/offers."""
+        _ = subject.create_ob3("offer-123", sample_award)
         assert http_client.calls[0].method == "post"
         assert http_client.calls[0].url == "http://agent.example.com/v0/credentials"
         assert http_client.calls[1].method == "post"
         assert http_client.calls[1].url == "http://agent.example.com/v0/offers"
 
-    def test_create_returns_uri_from_offer_response(
+    def test_create_ob3_returns_uri_from_offer_response(
         self,
         http_client: RequestsSpy,
         subject: SsiAgentOffersClientAdapter,
-        sample_award: Award,
+        sample_award: OB3Award,
     ):
-        """create() returns the URI from the offer creation response."""
+        """create_ob3() returns the URI from the offer creation response."""
         # First call (credential): default 200; second call (offer): returns the URI
         http_client.set_response(MockResponse(status_code=200, _content=b""))
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
         )
-        result = subject.create("offer-123", sample_award)
+        result = subject.create_ob3("offer-123", sample_award)
         assert result == _OFFER_URI
 
-    def test_create_raises_client_error_when_credential_creation_fails(
+    def test_create_ob3_raises_client_error_when_credential_creation_fails(
         self,
         http_client: RequestsSpy,
         subject: SsiAgentOffersClientAdapter,
-        sample_award: Award,
+        sample_award: OB3Award,
     ):
-        """create() raises OffersClientError when the credential POST fails."""
+        """create_ob3() raises OffersClientError when the credential POST fails."""
         http_client.set_response(
             MockResponse(status_code=422, _content=b'"Unprocessable"')
         )
         with pytest.raises(OffersClientError):
-            _ = subject.create("offer-123", sample_award)
+            _ = subject.create_ob3("offer-123", sample_award)
 
-    def test_create_raises_client_error_when_offer_creation_fails(
+    def test_create_ob3_raises_client_error_when_offer_creation_fails(
         self,
         http_client: RequestsSpy,
         subject: SsiAgentOffersClientAdapter,
-        sample_award: Award,
+        sample_award: OB3Award,
     ):
-        """create() raises OffersClientError when the offer POST fails."""
+        """create_ob3() raises OffersClientError when the offer POST fails."""
         # First call (credential) succeeds, second call (offer) fails
         http_client.set_response(MockResponse(status_code=200, _content=b""))
         http_client.set_response(
             MockResponse(status_code=500, _content=b'"Server Error"')
         )
         with pytest.raises(OffersClientError):
-            _ = subject.create("offer-123", sample_award)
+            _ = subject.create_ob3("offer-123", sample_award)
 
-    def test_create_uses_credential_template_id(
+    def test_create_ob3_uses_credential_template_ids(
         self,
         http_client: RequestsSpy,
-        sample_award: Award,
+        sample_award: OB3Award,
     ):
-        """create() uses the provided credential_configuration_id in requests."""
+        """create_ob3() uses the provided credential_template_ids in requests."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_id="test_credential_config",
+            credential_template_ids=["test_credential_config", "european_credential"],
             http_client=http_client,
         )
-        _ = adapter.create("offer-123", sample_award)
-        # Check that templateId in credential creation uses the ID
+        _ = adapter.create_ob3("offer-123", sample_award)
+        # Check that templateId in credential creation uses first ID
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
-        json_dict = credential_call.json  # type: ignore[reportAny]
+        json_dict = cast(dict[str, object], credential_call.json)
         assert isinstance(json_dict, dict)
         assert json_dict["templateId"] == "test_credential_config"
-        # Check that templateIds in offer creation uses the ID
+        # Check that templateIds in offer creation uses the full list
         offer_call = http_client.calls[1]
         assert offer_call.json is not None
-        offer_dict = offer_call.json  # type: ignore[reportAny]
+        offer_dict = cast(dict[str, object], offer_call.json)
         assert isinstance(offer_dict, dict)
         assert offer_dict["offerId"] == "offer-123"
+        assert offer_dict["templateIds"] == [
+            "test_credential_config",
+            "european_credential",
+        ]
+
+
+class TestSsiAgentOffersClientAdapterCreateEDC:
+    """Tests for SsiAgentOffersClientAdapter.create_edc()."""
+
+    _SAMPLE_ELM_CREDENTIAL: dict[str, object] = {
+        "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "http://data.europa.eu/snb/model/context/edc-ap",
+        ],
+        "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
+        "credentialSubject": {
+            "id": "did:example:subject",
+            "type": "Person",
+            "givenName": {"en": ["Jan"]},
+            "familyName": {"en": ["Jansen"]},
+            "hasClaim": [{"title": {"en": ["Badge"]}}],
+        },
+    }
+
+    def test_create_edc_posts_credential_then_offer(
+        self,
+        http_client: RequestsSpy,
+    ):
+        """create_edc() first POSTs to /v0/credentials then to /v0/offers."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["openbadge_credential", "european_credential"],
+            http_client=http_client,
+        )
+        _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
+        assert http_client.calls[0].method == "post"
+        assert http_client.calls[0].url == "http://agent.example.com/v0/credentials"
+        assert http_client.calls[1].method == "post"
+        assert http_client.calls[1].url == "http://agent.example.com/v0/offers"
+
+    def test_create_edc_returns_uri_from_offer_response(
+        self,
+        http_client: RequestsSpy,
+    ):
+        """create_edc() returns the URI from the offer creation response."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["openbadge_credential", "european_credential"],
+            http_client=http_client,
+        )
+        # First call (credential): default 200; second call (offer): returns the URI
+        http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
+        result = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
+        assert result == _OFFER_URI
+
+    def test_create_edc_uses_second_template_id(
+        self,
+        http_client: RequestsSpy,
+    ):
+        """create_edc() uses the second credential template ID."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["ob3_config", "edc_config"],
+            http_client=http_client,
+        )
+        _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
+        credential_call = http_client.calls[0]
+        assert credential_call.json is not None
+        json_dict = cast(dict[str, object], credential_call.json)
+        assert json_dict["templateId"] == "edc_config"
+        offer_call = http_client.calls[1]
+        assert offer_call.json is not None
+        offer_dict = cast(dict[str, object], offer_call.json)
+        assert offer_dict["templateIds"] == ["ob3_config", "edc_config"]
+
+    def test_create_edc_raises_client_error_when_credential_creation_fails(
+        self,
+        http_client: RequestsSpy,
+    ):
+        """create_edc() raises OffersClientError when the credential POST fails."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["ob3_config", "edc_config"],
+            http_client=http_client,
+        )
+        http_client.set_response(
+            MockResponse(status_code=422, _content=b'"Unprocessable"')
+        )
+        with pytest.raises(OffersClientError):
+            _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
+
+    def test_create_edc_raises_client_error_when_offer_creation_fails(
+        self,
+        http_client: RequestsSpy,
+    ):
+        """create_edc() raises OffersClientError when the offer POST fails."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["ob3_config", "edc_config"],
+            http_client=http_client,
+        )
+        # First call (credential) succeeds, second call (offer) fails
+        http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
+        http_client.set_response(
+            MockResponse(status_code=500, _content=b'"Server Error"')
+        )
+        with pytest.raises(OffersClientError):
+            _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
+
+    def test_create_edc_posts_raw_vcdm_to_credential_endpoint(
+        self,
+        http_client: RequestsSpy,
+    ):
+        """create_edc() posts the raw VCDM credential dict as-is."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["ob3_config", "edc_config"],
+            http_client=http_client,
+        )
+        http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
+        _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
+        credential_call = http_client.calls[0]
+        assert credential_call.json is not None
+        json_dict = cast(dict[str, object], credential_call.json)
+        assert isinstance(json_dict, dict)
+        credential = cast(dict[str, object], json_dict["credential"])
+        assert credential["type"] == [
+            "VerifiableCredential", "EuropeanDigitalCredential"
+        ]
+        assert "credentialSubject" in credential

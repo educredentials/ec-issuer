@@ -18,9 +18,12 @@ from src.awards.awards_client_port import (
 from src.awards.models import (
     Achievement,
     AchievementSubject,
-    Award,
     Criteria,
     Issuer,
+    OB3Award,
+)
+from src.credential_converter.credential_converter_port import (
+    CredentialConverterPort,
 )
 from src.offers.models import Offer
 from src.offers.offer_service import (
@@ -56,14 +59,14 @@ class _OffersRepositoryStub(OffersRepositoryPort):
 
 
 class _OffersClientSpy(OffersClientPort):
-    """Records all calls to create() for assertion."""
+    """Records all calls to create_ob3() for assertion."""
 
     def __init__(self) -> None:
         """Initialise with empty call log."""
         self.calls: list[tuple[str, dict[str, object]]] = []
 
     @override
-    def create(self, offer_id: str, award: Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
         """Record the call and return a stub URI.
 
         Args:
@@ -73,7 +76,23 @@ class _OffersClientSpy(OffersClientPort):
         Returns:
             A stub offer URI.
         """
-        self.calls.append(("create", {"offer_id": offer_id, "award": award}))
+        self.calls.append(("create_ob3", {"offer_id": offer_id, "award": award}))
+        return f"openid-credential-offer://?credential_offer_uri=http://example.com/offers/{offer_id}"
+
+    @override
+    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
+        """Record the call and return a stub URI.
+
+        Args:
+            offer_id: The offer identifier.
+            credential: The credential dict passed to the client.
+
+        Returns:
+            A stub offer URI.
+        """
+        self.calls.append(
+            ("create_edc", {"offer_id": offer_id, "credential": credential})
+        )
         return f"openid-credential-offer://?credential_offer_uri=http://example.com/offers/{offer_id}"
 
     @override
@@ -89,27 +108,50 @@ class _OffersClientSpy(OffersClientPort):
         return Offer(offer_id=offer_id, award_id="", uri=None)
 
 
-class _AwardsClientStub(AwardsClientPort):
-    """Stub that always returns the configured Award."""
+_SAMPLE_ELM_CREDENTIAL: dict[str, object] = {
+    "@context": ["https://www.w3.org/ns/credentials/v2"],
+    "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
+    "credentialSubject": {"id": "did:example:stub"},
+}
 
-    def __init__(self, award: Award) -> None:
-        """Initialise with the Award to return.
 
-        Args:
-            award: The award to return from get().
-        """
-        self._award: Award = award
+class _CredentialConverterStub(CredentialConverterPort):
+    """Stub that returns a fixed ELM credential from convert()."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> Award:
-        """Return the configured Award.
+    def convert(self, credential: dict[str, object]) -> dict[str, object]:
+        """Return the fixed ELM credential dict.
+
+        Args:
+            credential: The OB3 credential dict (unused).
+
+        Returns:
+            A fixed ELM/EDC credential dict.
+        """
+        return _SAMPLE_ELM_CREDENTIAL
+
+
+class _AwardsClientStub(AwardsClientPort):
+    """Stub that returns a configured OB3 award from get_ob3()."""
+
+    def __init__(self, award: OB3Award) -> None:
+        """Initialise with the OB3Award to return from get_ob3().
+
+        Args:
+            award: The award to return from get_ob3().
+        """
+        self._award: OB3Award = award
+
+    @override
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
+        """Return the configured OB3Award.
 
         Args:
             award_id: Ignored.
             bearer_token: The caller's bearer token (unused).
 
         Returns:
-            The configured Award.
+            The configured OB3Award.
         """
         return self._award
 
@@ -118,7 +160,7 @@ class _AwardsClientNotFoundStub(AwardsClientPort):
     """Stub that always raises AwardNotFound."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
         """Raise AwardNotFound.
 
         Args:
@@ -135,7 +177,7 @@ class _AwardsClientForbiddenStub(AwardsClientPort):
     """Stub that always raises AwardForbidden."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
         """Raise AwardForbidden.
 
         Args:
@@ -152,7 +194,7 @@ class _AwardsClientErrorStub(AwardsClientPort):
     """Stub that always raises AwardsClientError."""
 
     @override
-    def get(self, award_id: str, bearer_token: str) -> Award:
+    def get_ob3(self, award_id: str, bearer_token: str) -> OB3Award:
         """Raise AwardsClientError.
 
         Args:
@@ -166,9 +208,9 @@ class _AwardsClientErrorStub(AwardsClientPort):
 
 
 @pytest.fixture
-def sample_award() -> Award:
-    """Provide a minimal valid OB3 AchievementCredential Award."""
-    return Award(
+def sample_award() -> OB3Award:
+    """Provide a minimal valid OB3 AchievementCredential."""
+    return OB3Award(
         id="http://example.com/credentials/3527",
         type=["VerifiableCredential", "OpenBadgeCredential"],
         name="Teamwork Badge",
@@ -202,7 +244,7 @@ class TestOfferAwardsServiceInteraction:
     """Integration tests for OfferService and AwardsClientPort interaction."""
 
     def test_create_offer_fetches_award_and_passes_it_to_offers_client(
-        self, sample_award: Award
+        self, sample_award: OB3Award
     ) -> None:
         """create_offer fetches award via AwardsClientPort and passes it through."""
         offers_client = _OffersClientSpy()
@@ -211,13 +253,14 @@ class TestOfferAwardsServiceInteraction:
             offers_repository=_OffersRepositoryStub(),
             offers_client=offers_client,
             awards_client=_AwardsClientStub(award=sample_award),
+            credential_converter=_CredentialConverterStub(),
         )
 
-        offer = service.create_offer(award_id="award-123", bearer_token="tok")
+        offer = service.create_offer(award_id="award-123", bearer_token="test-token")
 
         assert len(offers_client.calls) == 1
         call_name, call_args = offers_client.calls[0]
-        assert call_name == "create"
+        assert call_name == "create_ob3"
         assert call_args["offer_id"] == offer.offer_id
         assert call_args["award"] == sample_award
 
@@ -230,10 +273,14 @@ class TestOfferAwardsServiceInteraction:
             offers_repository=_OffersRepositoryStub(),
             offers_client=_OffersClientSpy(),
             awards_client=_AwardsClientNotFoundStub(),
+            credential_converter=_CredentialConverterStub(),
         )
 
         with pytest.raises(NotFoundError, match="Award unknown-award not found"):
-            _ = service.create_offer(award_id="unknown-award", bearer_token="tok")
+            _ = service.create_offer(
+                award_id="unknown-award",
+                bearer_token="test-token",
+            )
 
     def test_create_offer_raises_permission_denied_when_award_service_returns_forbidden(
         self,
@@ -244,10 +291,14 @@ class TestOfferAwardsServiceInteraction:
             offers_repository=_OffersRepositoryStub(),
             offers_client=_OffersClientSpy(),
             awards_client=_AwardsClientForbiddenStub(),
+            credential_converter=_CredentialConverterStub(),
         )
 
         with pytest.raises(PermissionDeniedError):
-            _ = service.create_offer(award_id="forbidden-award", bearer_token="tok")
+            _ = service.create_offer(
+                award_id="forbidden-award",
+                bearer_token="test-token",
+            )
 
     def test_create_offer_raises_awards_service_error_when_awards_client_fails(
         self,
@@ -258,7 +309,35 @@ class TestOfferAwardsServiceInteraction:
             offers_repository=_OffersRepositoryStub(),
             offers_client=_OffersClientSpy(),
             awards_client=_AwardsClientErrorStub(),
+            credential_converter=_CredentialConverterStub(),
         )
 
         with pytest.raises(OfferServiceError):
-            _ = service.create_offer(award_id="award-123", bearer_token="tok")
+            _ = service.create_offer(award_id="award-123", bearer_token="test-token")
+
+    def test_create_offer_dispatches_create_edc_when_credential_type_is_edc(
+        self,
+        sample_award: OB3Award,
+    ) -> None:
+        """create_offer with credential_type='edc' dispatches to create_edc."""
+        converter = _CredentialConverterStub()
+        offers_client = _OffersClientSpy()
+        service = OfferService(
+            access_control=_AllowingAccessControl(),
+            offers_repository=_OffersRepositoryStub(),
+            offers_client=offers_client,
+            awards_client=_AwardsClientStub(award=sample_award),
+            credential_converter=converter,
+        )
+
+        _ = service.create_offer(
+            award_id="award-123",
+            bearer_token="test-token",
+            credential_type="edc",
+        )
+
+        assert len(offers_client.calls) == 1
+        call_name, call_args = offers_client.calls[0]
+        assert call_name == "create_edc"
+        assert call_args["offer_id"] is not None
+        assert call_args["credential"] == _SAMPLE_ELM_CREDENTIAL
