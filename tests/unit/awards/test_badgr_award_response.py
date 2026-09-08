@@ -15,7 +15,11 @@ from src.awards.models import (
     _BadgrBadgeclass,  # pyright:ignore[reportPrivateUsage]
     _BadgrIssuer,  # pyright:ignore[reportPrivateUsage]
     _ob3_default_schema,  # pyright:ignore[reportPrivateUsage]
+    _resolve_identifiers,  # pyright:ignore[reportPrivateUsage]
     _to_ob3_award,  # pyright:ignore[reportPrivateUsage]
+)
+from src.awards.models import (
+    IdentityObject as _IdentityObject,
 )
 
 
@@ -155,12 +159,15 @@ class TestToOb3Award:
     """Tests for _to_ob3_award conversion."""
 
     def test_full_response_with_mapper_fields(self) -> None:
-        """Maps criteria_text, description and issuer.entity_id from badgeclass."""
+        """Maps criteria_text, description, issuer.entity_id and identifiers."""
         dto = _BadgrAwardResponse(
             id=2,
             entity_id="I41eovHQReGI_SG5KM6dSQ",
             name=None,
             issued_on="2021-04-20T16:20:30.521307+02:00",
+            given_name="Jan",
+            family_name="Jansen",
+            email="jan@example.com",
             badgeclass=_BadgrBadgeclass(
                 id=3,
                 name="Edubadge account complete",
@@ -200,6 +207,22 @@ class TestToOb3Award:
                     description="Complete your account to start earning badges",
                     name="Edubadge account complete",
                 ),
+                identifiers=[
+                    _IdentityObject(
+                        type=["IdentityObject"],
+                        identity_hash="jan@example.com",
+                        identity_type="emailAddress",
+                        hashed=False,
+                        salt=None,
+                    ),
+                    _IdentityObject(
+                        type=["IdentityObject"],
+                        identity_hash="Jan Jansen",
+                        identity_type="name",
+                        hashed=False,
+                        salt=None,
+                    ),
+                ],
             ),
             credentialSchema=_ob3_default_schema(),
         )
@@ -236,3 +259,82 @@ class TestToOb3Award:
         dto = _BadgrAwardResponse(id=1, entity_id="x", name=None, issued_on=None)
         result = _to_ob3_award(dto)
         assert result.name == ""
+
+    def test_identifiers_populated_with_email_and_name(self) -> None:
+        """dto with given_name, family_name, and email produces two identifiers."""
+        dto = _BadgrAwardResponse(
+            id=1,
+            entity_id="http://example.com/awards/1",
+            name="Badge",
+            issued_on="2024-01-01T00:00:00Z",
+            given_name="Jan",
+            family_name="Jansen",
+            email="jan@example.com",
+        )
+        result = _to_ob3_award(dto)
+        identifiers = result.credentialSubject.identifiers
+        assert len(identifiers) == 2
+        assert identifiers[0].type == ["IdentityObject"]
+        assert identifiers[0].identity_hash == "jan@example.com"
+        assert identifiers[0].identity_type == "emailAddress"
+        assert identifiers[0].hashed is False
+        assert identifiers[1].identity_hash == "Jan Jansen"
+        assert identifiers[1].identity_type == "name"
+
+    def test_identifiers_only_email_when_no_name(self) -> None:
+        """Only an emailAddress identifier is produced when no name fields exist."""
+        dto = _BadgrAwardResponse(
+            id=1,
+            entity_id="x",
+            name="Badge",
+            issued_on="2024-01-01T00:00:00Z",
+            given_name=None,
+            family_name=None,
+            email="solo@example.com",
+        )
+        result = _to_ob3_award(dto)
+        assert len(result.credentialSubject.identifiers) == 1
+        assert result.credentialSubject.identifiers[0].identity_hash == (
+            "solo@example.com"
+        )
+
+    def test_identifiers_only_name_when_no_email(self) -> None:
+        """Only a name identifier is produced when email is missing."""
+        dto = _BadgrAwardResponse(
+            id=1,
+            entity_id="x",
+            name="Badge",
+            issued_on="2024-01-01T00:00:00Z",
+            given_name="M",
+            family_name="L",
+            email=None,
+        )
+        result = _to_ob3_award(dto)
+        assert len(result.credentialSubject.identifiers) == 1
+        assert result.credentialSubject.identifiers[0].identity_type == "name"
+
+    def test_empty_identifiers_when_no_recipient_data(self) -> None:
+        """No recipient data produces an empty identifiers list."""
+        dto = _BadgrAwardResponse(
+            id=1,
+            entity_id="x",
+            name="Badge",
+            issued_on="2024-01-01T00:00:00Z",
+        )
+        result = _to_ob3_award(dto)
+        assert result.credentialSubject.identifiers == []
+
+    def test_name_parts_filtered_for_none(self) -> None:
+        """Only non-None name parts are joined."""
+        dto = _BadgrAwardResponse(
+            id=1,
+            entity_id="x",
+            name="Badge",
+            issued_on="2024-01-01T00:00:00Z",
+            given_name="Single",
+            family_name=None,
+            email=None,
+        )
+        result = _resolve_identifiers(dto)
+        assert len(result) == 1
+        assert result[0].identity_hash == "Single"

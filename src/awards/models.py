@@ -43,6 +43,7 @@ class _BadgrAwardResponse(msgspec.Struct):
     # Person/learner fields (populated when the awards service returns them).
     given_name: str | None = None
     family_name: str | None = None
+    email: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrAwardResponse:
@@ -71,6 +72,7 @@ def _to_ob3_award(dto: _BadgrAwardResponse) -> OB3Award:
     issuer = _resolve_issuer(dto)
     valid_from = _resolve_valid_from(dto)
     achievement_data = _resolve_achievement_data(dto)
+    identifiers = _resolve_identifiers(dto)
 
     return OB3Award(
         id=entity_id,
@@ -90,6 +92,7 @@ def _to_ob3_award(dto: _BadgrAwardResponse) -> OB3Award:
                 description=achievement_data["description"],
                 name=badge_name,
             ),
+            identifiers=identifiers,
         ),
     )
 
@@ -152,6 +155,42 @@ def _resolve_valid_from(dto: _BadgrAwardResponse) -> str:
     return ""
 
 
+def _resolve_identifiers(dto: _BadgrAwardResponse) -> list[IdentityObject]:
+    """Build an identifier list from recipient data in the DTO.
+
+    Collects plain-text identifiers for email and name when present.
+    """
+    identifiers: list[IdentityObject] = []
+    if dto.email:
+        identifiers.append(
+            IdentityObject(
+                type=["IdentityObject"],
+                identity_hash=dto.email,
+                identity_type="emailAddress",
+                hashed=False,
+                salt=None,
+            )
+        )
+    name = _resolve_name(dto)
+    if name:
+        identifiers.append(
+            IdentityObject(
+                type=["IdentityObject"],
+                identity_hash=name,
+                identity_type="name",
+                hashed=False,
+                salt=None,
+            )
+        )
+    return identifiers
+
+
+def _resolve_name(dto: _BadgrAwardResponse) -> str:
+    """Resolve the recipient full name from given_name + family_name."""
+    parts = [p for p in (dto.given_name, dto.family_name) if p]
+    return " ".join(parts)
+
+
 def ob3_award_from_badgr_api_response(raw: dict[str, object]) -> OB3Award:
     """Convert a Badgr API response to an OB3 Award domain model.
 
@@ -190,6 +229,7 @@ class AchievementSubject:
     id: str
     type: list[str]
     achievement: Achievement
+    identifiers: list[IdentityObject] = field(default_factory=list)
 
 
 @dataclass
@@ -199,6 +239,17 @@ class Issuer:
     id: str
     type: list[str]
     name: str
+
+
+@dataclass
+class IdentityObject:
+    """An identifier for the recipient of an achievement (OB3 spec)."""
+
+    type: list[str]
+    identity_hash: str
+    identity_type: str
+    hashed: bool
+    salt: str | None
 
 
 def _ob3_default_schema() -> list[dict[str, str]]:
@@ -222,5 +273,3 @@ class OB3Award:
     validFrom: str
     credentialSubject: AchievementSubject
     credentialSchema: list[dict[str, str]] = field(default_factory=_ob3_default_schema)
-
-
