@@ -9,26 +9,17 @@ import binascii
 import json
 import logging
 
+import msgspec
+from msgspec import json as msgspec_json
+
 from src.lib.http_client import HttpClient, HttpResponse, RequestsHttpClient
+
+from .credential_converter_port import CredentialConverterClientError
 
 log = logging.getLogger(__name__)
 
 CONVERSION_PATH = "/api"
 PREFERRED_LANGUAGE = "en"
-
-
-class CredentialConverterClientError(Exception):
-    """Raised when the credential converter service returns an unexpected error."""
-
-    def __init__(self, message: str, cause: Exception | None = None) -> None:
-        """Initialise the error.
-
-        Args:
-            message: Human-readable error description.
-            cause: The original exception, if any.
-        """
-        super().__init__(message)
-        self.cause: Exception | None = cause
 
 
 class HttpCredentialConverterAdapter:
@@ -152,15 +143,15 @@ class HttpCredentialConverterAdapter:
             CredentialConverterClientError: If response is malformed.
         """
         try:
-            data = json.loads(response.content)  # pyright: ignore[reportAny]
-        except json.JSONDecodeError as exc:
+            data = msgspec_json.decode(response.content, type=dict[str, object])
+        except msgspec.DecodeError as exc:
             raise CredentialConverterClientError(
                 f"Invalid JSON response from converter: {exc}"
             ) from exc
 
         if "error" in data:
             raise CredentialConverterClientError(
-                f"Converter error: {data['error']} - {data.get('message', '')}"  # pyright: ignore[reportAny]
+                f"Converter error: {data['error']} - {data.get('message', '')}"
             )
 
         if "content" not in data:
@@ -169,16 +160,13 @@ class HttpCredentialConverterAdapter:
             )
 
         try:
-            raw = base64.b64decode(data["content"])  # pyright: ignore[reportAny]
-            credential = json.loads(raw)  # pyright: ignore[reportAny]
-        except (binascii.Error, json.JSONDecodeError) as exc:
+            raw = base64.b64decode(data["content"])
+            credential = msgspec_json.decode(raw, type=dict[str, object])
+        except (binascii.Error, msgspec.DecodeError, TypeError) as exc:
             raise CredentialConverterClientError(
                 f"Failed to decode converter response: {exc}"
             ) from exc
 
-        if not isinstance(credential, dict):
-            raise CredentialConverterClientError(
-                "Converter returned non-object credential"
-            )
-        credential.pop("@context", None)
+        if "@context" in credential:
+            del credential["@context"]
         return credential

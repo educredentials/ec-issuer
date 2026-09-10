@@ -10,9 +10,9 @@ from src.awards.awards_client_port import (
     AwardsClientError,
     AwardsClientPort,
 )
-from src.credential_converter.http_adapter import (
+from src.credential_converter.credential_converter_port import (
     CredentialConverterClientError,
-    HttpCredentialConverterAdapter,
+    CredentialConverterPort,
 )
 
 from .models import Offer
@@ -52,7 +52,7 @@ class OfferService:
     _awards_client: AwardsClientPort
     _offers_repository: OffersRepositoryPort
     _offers_client: OffersClientPort
-    _credential_converter: HttpCredentialConverterAdapter
+    _credential_converter: CredentialConverterPort
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class OfferService:
         awards_client: AwardsClientPort,
         offers_repository: OffersRepositoryPort,
         offers_client: OffersClientPort,
-        credential_converter: HttpCredentialConverterAdapter,
+        credential_converter: CredentialConverterPort,
     ) -> None:
         """Initialise the service with its dependencies.
 
@@ -69,7 +69,7 @@ class OfferService:
             awards_client: Adapter for fetching awards from the external awards service.
             offers_repository: Adapter for persisting offers.
             offers_client: Adapter for interacting with oid4vci agent.
-            credential_converter: Adapter for converting OB3 to ELM/EDC.
+            credential_converter: Port for converting OB3 to ELM/EDC.
         """
         self._access_control = access_control
         self._awards_client = awards_client

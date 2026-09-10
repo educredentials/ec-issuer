@@ -13,10 +13,10 @@ from src.awards.models import (
     Issuer,
     OB3Award,
 )
-from src.credential_converter.http_adapter import (
+from src.credential_converter.credential_converter_port import (
     CredentialConverterClientError,
-    HttpCredentialConverterAdapter,
 )
+from src.credential_converter.http_adapter import HttpCredentialConverterAdapter
 from typing import cast
 
 from tests.unit.support.requests_doubles import (
@@ -299,7 +299,7 @@ class TestHttpCredentialConverterAdapterMalformed:
             )
         )
         with pytest.raises(
-            CredentialConverterClientError, match="non-object credential"
+            CredentialConverterClientError, match="Failed to decode"
         ):
             _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
 
