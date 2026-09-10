@@ -12,9 +12,9 @@ services:
     environment:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8008
-      - SSI_AGENT_URL=http://real-ssi-agent:3033 # Internal URL
-      - AWARDS_SERVICE_URL=http://172.17.0.1:8000/earner
-      - CREDENTIAL_CONVERTER_URL=http://real-credential-converter:8080
+      - SSI_AGENT_URL=http://mock-ssi-agent:4010
+      - AWARDS_SERVICE_URL=http://mock-awards:4010/earner
+      - CREDENTIAL_CONVERTER_URL=http://mock-converter:4010
       - POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@postgresql:5432/ecissuer
       - ALLOWED_CORS_DOMAINS=http://localhost:8080,http://localhost:3000
       # Credential template resolution (templates are baked into /etc/templates/):
@@ -101,7 +101,7 @@ services:
     platform: "linux/amd64"
     image: cr.surf.nl/edubadges-educredentials/credential-converter:latest
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       RUST_BACKTRACE: "1"
     healthcheck:

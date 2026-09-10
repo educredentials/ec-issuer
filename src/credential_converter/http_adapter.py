@@ -1,18 +1,15 @@
-"""HTTP adapter for the credential converter."""
+"""HTTP adapter for the credential converter.
+
+The converter takes OB3 credentials and returns ELM/EDC JSON via an HTTP
+endpoint that accepts base64-encoded payloads.
+"""
 
 import base64
 import binascii
 import json
 import logging
 
-from typing import override
-
 from src.lib.http_client import HttpClient, HttpResponse, RequestsHttpClient
-
-from .credential_converter_port import (
-    CredentialConverterClientError,
-    CredentialConverterPort,
-)
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +17,21 @@ CONVERSION_PATH = "/api"
 PREFERRED_LANGUAGE = "en"
 
 
-class HttpCredentialConverterAdapter(CredentialConverterPort):
+class CredentialConverterClientError(Exception):
+    """Raised when the credential converter service returns an unexpected error."""
+
+    def __init__(self, message: str, cause: Exception | None = None) -> None:
+        """Initialise the error.
+
+        Args:
+            message: Human-readable error description.
+            cause: The original exception, if any.
+        """
+        super().__init__(message)
+        self.cause: Exception | None = cause
+
+
+class HttpCredentialConverterAdapter:
     """Adapter that calls the converter's HTTP API.
 
     Encodes the input credential as base64, POSTs it to the converter, and
@@ -44,7 +55,6 @@ class HttpCredentialConverterAdapter(CredentialConverterPort):
         self._base_url = converter_base_url.rstrip("/")
         self._http_client = http_client or RequestsHttpClient()
 
-    @override
     def convert(self, credential: dict[str, object]) -> dict[str, object]:
         """Convert an OB3 credential to ELM/EDC format.
 

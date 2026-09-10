@@ -10,9 +10,9 @@ from src.awards.awards_client_port import (
     AwardsClientError,
     AwardsClientPort,
 )
-from src.credential_converter.credential_converter_port import (
+from src.credential_converter.http_adapter import (
     CredentialConverterClientError,
-    CredentialConverterPort,
+    HttpCredentialConverterAdapter,
 )
 
 from .models import Offer
@@ -52,7 +52,7 @@ class OfferService:
     _awards_client: AwardsClientPort
     _offers_repository: OffersRepositoryPort
     _offers_client: OffersClientPort
-    _credential_converter: CredentialConverterPort
+    _credential_converter: HttpCredentialConverterAdapter
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class OfferService:
         awards_client: AwardsClientPort,
         offers_repository: OffersRepositoryPort,
         offers_client: OffersClientPort,
-        credential_converter: CredentialConverterPort,
+        credential_converter: HttpCredentialConverterAdapter,
     ) -> None:
         """Initialise the service with its dependencies.
 

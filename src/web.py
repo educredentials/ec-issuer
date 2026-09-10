@@ -46,15 +46,14 @@ class App:
         offers_repository = PostgreSQLOffersRepositoryAdapter(
             self.config.postgresql_connection_string,
         )
-        credential_converter = HttpCredentialConverterAdapter(
-            converter_base_url=self.config.credential_converter_url,
-        )
         offer_service = OfferService(
             access_control=access_control,
             awards_client=awards_client,
             offers_repository=offers_repository,
             offers_client=offers_client,
-            credential_converter=credential_converter,
+            credential_converter=HttpCredentialConverterAdapter(
+                converter_base_url=self.config.credential_converter_url,
+            ),
         )
 
         api_adapter = HttpApiAdapter(

@@ -22,9 +22,6 @@ from src.awards.models import (
     Issuer,
     OB3Award,
 )
-from src.credential_converter.credential_converter_port import (
-    CredentialConverterPort,
-)
 from src.offers.models import Offer
 from src.offers.offer_service import (
     NotFoundError,
@@ -115,19 +112,11 @@ _SAMPLE_ELM_CREDENTIAL: dict[str, object] = {
 }
 
 
-class _CredentialConverterStub(CredentialConverterPort):
+class _CredentialConverterStub:
     """Stub that returns a fixed ELM credential from convert()."""
 
-    @override
-    def convert(self, credential: dict[str, object]) -> dict[str, object]:
-        """Return the fixed ELM credential dict.
-
-        Args:
-            credential: The OB3 credential dict (unused).
-
-        Returns:
-            A fixed ELM/EDC credential dict.
-        """
+    def convert(self, _credential: dict[str, object]) -> dict[str, object]:
+        """Return the fixed ELM credential dict."""
         return _SAMPLE_ELM_CREDENTIAL
 
 

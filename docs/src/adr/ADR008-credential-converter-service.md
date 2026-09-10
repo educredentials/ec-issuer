@@ -64,7 +64,7 @@ Chosen option: **"Option A — Call the credential-converter service"**, because
 |------|----------|-------------------|
 | 1 | `get_ob3(award_id, token)` | `get_ob3(award_id, token)` |
 | 2 | `create_ob3(offer_id, award)` | `asdict(award)` |
-| | | `convert(raw_ob3)` → `credential_convetor` |
+| | | `convert(raw_ob3)` → `credential_converter` |
 | | | `create_edc(offer_id, converted)` |
 | 3 | store + return | store + return |
 

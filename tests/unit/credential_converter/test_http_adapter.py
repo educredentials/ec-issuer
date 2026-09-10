@@ -13,14 +13,11 @@ from src.awards.models import (
     Issuer,
     OB3Award,
 )
-from src.credential_converter.credential_converter_port import (
-    CredentialConverterClientError,
-)
-from typing import cast
-
 from src.credential_converter.http_adapter import (
+    CredentialConverterClientError,
     HttpCredentialConverterAdapter,
 )
+from typing import cast
 
 from tests.unit.support.requests_doubles import (
     MockResponse,

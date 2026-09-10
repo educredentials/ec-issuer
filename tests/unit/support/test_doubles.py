@@ -14,9 +14,6 @@ from src.awards.models import (
     Issuer,
     OB3Award,
 )
-from src.credential_converter.credential_converter_port import (
-    CredentialConverterPort,
-)
 from src.config.config_port import ConfigRepoPort
 from src.offers.models import Offer
 from src.offers.offer_service import (
@@ -454,8 +451,8 @@ class OfferServiceSpy(OfferService):
         )
 
 
-class CredentialConverterStub(CredentialConverterPort):
-    """Stub for CredentialConverterPort: returns a fixed credential dict."""
+class CredentialConverterStub:
+    """Stub for the credential converter: returns a fixed credential dict."""
 
     def __init__(self, sample_response: dict[str, object] | None = None) -> None:
         """Initialize with optional sample credential.
@@ -480,7 +477,6 @@ class CredentialConverterStub(CredentialConverterPort):
         """
         return self._calls
 
-    @override
     def convert(self, credential: dict[str, object]) -> dict[str, object]:
         """Record the call and return the sample response.
 
