@@ -12,6 +12,7 @@ def _make_env(
     server_port: int = 8000,
     ssi_agent_url: str = "http://agent.example.com",
     awards_service_url: str = "http://awards.example.com",
+    credential_converter_url: str = "http://converter.example.com",
     postgresql_connection_string: str = "postgresql://localhost/test",
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com",
     debug: bool = True,
@@ -22,6 +23,7 @@ def _make_env(
         "SERVER_PORT": str(server_port),
         "SSI_AGENT_URL": ssi_agent_url,
         "AWARDS_SERVICE_URL": awards_service_url,
+        "CREDENTIAL_CONVERTER_URL": credential_converter_url,
         "POSTGRES_CONNECTION_STRING": postgresql_connection_string,
         "ALLOWED_CORS_DOMAINS": allowed_cors_domains,
         "DEBUG": str(debug),
@@ -59,7 +61,7 @@ class TestEnvConfigRepo:
             config.allowed_cors_domains
             == "http://localhost:8000,https://app.example.com"
         )
-        assert config.credential_configuration_id == ""
+        assert config.credential_configuration_ids == []
 
     def test_debug_defaults_to_false_when_absent(self) -> None:
         """DEBUG env var is optional and defaults to false."""
@@ -105,13 +107,15 @@ class TestEnvConfigRepo:
     def test_pre_resolved_id(self) -> None:
         """Credential template id can be pre-resolved."""
         env = _make_env()
-        config = EnvConfigRepo(env=env, credential_configuration_id="pre-resolved-id")
+        config = EnvConfigRepo(
+            env=env, credential_configuration_ids=["pre-resolved-id"]
+        )
 
-        assert config.credential_configuration_id == "pre-resolved-id"
+        assert config.credential_configuration_ids == ["pre-resolved-id"]
 
-    def test_default_credential_configuration_id_is_empty(self) -> None:
-        """credential_configuration_id defaults to empty string."""
+    def test_default_credential_configuration_ids_is_empty(self) -> None:
+        """credential_configuration_ids defaults to empty list."""
         env = _make_env()
         config = EnvConfigRepo(env=env)
 
-        assert config.credential_configuration_id == ""
+        assert config.credential_configuration_ids == []

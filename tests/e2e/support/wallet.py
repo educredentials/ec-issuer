@@ -181,11 +181,18 @@ class WalletClient:
         )
         return access_token_response.access_token
 
-    def use_offer(self, offer_uri: str) -> tuple[Offer, CredentialIssuerMetadata, str]:
+    def use_offer(
+        self,
+        offer_uri: str,
+        credential_configuration_id: str | None = None,
+    ) -> tuple[Offer, CredentialIssuerMetadata, str]:
         """Fetch and parse a credential offer, get its metadata, and return auth URL.
 
         Args:
             offer_uri: The URI of the credential offer.
+            credential_configuration_id: The credential configuration ID to use
+                in the authorization details. Defaults to the first item from
+                the offer's ``credential_configuration_ids`` list.
 
         Returns:
             A tuple of (offer, metadata, auth_url).
@@ -197,6 +204,15 @@ class WalletClient:
 
         code_challenge, code_verifier = pkce.generate_pkce_pair()
         self.code_verifier = code_verifier
+
+        config_id = (
+            credential_configuration_id
+            or offer.credential_configuration_ids[0]
+        )
+        authorization_details = msgspec_json.encode(
+            [{"type": "openid_credential", "credential_configuration_id": config_id}]
+        ).decode()
+
         auth_attributes: dict[str, str] = {
             "response_type": "code",
             "client_id": self.client_id,
@@ -205,10 +221,7 @@ class WalletClient:
             "code_verifier": code_verifier,
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
-            "authorization_details": '[{\
-                "type": "openid_credential", \
-                "credential_configuration_id": "openbadge_credential"\
-            }]',  # Note: Is one single string! TODO: get from offer?
+            "authorization_details": authorization_details,
             "state": "static_state",
             "issuer_state": offer.issuer_state(),
         }

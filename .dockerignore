@@ -1,0 +1,35 @@
+# Dependencies (baked in or mounted via compose volumes)
+dependencies/
+
+# Virtual environment
+.venv/
+
+# Version control
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Docker files (avoid recursive builds)
+Dockerfile
+docker-compose*.yml
+compose*.yml
+
+# Documentation
+docs/
+
+# Tests (not needed for runtime)
+tests/

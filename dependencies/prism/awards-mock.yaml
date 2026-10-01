@@ -3,9 +3,9 @@ info:
   title: Awards Mock
   version: 1.0.0
 servers:
-  - url: http://localhost:8003
+  - url: http://localhost:8003/earner
 paths:
-  /awards/award-123:
+  /earner/awards/award-123:
     get:
       responses:
         "200":
@@ -47,7 +47,7 @@ paths:
               schema:
                 type: object
 
-  /awards/award-999:
+  /earner/awards/award-999:
     get:
       responses:
         "404":
@@ -59,7 +59,7 @@ paths:
                 example:
                   error: "Award not found"
 
-  /awards/{award_id}:
+  /earner/awards/{award_id}:
     get:
       parameters:
         - name: award_id

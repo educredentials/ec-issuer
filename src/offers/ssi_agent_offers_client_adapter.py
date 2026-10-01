@@ -5,7 +5,7 @@ from typing import override
 
 import msgspec
 
-from src.awards.models import Award
+from src.awards.models import OB3Award
 from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .models import Offer
@@ -46,42 +46,69 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
 
     _ssi_agent_admin_base_url: str
     _http_client: HttpClient
-    _credential_template_id: str
+    _credential_template_ids: list[str]
 
     def __init__(
         self,
         ssi_agent_url: str,
-        credential_template_id: str,
+        credential_template_ids: list[str] | None = None,
         http_client: HttpClient | None = None,
     ) -> None:
         """Initialize the adapter.
 
         Args:
             ssi_agent_url: The admin base URL of the SSI agent.
-            credential_configuration_id: The credential configuration ID to use
+            credential_template_ids: The credential template IDs to use
                 for offers.
             http_client: The HTTP client to use for requests.
                 Defaults to requests module.
         """
         self._ssi_agent_admin_base_url = ssi_agent_url.rstrip("/")
-        self._credential_template_id = credential_template_id
+        self._credential_template_ids = credential_template_ids or []
         if http_client is not None:
             self._http_client = http_client
         else:
             self._http_client = RequestsHttpClient()
 
     @override
-    def create(self, offer_id: str, award: Award) -> str:
-        """Create an offer in the SSI agent.
+    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+        """Create an OB3 credential offer in the SSI agent.
 
         Args:
             offer_id: The offer identifier to create.
-            award: The award to issue as a credential.
+            award: The OB3 AchievementCredential to issue.
 
         Returns:
             The credential offer URI.
         """
-        self._create_credential_for_subject(offer_id, award)
+        self._create_credential_for_subject(
+            offer_id,
+            asdict(award),
+            self._credential_template_ids[0] if self._credential_template_ids else "",
+        )
+        offer_uri = self._create_offer(offer_id)
+        return offer_uri
+
+    @override
+    def create_edc(
+        self, offer_id: str, credential: dict[str, object]
+    ) -> str:
+        """Create an EDC credential offer in the SSI agent.
+
+        Args:
+            offer_id: The offer identifier to create.
+            credential: The ELM/EDC credential as a dict.
+
+        Returns:
+            The credential offer URI.
+        """
+        self._create_credential_for_subject(
+            offer_id,
+            credential,
+            self._credential_template_ids[1]
+            if len(self._credential_template_ids) > 1
+            else "",
+        )
         offer_uri = self._create_offer(offer_id)
         return offer_uri
 
@@ -126,13 +153,18 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             uri=uri,
         )
 
-    def _create_credential_for_subject(self, offer_id: str, award: Award) -> None:
+    def _create_credential_for_subject(
+        self,
+        offer_id: str,
+        credential: dict[str, object],
+        template_id: str,
+    ) -> None:
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credentials",
             json={
                 "offerId": offer_id,
-                "credential": asdict(award),
-                "templateId": self._credential_template_id,
+                "credential": credential,
+                "templateId": template_id,
                 "expiresAt": "never",
             },
         )
@@ -147,7 +179,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             f"{self._ssi_agent_admin_base_url}/v0/offers",
             json={
                 "offerId": offer_id,
-                "templateIds": [self._credential_template_id],
+                "templateIds": self._credential_template_ids,
             },
         )
 
