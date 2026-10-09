@@ -40,12 +40,12 @@ _BADGR_RESPONSE_WITH_IMAGE = {
     "id": "https://DOMAIN/assertions/43",
     "name": "Coding Badge",
     "issued_on": "2024-06-15T11:00:00Z",
-    "image": "https://DOMAIN/images/coding-badge.png",
     "badgeclass": {
         "id": "https://DOMAIN/badges/19",
         "name": "Coding Badge",
         "description": "Demonstrates coding skills",
         "criteria_text": "Write a program",
+        "image": "https://DOMAIN/images/coding-badge.png",
         "issuer": {
             "id": "https://DOMAIN/issuers/1",
             "name_dutch": "Test NL",
@@ -140,18 +140,17 @@ class TestOb3AwardFromBadgrApi:
         award = ob3_award_from_badgr_api_response(_VALID_BADGR_RESPONSE)
         assert award.credentialSubject.achievement.image is None
 
-    def test_prefers_assertion_image_over_badgeclass_image(self):
-        """_resolve_image prefers assertion-level image over badgeclass.image."""
+    def test_uses_badgeclass_image(self):
+        """_resolve_image uses badgeclass.image when present."""
         award = ob3_award_from_badgr_api_response(
             {
                 "id": "https://DOMAIN/assertions/44",
                 "name": "Double Image",
                 "issued_on": "2024-06-15T12:00:00Z",
-                "image": "https://DOMAIN/assertions/44/image",
                 "badgeclass": {
                     "id": "https://DOMAIN/badges/20",
                     "name": "Double Image",
-                    "description": "Has image on both levels",
+                    "description": "Has an image",
                     "criteria_text": "Do stuff",
                     "image": "https://DOMAIN/badges/20/image",
                     "issuer": {
@@ -164,7 +163,7 @@ class TestOb3AwardFromBadgrApi:
         )
         assert award.credentialSubject.achievement.image is not None
         assert award.credentialSubject.achievement.image["id"] == (
-            "https://DOMAIN/assertions/44/image"
+            "https://DOMAIN/badges/20/image"
         )
 
 

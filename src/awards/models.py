@@ -251,11 +251,10 @@ def _resolve_image(
     dto: _BadgrAwardResponse,
     base_url: str | None = None,
 ) -> dict[str, str] | None:
-    """Resolve the image from the award response.
+    """Resolve the image from the badgeclass.
 
-    Prefers the assertion-level ``image`` field (OBv2 Assertion format), falling back to
-    ``badgeclass.image`` when available. When a ``base_url`` is provided and the
-    image path is relative, it is resolved to an absolute URL.
+    When a ``base_url`` is provided and the image path is relative, it is
+    resolved to an absolute URL.
 
     Args:
         dto: The deserialized Badgr award response.
