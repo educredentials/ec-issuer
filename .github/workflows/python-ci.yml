@@ -20,33 +20,49 @@ jobs:
           POSTGRES_DB: ecissuer
         ports:
           - "5432:5432"
-        options: --health-cmd="pg_isready -U ecissuer -d ecissuer" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: >-
+          --health-cmd="pg_isready -U ecissuer -d ecissuer"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - uses: actions/checkout@v6
 
       - name: Start mock SSI agent
         run: |
+          WS="${{ github.workspace }}"
           docker run -d \
             --name mock-ssi-agent \
             -p 8001:4010 \
-            -v ${{ github.workspace }}/dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml \
+            -v "$WS/dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml" \
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
       - name: Start mock OIDC auth
         run: |
+          WS="${{ github.workspace }}"
           docker run -d \
             --name mock-oidc-auth \
             -p 8002:4010 \
-            -v ${{ github.workspace }}/dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml \
+            -v "$WS/dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml" \
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
       - name: Start mock awards service
         run: |
+          WS="${{ github.workspace }}"
           docker run -d \
             --name mock-awards \
             -p 8003:4010 \
-            -v ${{ github.workspace }}/dependencies/prism/awards-mock.yaml:/app/mock.yaml \
+            -v "$WS/dependencies/prism/awards-mock.yaml:/app/mock.yaml" \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
+      - name: Start mock converter service
+        run: |
+          WS="${{ github.workspace }}"
+          docker run -d \
+            --name mock-converter \
+            -p 8004:4010 \
+            -v "$WS/dependencies/prism/converter-mock.yaml:/app/mock.yaml" \
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
       - name: Install uv
@@ -72,7 +88,9 @@ jobs:
       - name: Run integration tests
         env:
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          POSTGRES_CONNECTION_STRING: >-
+            postgresql://ecissuer:ecissuer@
+            localhost:5432/ecissuer
         run: uv run pytest tests/integration/ -v
 
       - name: Start ec-issuer service
@@ -82,12 +100,31 @@ jobs:
           export SERVER_PORT=8000
           export SSI_AGENT_URL=http://localhost:8001
           export DEBUG_METRICS=1
-          export POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          export POSTGRES_CONNECTION_STRING= >-
+            postgresql://ecissuer:ecissuer@
+            localhost:5432/ecissuer
           export AWARDS_SERVICE_URL=http://localhost:8003
-          export ALLOWED_CORS_DOMAINS=http://localhost:8000,http://localhost:3000
+          export CREDENTIAL_CONVERTER_URL=http://localhost:8004
+          export ALLOWED_CORS_DOMAINS= >-
+            http://localhost:8000,
+            http://localhost:3000
           export CREDENTIAL_TEMPLATE_ID=openbadge_credential
-          RUNNER_TRACKING_ID="" && (nohup uv run ec-issuer-web &)
-          sleep 1
+          nohup uv run ec-issuer-web \
+            > /tmp/ec-issuer.log 2>&1 &
+
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health \
+              > /dev/null; then
+              echo "Service is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Service failed to start"
+              cat /tmp/ec-issuer.log
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Run e2e tests
         env:
@@ -95,22 +132,31 @@ jobs:
           SERVER_PORT: 8000
           EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          POSTGRES_CONNECTION_STRING: >-
+            postgresql://ecissuer:ecissuer@
+            localhost:5432/ecissuer
           AWARDS_SERVICE_URL: http://localhost:8003
-          ALLOWED_CORS_DOMAINS: http://localhost:8000,http://localhost:3000
+          CREDENTIAL_CONVERTER_URL: http://localhost:8004
+          ALLOWED_CORS_DOMAINS: >-
+            http://localhost:8000,
+            http://localhost:3000
           CREDENTIAL_TEMPLATE_ID: openbadge_credential
         run: uv run pytest tests/e2e/ -v
 
       - name: Cleanup
         if: always()
         run: |
-          pkill -f "python -m src.main" || true
-          docker stop mock-ssi-agent || true
-          docker stop mock-oidc-auth || true
-          docker stop mock-awards || true
-          docker rm mock-ssi-agent || true
-          docker rm mock-oidc-auth || true
-          docker rm mock-awards || true
+          pkill -f "ec-issuer-web" || true
+          docker stop \
+            mock-ssi-agent \
+            mock-oidc-auth \
+            mock-awards \
+            mock-converter 2>/dev/null || true
+          docker rm \
+            mock-ssi-agent \
+            mock-oidc-auth \
+            mock-awards \
+            mock-converter 2>/dev/null || true
 
 
   build:
@@ -118,7 +164,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     # When a commit or tag is pushed to main
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' ||
+       startsWith(github.ref, 'refs/tags/'))
     steps:
       - uses: actions/checkout@v6
 
@@ -139,13 +188,18 @@ jobs:
 
       - name: Extract version from pyproject.toml
         id: version
-        run: echo "VERSION=$(grep '^version' pyproject.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+        run: >-
+          echo "VERSION=$(
+            grep '^version' pyproject.toml
+            | cut -d'"' -f2
+          )" >> $GITHUB_OUTPUT
 
       - name: Get Git tag if available
         id: git_tag
         run: |
           if [[ $GITHUB_REF == refs/tags/* ]]; then
-            echo "GIT_TAG=git-tag-${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "GIT_TAG=git-tag-${GITHUB_REF#refs/tags/}" \
+              >> $GITHUB_OUTPUT
             echo "HAS_TAG=true" >> $GITHUB_OUTPUT
           else
             echo "HAS_TAG=false" >> $GITHUB_OUTPUT
@@ -162,8 +216,15 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             cr.surf.nl/edubadges-educredentials/ec-issuer:latest
-            cr.surf.nl/edubadges-educredentials/ec-issuer:${{ steps.version.outputs.VERSION }}
-            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
+            cr.surf.nl/edubadges-educredentials/ec-issuer:${{
+              steps.version.outputs.VERSION }}
+            ${{
+              steps.git_tag.outputs.HAS_TAG == 'true' &&
+              format(
+                'cr.surf.nl/edubadges-educredentials/ec-issuer:{0}',
+                steps.git_tag.outputs.GIT_TAG
+              ) || ''
+            }}
 
       - name: Build and push Docker image (web gunicorn service)
         uses: docker/build-push-action@v7
@@ -176,8 +237,15 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:latest
-            cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:${{ steps.version.outputs.VERSION }}
-            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
+            cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:${{
+              steps.version.outputs.VERSION }}
+            ${{
+              steps.git_tag.outputs.HAS_TAG == 'true' &&
+              format(
+                'cr.surf.nl/edubadges-educredentials/ec-issuer-gunicorn:{0}',
+                steps.git_tag.outputs.GIT_TAG
+              ) || ''
+            }}
 
       - name: Build and push Docker image (cli, init container)
         uses: docker/build-push-action@v7
@@ -189,5 +257,12 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             cr.surf.nl/edubadges-educredentials/ec-issuer-cli:latest
-            cr.surf.nl/edubadges-educredentials/ec-issuer-cli:${{ steps.version.outputs.VERSION }}
-            ${{ steps.git_tag.outputs.HAS_TAG == 'true' && format('cr.surf.nl/edubadges-educredentials/ec-issuer-cli:{0}', steps.git_tag.outputs.GIT_TAG) || '' }}
+            cr.surf.nl/edubadges-educredentials/ec-issuer-cli:${{
+              steps.version.outputs.VERSION }}
+            ${{
+              steps.git_tag.outputs.HAS_TAG == 'true' &&
+              format(
+                'cr.surf.nl/edubadges-educredentials/ec-issuer-cli:{0}',
+                steps.git_tag.outputs.GIT_TAG
+              ) || ''
+            }}
