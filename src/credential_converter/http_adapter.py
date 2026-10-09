@@ -17,6 +17,13 @@ from src.lib.http_client import HttpClient, HttpResponse, RequestsHttpClient
 from .credential_converter_port import CredentialConverterClientError
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+if not log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setLevel(logging.DEBUG)
+    _fmt = "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
+    _handler.setFormatter(logging.Formatter(_fmt))
+    log.addHandler(_handler)
 
 CONVERSION_PATH = "/api"
 PREFERRED_LANGUAGE = "en"
@@ -82,10 +89,15 @@ class HttpCredentialConverterAdapter:
         content = self._encode_input(credential)
         payload = self._build_request(content)
 
+        log.debug("Request to converter: %s%s", self._base_url, CONVERSION_PATH)
+        log.debug("Body: %s", json.dumps(payload, indent=2))
+
         response = self._http_client.post(
             f"{self._base_url}{CONVERSION_PATH}",
             json=payload,
         )
+
+        log.debug("Response from converter: status=%d", response.status_code)
 
         if response.status_code == 400:
             raise CredentialConverterClientError(
@@ -131,13 +143,13 @@ class HttpCredentialConverterAdapter:
         }
 
     def _decode_response(self, response: HttpResponse) -> dict[str, object]:
-        """Decode the converter response and strip ``@context`` from the credential.
+        """Decode the converter response.
 
         Args:
             response: The HTTP response from the converter.
 
         Returns:
-            The converted ELM/EDC credential as a dict (without ``@context``).
+            The converted ELM/EDC credential as a dict.
 
         Raises:
             CredentialConverterClientError: If response is malformed.
@@ -159,14 +171,20 @@ class HttpCredentialConverterAdapter:
                 "Converter response missing 'content' field"
             )
 
+        content = data["content"]
+        if not isinstance(content, str):
+            raise CredentialConverterClientError(
+                "Converter response 'content' field is not a string"
+            )
+
         try:
-            raw = base64.b64decode(data["content"])
+            raw = base64.b64decode(content)
             credential = msgspec_json.decode(raw, type=dict[str, object])
-        except (binascii.Error, msgspec.DecodeError, TypeError) as exc:
+        except (binascii.Error, msgspec.DecodeError) as exc:
             raise CredentialConverterClientError(
                 f"Failed to decode converter response: {exc}"
             ) from exc
 
-        if "@context" in credential:
-            del credential["@context"]
+        log.debug("Decoded response credential:")
+        log.debug("  %s", json.dumps(credential, indent=2))
         return credential

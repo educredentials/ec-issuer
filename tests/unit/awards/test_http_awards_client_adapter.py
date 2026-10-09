@@ -21,36 +21,40 @@ from src.lib.http_client import HttpClient
 from ..support.requests_doubles import MockResponse, RequestsSpy
 
 _BADGR_AWARD_JSON = (
-    b'{"id":32,"entity_id":"http://example.com/'
-    b'awards/3527","name":"Teamwork Badge",'
+    b'{"id":"https://DOMAIN/assertions/3527","name":"Teamwork Badge",'
     b'"issued_on":"2010-01-01T00:00:00Z",'
     b'"badgr":null,"revoked":false,"public":true,'
     b'"grade_achieved":null,"expires_at":null,'
-    b'"badgeclass":{"id":18,"name":"Teamwork Badge",'
-    b'"entity_id":"http://example.com/'
-    b'badgeclasses/21",'
+    b'"badgeclass":{"id":"https://DOMAIN/badges/21","name":"Teamwork Badge",'
     b'"description":"Demonstrates the ability to work effectively",'
     b'"criteria_text":"Successfully complete the teamwork project",'
     b'"issuer":{'
+    b'"id":"https://DOMAIN/issuers/1",'
     b'"name_dutch":null,"name_english":null,'
     b'"faculty":null}}}'
 )
 
+_BADGR_AWARD_JSON_WITHOUT_ID = (
+    b'{"name":"Teamwork Badge",'
+    b'"issued_on":"2010-01-01T00:00:00Z",'
+    b'"badgeclass":{"name":"Teamwork Badge"}}'
+)
+
 _EXPECTED_BADGR_AWARD = OB3Award(
-    id="http://example.com/awards/3527",
+    id="https://DOMAIN/assertions/3527",
     type=["VerifiableCredential", "AchievementCredential"],
     name="Teamwork Badge",
     issuer=Issuer(
-        id="",
+        id="https://DOMAIN/issuers/1",
         type=["Profile"],
         name="Teamwork Badge",
     ),
     validFrom="2010-01-01T00:00:00Z",
     credentialSubject=AchievementSubject(
-        id="http://example.com/awards/3527",
+        id="https://DOMAIN/assertions/3527",
         type=["AchievementSubject"],
         achievement=Achievement(
-            id="http://example.com/awards/3527",
+            id="https://DOMAIN/assertions/3527",
             type=["Achievement"],
             criteria=Criteria(
                 narrative="Successfully complete the teamwork project",
@@ -169,4 +173,16 @@ class TestHttpAwardsClientAdapter:
             MockResponse(status_code=200, _content=b"not valid json")
         )
         with pytest.raises(AwardsClientError):
+            _ = subject.get_ob3("award-123", "fake_token")
+
+    def test_get_ob3_raises_awards_client_error_when_id_missing(
+        self,
+        http_client: RequestsSpy,
+        subject: HttpAwardsClientAdapter,
+    ) -> None:
+        """get_ob3() raises AwardsClientError when the response lacks an ``id``."""
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_BADGR_AWARD_JSON_WITHOUT_ID)
+        )
+        with pytest.raises(AwardsClientError, match="missing 'id'"):
             _ = subject.get_ob3("award-123", "fake_token")

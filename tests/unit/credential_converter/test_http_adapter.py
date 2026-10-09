@@ -113,12 +113,12 @@ class TestHttpCredentialConverterAdapterSuccess:
 
         assert result == response_credential
 
-    def test_strips_context_from_response(
+    def test_preserves_context_from_response(
         self,
         http_spy: RequestsSpy,
         subject: HttpCredentialConverterAdapter,
     ) -> None:
-        """convert() removes ``@context`` from the decoded credential."""
+        """convert() preserves ``@context`` from the decoded credential."""
         response_credential = {
             "@context": ["https://www.w3.org/ns/credentials/v2"],
             "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
@@ -128,7 +128,7 @@ class TestHttpCredentialConverterAdapterSuccess:
 
         result = subject.convert(asdict(_SAMPLE_OB3_AWARD))
 
-        assert "@context" not in result
+        assert result["@context"] == ["https://www.w3.org/ns/credentials/v2"]
         cred_type = cast(list[object], result["type"])
         assert cred_type == ["VerifiableCredential",
                              "EuropeanDigitalCredential"]
@@ -243,6 +243,24 @@ class TestHttpCredentialConverterAdapterMalformed:
 
         with pytest.raises(
             CredentialConverterClientError, match="Invalid JSON"
+        ):
+            _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
+
+    def test_non_string_content_raises_client_error(
+        self,
+        http_spy: RequestsSpy,
+        subject: HttpCredentialConverterAdapter,
+    ) -> None:
+        """convert() raises when the content field is not a string."""
+        http_spy.set_response(
+            MockResponse(
+                status_code=200,
+                _content=json.dumps({"content": 42}).encode(),
+            )
+        )
+
+        with pytest.raises(
+            CredentialConverterClientError, match="not a string"
         ):
             _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
 
