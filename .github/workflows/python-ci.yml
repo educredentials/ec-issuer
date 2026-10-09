@@ -88,9 +88,8 @@ jobs:
       - name: Run integration tests
         env:
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: >-
-            postgresql://ecissuer:ecissuer@
-            localhost:5432/ecissuer
+          POSTGRES_CONNECTION_STRING: >
+            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
         run: uv run pytest tests/integration/ -v
 
       - name: Start ec-issuer service
@@ -100,14 +99,12 @@ jobs:
           export SERVER_PORT=8000
           export SSI_AGENT_URL=http://localhost:8001
           export DEBUG_METRICS=1
-          export POSTGRES_CONNECTION_STRING= >-
-            postgresql://ecissuer:ecissuer@
+          export POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@ \
             localhost:5432/ecissuer
           export AWARDS_SERVICE_URL=http://localhost:8003
           export CREDENTIAL_CONVERTER_URL=http://localhost:8004
-          export ALLOWED_CORS_DOMAINS= >-
-            http://localhost:8000,
-            http://localhost:3000
+          export ALLOWED_CORS_DOMAINS="http://localhost:8000,\
+            http://localhost:3000"
           export CREDENTIAL_TEMPLATE_ID=openbadge_credential
           nohup uv run ec-issuer-web \
             > /tmp/ec-issuer.log 2>&1 &
@@ -132,13 +129,11 @@ jobs:
           SERVER_PORT: 8000
           EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: >-
-            postgresql://ecissuer:ecissuer@
-            localhost:5432/ecissuer
+          POSTGRES_CONNECTION_STRING: >
+            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
           AWARDS_SERVICE_URL: http://localhost:8003
           CREDENTIAL_CONVERTER_URL: http://localhost:8004
-          ALLOWED_CORS_DOMAINS: >-
-            http://localhost:8000,
+          ALLOWED_CORS_DOMAINS: http://localhost:8000, \
             http://localhost:3000
           CREDENTIAL_TEMPLATE_ID: openbadge_credential
         run: uv run pytest tests/e2e/ -v
