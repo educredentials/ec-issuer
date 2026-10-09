@@ -3,27 +3,96 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
 import msgspec
+
+
+class AwardMappingError(Exception):
+    """Raised when a Badgr award response cannot be mapped to an OB3 award."""
+
+
+class _BadgrFaculty(msgspec.Struct):
+    """DTO for faculty within issuer."""
+
+    entity_id: str | None = msgspec.field(name="id", default=None)
+    name_dutch: str | None = None
+    name_english: str | None = None
+    image_dutch: str | None = None
+    image_english: str | None = None
+    on_behalf_of: str | bool | None = None
+    on_behalf_of_display_name: str | None = None
+    on_behalf_of_url: str | None = None
+    institution: _BadgrInstitution | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> _BadgrFaculty:
+        """Deserialize a dict to this DTO.
+
+        Uses msgspec.field(name="id") so the JSON key ``id`` maps to the Python
+        attribute ``entity_id`` without any pre-processing.
+        """
+        return msgspec.convert(data, type=cls)
+
+
+class _BadgrInstitution(msgspec.Struct):
+    """DTO for institution within faculty."""
+
+    entity_id: str | None = msgspec.field(name="id", default=None)
+    name_dutch: str | None = None
+    name_english: str | None = None
+    image_dutch: str | None = None
+    image_english: str | None = None
+    identifier: str | None = None
+    alternative_identifier: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> _BadgrInstitution:
+        """Deserialize a dict to this DTO.
+
+        Uses msgspec.field(name="id") so the JSON key ``id`` maps to the Python
+        attribute ``entity_id`` without any pre-processing.
+        """
+        return msgspec.convert(data, type=cls)
 
 
 class _BadgrIssuer(msgspec.Struct):
     """DTO for Badgr issuer within badgeclass."""
 
+    entity_id: str | None = msgspec.field(name="id", default=None)
     name_dutch: str | None = None
     name_english: str | None = None
-    faculty: object | None = None
-    entity_id: str | None = None
+    faculty: _BadgrFaculty | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> _BadgrIssuer:
+        """Deserialize a dict to this DTO.
+
+        Uses msgspec.field(name="id") so the JSON key ``id`` maps to the Python
+        attribute ``entity_id`` without any pre-processing.  Nested dicts (e.g.
+        ``faculty``) are converted automatically by msgspec.
+        """
+        return msgspec.convert(data, type=cls)
 
 
 class _BadgrBadgeclass(msgspec.Struct):
     """DTO for Badgr badgeclass."""
 
-    id: int
     name: str
-    entity_id: str | None = None
+    entity_id: str | None = msgspec.field(name="id", default=None)
     description: str | None = None
     criteria_text: str | None = None
+    image: str | None = msgspec.field(name="image", default=None)
     issuer: _BadgrIssuer | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> _BadgrBadgeclass:
+        """Deserialize a dict to this DTO.
+
+        Uses msgspec.field(name="id") so the JSON key ``id`` maps to the Python
+        attribute ``entity_id`` without any pre-processing.  Nested dicts (e.g.
+        ``issuer``) are converted automatically by msgspec.
+        """
+        return msgspec.convert(data, type=cls)
 
 
 class _BadgrAwardResponse(msgspec.Struct):
@@ -34,15 +103,24 @@ class _BadgrAwardResponse(msgspec.Struct):
     field, so new Badgr fields never break decoding.
     """
 
-    id: int
-    entity_id: str | None = None
+    entity_id: str | None = msgspec.field(name="id", default=None)
     name: str | None = None
     issued_on: str | None = None
+    image: str | None = msgspec.field(name="image", default=None)
     badgeclass: _BadgrBadgeclass | None = None
+    # Person/learner fields (populated when the awards service returns them).
+    given_name: str | None = None
+    family_name: str | None = None
+    email: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> "_BadgrAwardResponse":
+    def from_dict(cls, data: dict[str, object]) -> _BadgrAwardResponse:
         """Deserialize a dict to this DTO.
+
+        Uses msgspec.field(name="id") so the JSON key ``id`` maps to the Python
+        attribute ``entity_id`` without any pre-processing.  Nested dicts (e.g.
+        ``badgeclass``, ``issuer``, ``faculty``) are converted automatically by
+        msgspec.
 
         Args:
             data: Raw dict from the Badgr API.
@@ -53,39 +131,48 @@ class _BadgrAwardResponse(msgspec.Struct):
         return msgspec.convert(data, type=cls)
 
 
-def _to_ob3_award(dto: "_BadgrAwardResponse") -> Award:
+def _to_ob3_award(
+    dto: _BadgrAwardResponse,
+    base_url: str | None = None,
+) -> OB3Award:
     """Convert a BadgrAwardResponse DTO to an OB3 Award domain model.
 
     Args:
         dto: The deserialized Badgr award response.
+        base_url: Optional base URL to resolve relative image paths to absolute
+            URLs.
 
     Returns:
         A fully-structured OB3 Award.
     """
-    entity_id = _resolve_entity_id(dto)
+    credential_id = _resolve_credential_id(dto)
     badge_name = _resolve_badge_name(dto)
     issuer = _resolve_issuer(dto)
     valid_from = _resolve_valid_from(dto)
     achievement_data = _resolve_achievement_data(dto)
+    identifiers = _resolve_identifiers(dto)
+    image = _resolve_image(dto, base_url)
 
-    return Award(
-        id=entity_id,
+    return OB3Award(
+        id=credential_id,
         type=["VerifiableCredential", "AchievementCredential"],
         name=badge_name,
         issuer=issuer,
         validFrom=valid_from,
         credentialSubject=AchievementSubject(
-            id=entity_id,
+            id=credential_id,
             type=["AchievementSubject"],
             achievement=Achievement(
-                id=entity_id,
+                id=credential_id,
                 type=["Achievement"],
                 criteria=Criteria(
                     narrative=achievement_data["criteria_text"],
                 ),
                 description=achievement_data["description"],
                 name=badge_name,
+                image=image,
             ),
+            identifiers=identifiers,
         ),
     )
 
@@ -93,18 +180,23 @@ def _to_ob3_award(dto: "_BadgrAwardResponse") -> Award:
 def _resolve_issuer(dto: _BadgrAwardResponse) -> Issuer:
     """Resolve the issuer from the DTO.
 
-    Uses badgeclass.issuer.entity_id as the issuer id if available.
-    Falls back to empty string.
+    Prefers badgeclass.issuer.entity_id (the id URI) and
+    badgeclass.issuer.name_english (the issuer display name), falling back
+    to badgeclass.name, then to empty string when absent.
     """
     badgeclass = dto.badgeclass
+    issuer_name = ""
     if badgeclass is not None and badgeclass.issuer is not None:
-        issuer_entity_id = badgeclass.issuer.entity_id or ""
+        issuer_id = badgeclass.issuer.entity_id or ""
+        issuer_name = badgeclass.issuer.name_english or ""
     else:
-        issuer_entity_id = ""
+        issuer_id = ""
+    if not issuer_name and badgeclass is not None:
+        issuer_name = badgeclass.name or ""
     return Issuer(
-        id=issuer_entity_id,
+        id=issuer_id,
         type=["Profile"],
-        name=_resolve_badge_name(dto),
+        name=issuer_name,
     )
 
 
@@ -125,11 +217,18 @@ def _resolve_achievement_data(dto: _BadgrAwardResponse) -> dict[str, str]:
     return {"criteria_text": criteria_text, "description": description}
 
 
-def _resolve_entity_id(dto: _BadgrAwardResponse) -> str:
-    """Resolve the entity ID, falling back to str(id) if not set."""
+def _resolve_credential_id(dto: _BadgrAwardResponse) -> str:
+    """Resolve the credential ID from the ``id`` field.
+
+    Returns:
+        The URI from the source system.
+
+    Raises:
+        AwardMappingError: When the response has no ``id``.
+    """
     if dto.entity_id:
         return dto.entity_id
-    return str(dto.id)
+    raise AwardMappingError("Badgr award response is missing 'id'")
 
 
 def _resolve_badge_name(dto: _BadgrAwardResponse) -> str:
@@ -148,17 +247,87 @@ def _resolve_valid_from(dto: _BadgrAwardResponse) -> str:
     return ""
 
 
-def award_from_badgr_api_response(raw: dict[str, object]) -> Award:
+def _resolve_image(
+    dto: _BadgrAwardResponse,
+    base_url: str | None = None,
+) -> dict[str, str] | None:
+    """Resolve the image from the badgeclass.
+
+    When a ``base_url`` is provided and the image path is relative, it is
+    resolved to an absolute URL.
+
+    Args:
+        dto: The deserialized Badgr award response.
+        base_url: Optional base URL to resolve relative image paths.
+
+    Returns:
+        Image dict with ``id`` and ``type`` keys, or None.
+    """
+    raw_image = None
+    if dto.badgeclass is not None and dto.badgeclass.image:
+        raw_image = dto.badgeclass.image
+
+    if raw_image is None:
+        return None
+
+    image_id = raw_image
+    # Resolve relative paths to absolute URLs using the base URL.
+    if base_url is not None and not raw_image.startswith(("http://", "https://")):
+        image_id = f"{base_url.rstrip('/')}{raw_image}"
+
+    return {"id": image_id, "type": "Image"}
+
+
+def _resolve_identifiers(dto: _BadgrAwardResponse) -> list[IdentityObject]:
+    """Build an identifier list from recipient data in the DTO.
+
+    Collects plain-text identifiers for email and name when present.
+    """
+    identifiers: list[IdentityObject] = []
+    if dto.email:
+        identifiers.append(
+            IdentityObject(
+                type=["IdentityObject"],
+                identityHash=dto.email,
+                identityType="emailAddress",
+                hashed=False
+            )
+        )
+    name = _resolve_name(dto)
+    if name:
+        identifiers.append(
+            IdentityObject(
+                type=["IdentityObject"],
+                identityHash=name,
+                identityType="name",
+                hashed=False,
+            )
+        )
+    return identifiers
+
+
+def _resolve_name(dto: _BadgrAwardResponse) -> str:
+    """Resolve the recipient full name from given_name + family_name."""
+    parts = [p for p in (dto.given_name, dto.family_name) if p]
+    return " ".join(parts)
+
+
+def ob3_award_from_badgr_api_response(
+    raw: dict[str, object],
+    base_url: str | None = None,
+) -> OB3Award:
     """Convert a Badgr API response to an OB3 Award domain model.
 
     Args:
         raw: The parsed JSON response from the Badgr awards API.
+        base_url: Optional base URL to resolve relative image paths to absolute
+            URLs. Required when the image field contains a relative path.
 
     Returns:
-        A fully-structured Award.
+        A fully-structured OB3 Award.
     """
     dto = _BadgrAwardResponse.from_dict(raw)
-    return _to_ob3_award(dto)
+    return _to_ob3_award(dto, base_url)
 
 
 @dataclass
@@ -177,6 +346,7 @@ class Achievement:
     criteria: Criteria
     description: str
     name: str
+    image: dict[str, str] | None = None
 
 
 @dataclass
@@ -186,6 +356,7 @@ class AchievementSubject:
     id: str
     type: list[str]
     achievement: Achievement
+    identifiers: list[IdentityObject] = field(default_factory=list)
 
 
 @dataclass
@@ -195,6 +366,16 @@ class Issuer:
     id: str
     type: list[str]
     name: str
+
+
+@dataclass
+class IdentityObject:
+    """An identifier for the recipient of an achievement (OB3 spec)."""
+
+    type: list[str]
+    identityHash: str
+    identityType: str
+    hashed: bool
 
 
 def _ob3_default_schema() -> list[dict[str, str]]:
@@ -208,8 +389,8 @@ def _ob3_default_schema() -> list[dict[str, str]]:
 
 
 @dataclass
-class Award:
-    """Minimal OB3 AchievementCredential (unsigned)."""
+class OB3Award:
+    """Open Badges 3.0 AchievementCredential (unsigned)."""
 
     id: str
     type: list[str]

@@ -6,9 +6,13 @@ delegating to the service to find or create it on the SSI Agent.
 """
 
 import os
+from pathlib import Path
 
 import msgspec
 
+from src.credential_configurations import (
+    ssi_agent_credential_configurations_client_adapter as ssi_cred_client,
+)
 from src.credential_configurations.credential_configurations_client_port import (
     CredentialTemplateClientError,
 )
@@ -16,9 +20,6 @@ from src.credential_configurations.credential_configurations_service import (
     CredentialTemplateService,
 )
 from src.credential_configurations.models import CredentialTemplate
-from src.credential_configurations import (
-    ssi_agent_credential_configurations_client_adapter as ssi_cred_client,
-)
 
 
 def resolve_credential_template_id() -> str:
@@ -52,6 +53,111 @@ def resolve_credential_template_id() -> str:
     )
 
 
+def resolve_credential_template_ids() -> list[str]:
+    """Resolve credential template IDs from a directory of JSON files.
+
+    Reads all .json files from the directory specified by
+    CREDENTIAL_TEMPLATE_JSON_DIR, registers each template with the
+    SSI Agent, and returns the list of resolved IDs.
+
+    Falls back to CREDENTIAL_TEMPLATE_JSON_FILE (single file) if no
+    directory is configured, returning a single-element list.
+
+    Returns:
+        A list of resolved credential template IDs (one per JSON file).
+
+    Raises:
+        RuntimeError: If the directory is missing/empty, no templates
+            could be resolved, or the SSI Agent is unreachable.
+    """
+    json_dir = os.environ.get("CREDENTIAL_TEMPLATE_JSON_DIR", "").strip()
+    if json_dir:
+        return load_from_directory(json_dir)
+
+    # Fallback to single-file mode, return as single-element list
+    return [resolve_credential_template_id()]
+
+
+def load_from_directory(json_dir: str) -> list[str]:
+    """Load all .json credential templates from a directory.
+
+    Args:
+        json_dir: Path to the directory containing .json template files.
+
+    Returns:
+        A list of resolved credential template IDs.
+
+    Raises:
+        RuntimeError: If the directory is missing, empty, contains
+            invalid templates, or the SSI Agent is unreachable.
+    """
+    dir_path = Path(json_dir)
+
+    if not dir_path.is_dir():
+        raise RuntimeError(f"Credential template directory not found: {json_dir}")
+
+    json_files = sorted(
+        f for f in dir_path.iterdir() if f.suffix == ".json" and f.is_file()
+    )
+
+    if not json_files:
+        raise RuntimeError(
+            f"No .json files found in credential template directory: {json_dir}"
+        )
+
+    ssi_agent_url = os.environ.get("SSI_AGENT_URL", "")
+    client = ssi_cred_client.SsiAgentCredentialTemplateClientAdapter(
+        ssi_agent_url=ssi_agent_url,
+    )
+    service = CredentialTemplateService(client=client)
+
+    template_ids: list[str] = []
+
+    for json_file in json_files:
+        try:
+            json_str = json_file.read_text(encoding="utf-8")
+        except Exception as exc:
+            raise RuntimeError(
+                f"Could not read credential template file: {json_file}"
+            ) from exc
+
+        try:
+            template: CredentialTemplate = msgspec.json.decode(
+                json_str, type=CredentialTemplate
+            )
+        except msgspec.DecodeError as exc:
+            raise RuntimeError(
+                f"Invalid JSON in credential template file {json_file}: {exc}"
+            ) from exc
+
+        if not template.title or not template.title.strip():
+            raise RuntimeError(
+                "Credential template JSON is missing a non-empty 'title' field "
+                + f"(file: {json_file})."
+            )
+
+        try:
+            created = service.ensure_by_title(template, ssi_agent_url=ssi_agent_url)
+        except RuntimeError as exc:
+            if "Failed to reach SSI Agent" in str(exc):
+                raise
+            raise
+        except CredentialTemplateClientError as exc:
+            raise RuntimeError(
+                f"Failed to reach SSI Agent {ssi_agent_url}: {exc}"
+            ) from exc
+
+        if not created.id:
+            raise RuntimeError(
+                "SSI Agent returned a credential template with no ID "
+                + f"(file: {json_file}). This indicates an upstream issue."
+            )
+
+        template_ids.append(created.id)
+
+    return template_ids
+
+
 def load_from_json(json_file: str) -> str:
     """Parse credential template JSON and ensure it exists on SSI Agent.
 
@@ -68,9 +174,7 @@ def load_from_json(json_file: str) -> str:
     try:
         json_str = open(json_file).read()  # noqa: SIM115
     except Exception as exc:
-        raise RuntimeError(
-            f"Credential template file not found: {json_file}"
-        ) from exc
+        raise RuntimeError(f"Credential template file not found: {json_file}") from exc
 
     try:
         template: CredentialTemplate = msgspec.json.decode(
@@ -94,17 +198,13 @@ def load_from_json(json_file: str) -> str:
     service = CredentialTemplateService(client=client)
 
     try:
-        created = service.ensure_by_title(
-            template, ssi_agent_url=ssi_agent_url
-        )
+        created = service.ensure_by_title(template, ssi_agent_url=ssi_agent_url)
     except RuntimeError as exc:
         if "Failed to reach SSI Agent" in str(exc):
             raise
         raise
     except CredentialTemplateClientError as exc:
-        raise RuntimeError(
-            f"Failed to reach SSI Agent {ssi_agent_url}: {exc}"
-        ) from exc
+        raise RuntimeError(f"Failed to reach SSI Agent {ssi_agent_url}: {exc}") from exc
 
     if not created.id:
         raise RuntimeError(

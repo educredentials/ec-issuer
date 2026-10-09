@@ -24,6 +24,7 @@ class TestEnvConfigRepo:
             "SERVER_HOST": "localhost",
             "SERVER_PORT": "8080",
             "SSI_AGENT_URL": "http://ssi-agent.example.com",
+            "CREDENTIAL_CONVERTER_URL": "http://converter.example.com",
             "POSTGRES_CONNECTION_STRING": "postgresql://test:test@localhost:5432/test",
             "AWARDS_SERVICE_URL": "http://awards.example.com",
             "ALLOWED_CORS_DOMAINS": "https://example.com,http://localhost:8000",
@@ -61,6 +62,7 @@ class TestEnvConfigRepo:
         monkeypatch.setenv("SERVER_HOST", "localhost")
         monkeypatch.setenv("SERVER_PORT", "8080")
         monkeypatch.setenv("SSI_AGENT_URL", "http://ssi-agent.example.com")
+        monkeypatch.setenv("CREDENTIAL_CONVERTER_URL", "http://converter.example.com")
         monkeypatch.setenv(
             "POSTGRES_CONNECTION_STRING",
             "postgresql://test:test@localhost:5432/test",

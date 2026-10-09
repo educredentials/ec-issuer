@@ -1,17 +1,20 @@
 """HTTP REST API adapter"""
 
-import json
 from dataclasses import dataclass
-from typing import override
+from typing import Literal, cast, override
 
-from flask import Flask, Request, request
+from flask import Flask, Request, jsonify, request
 from flask_cors import CORS
 from prometheus_flask_exporter import (  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
     PrometheusMetrics,
 )
 
 from src.config.config_port import ConfigRepoPort
-from src.offers.offer_service import OfferService, PermissionDeniedError
+from src.offers.offer_service import (
+    OfferService,
+    PermissionDeniedError,
+    UnknownCredentialTypeError,
+)
 
 from .api_port import ApiPort
 
@@ -25,6 +28,7 @@ class CreateOfferBody:
     """Parsed request body for the create offer endpoint."""
 
     award_id: str
+    credential_type: Literal["ob3", "edc"] = "ob3"
 
 
 @dataclass
@@ -99,20 +103,28 @@ class HttpApiAdapter(ApiPort):
             try:
                 bearer_token = self._bearer_token(request)
             except MissingTokenError:
-                return json.dumps({"error": "Unauthorized"}), 401
+                return jsonify({"error": "Unauthorized"}), 401
 
-            raw: dict[str, str] = request.get_json(silent=True) or {}
-            body = CreateOfferBody(award_id=raw.get("award_id", ""))
+            _raw = request.get_json(silent=True) or {}
+            body = CreateOfferBody(
+                award_id=cast(str, _raw.get("award_id", "")),
+                credential_type=cast(
+                    Literal["ob3", "edc"], _raw.get("credential_type", "ob3")
+                ),
+            )
 
             try:
                 offer = self.offer_service.create_offer(
                     award_id=body.award_id,
                     bearer_token=bearer_token,
+                    credential_type=body.credential_type,
                 )
             except PermissionDeniedError:
-                return json.dumps({"error": "Forbidden"}), 403
+                return jsonify({"error": "Forbidden"}), 403
+            except UnknownCredentialTypeError as exc:
+                return jsonify({"error": str(exc)}), 400
 
-            return json.dumps({"offer_id": offer.offer_id, "uri": offer.uri}), 201
+            return jsonify({"offer_id": offer.offer_id, "uri": offer.uri}), 201
 
         return app
 
