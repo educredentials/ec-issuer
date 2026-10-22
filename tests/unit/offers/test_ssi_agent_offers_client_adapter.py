@@ -61,6 +61,29 @@ def valid_offer_response() -> MockResponse:
     return MockResponse(status_code=200, _content=_VALID_OFFER_RESPONSE_JSON)
 
 
+_SAMPLE_CREDENTIAL_CONTEXT = [
+    "https://purl.imsglobal.org/spec/openbadge/contexts/context.json",
+]
+
+_SAMPLE_ELM_CREDENTIAL_WITH_CTX: dict[str, object] = {
+    "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "http://data.europa.eu/snb/model/context/edc-ap",
+    ],
+    "credential_context": [
+        "http://data.europa.eu/snb/model/context/edc-ap",
+    ],
+    "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
+    "credentialSubject": {
+        "id": "did:example:subject",
+        "type": "Person",
+        "givenName": {"en": ["Jan"]},
+        "familyName": {"en": ["Jansen"]},
+        "hasClaim": [{"title": {"en": ["Badge"]}}],
+    },
+}
+
+
 @pytest.fixture
 def sample_award() -> OB3Award:
     """Provide a minimal OB3Award for create_ob3() calls."""
@@ -89,6 +112,7 @@ def sample_award() -> OB3Award:
                 name="Teamwork",
             ),
         ),
+        credential_context=_SAMPLE_CREDENTIAL_CONTEXT,
     )
 
 
@@ -264,6 +288,9 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             "https://www.w3.org/ns/credentials/v2",
             "http://data.europa.eu/snb/model/context/edc-ap",
         ],
+        "credential_context": [
+            "http://data.europa.eu/snb/model/context/edc-ap",
+        ],
         "type": ["VerifiableCredential", "EuropeanDigitalCredential"],
         "credentialSubject": {
             "id": "did:example:subject",
@@ -388,7 +415,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         assert "credentialSubject" in credential
 
     def test_create_ob3_uses_ob3_contexts(self, http_client: RequestsSpy):
-        """create_ob3() sets @context with OB3-specific hardcoded URLs."""
+        """create_ob3() sets @context with OB3 hardcoded + credential_context."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
             credential_template_ids=["ob3_config"],
@@ -419,6 +446,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
                     name="Teamwork",
                 ),
             ),
+            credential_context=_SAMPLE_CREDENTIAL_CONTEXT,
         )
         _ = adapter.create_ob3("offer-123", _award)
         credential_call = http_client.calls[0]
@@ -427,14 +455,15 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         credential = cast(dict[str, object], json_dict["credential"])
         expected_contexts = [
             "https://www.w3.org/ns/credentials/v2",
-            "http://agent.example.com/ob/v3p0/context-3.0.3.json",
-            "http://agent.example.com/ob/v3p0/extensions.json",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+            "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+            "https://purl.imsglobal.org/spec/openbadge/contexts/context.json",
         ]
         assert credential["@context"] == expected_contexts
         assert "credential_context" not in credential
 
     def test_create_edc_uses_edc_contexts(self, http_client: RequestsSpy):
-        """create_edc() replaces @context with EDC-specific hardcoded URLs."""
+        """create_edc() chains hardcoded + credential_context @context."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
             credential_template_ids=["ob3_config", "edc_config"],
@@ -453,5 +482,6 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         expected_contexts = [
             "https://www.w3.org/2018/credentials/v1",
             "https://www.w3.org/ns/credentials/v2",
+            "http://data.europa.eu/snb/model/context/edc-ap",
         ]
         assert credential_sent["@context"] == expected_contexts
