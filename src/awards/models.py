@@ -2,13 +2,37 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import logging
+import os
+from dataclasses import asdict, dataclass, field
+from enum import StrEnum
+from typing import cast
 
 import msgspec
+
+log = logging.getLogger(__name__)
 
 
 class AwardMappingError(Exception):
     """Raised when a Badgr award response cannot be mapped to an OB3 award."""
+
+
+class AssessmentType(StrEnum):
+    """Assessment type per Open Badges AssessmentTypeExtension."""
+
+    TESTING = "testing"
+    APPLICATION_OF_SKILL = "applicationOfSkill"
+    PORTFOLIO = "portfolio"
+    RECOGNITION_OF_PRIOR_LEARNING = "recognitionOfPriorLearning"
+    PERSONALIZED_ASSESSMENT = "personalizedAssessment"
+    BY_CHOICE_OF_PARTICIPANT = "byChoiceOfParticipant"
+
+    # Allow arbitrary values from the awards service.
+    @classmethod
+    def _missing_(cls, value: object) -> "AssessmentType | None":  # pyright: ignore[reportImplicitOverride]
+        if isinstance(value, str):
+            return cls(value)
+        return None
 
 
 class _BadgrFaculty(msgspec.Struct):
@@ -74,6 +98,17 @@ class _BadgrIssuer(msgspec.Struct):
         return msgspec.convert(data, type=cls)
 
 
+class _BadgrCriteria(msgspec.Struct):
+    """DTO for the ``criteria`` object inside ``badgeclass``."""
+
+    narrative: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> _BadgrCriteria:
+        """Deserialize a dict to this DTO."""
+        return msgspec.convert(data, type=cls)
+
+
 class _BadgrBadgeclass(msgspec.Struct):
     """DTO for Badgr badgeclass."""
 
@@ -82,7 +117,15 @@ class _BadgrBadgeclass(msgspec.Struct):
     description: str | None = None
     criteria_text: str | None = None
     image: str | None = msgspec.field(name="image", default=None)
+    criteria: _BadgrCriteria | None = None
     issuer: _BadgrIssuer | None = None
+    # Flat extension fields (top-level on badgeclass).
+    participation: str | None = None
+    assessment_type: str | None = None
+    assessment_id_verified: bool | None = None
+    assessment_supervised: bool | None = None
+    # Array of extension objects from the awards service.
+    extensions: list[dict[str, object]] | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrBadgeclass:
@@ -112,6 +155,27 @@ class _BadgrAwardResponse(msgspec.Struct):
     given_name: str | None = None
     family_name: str | None = None
     email: str | None = None
+    # Extended fields from the awards service.
+    expires_at: str | None = msgspec.field(name="expires_at", default=None)
+    language: str | None = msgspec.field(name="language", default=None)
+    ects: float | None = msgspec.field(name="ects", default=None)
+    eqf: int | None = msgspec.field(name="eqf", default=None)
+    participation: str | None = msgspec.field(name="participation", default=None)
+    assessment_type: str | None = msgspec.field(
+        name="assessment_type", default=None
+    )
+    assessment_id_verified: bool | None = msgspec.field(
+        name="assessment_id_verified", default=None
+    )
+    assessment_supervised: bool | None = msgspec.field(
+        name="assessment_supervised", default=None
+    )
+    learning_outcome: list[dict[str, str]] | None = msgspec.field(
+        name="learning_outcome", default=None
+    )
+    education_program_identifier: list[str] | None = msgspec.field(
+        name="education_program_identifier", default=None
+    )
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrAwardResponse:
@@ -129,6 +193,85 @@ class _BadgrAwardResponse(msgspec.Struct):
             A fully-typed _BadgrAwardResponse DTO.
         """
         return msgspec.convert(data, type=cls)
+
+
+class _BadgeclassExtensions(msgspec.Struct):
+    """Typed extension values extracted from ``badgeclass.extensions``."""
+
+    language: str | None = None
+    ects: float | None = None
+    eqf: int | None = None
+    learning_outcome: list[dict[str, str]] | None = None
+    education_program_identifier: list[str] | None = None
+
+
+_EXT_MAP: dict[str, str] = {
+    "extensions:LanguageExtension": "language",
+    "extensions:ECTSExtension": "ects",
+    "extensions:EQFExtension": "eqf",
+    "extensions:LearningOutcomeExtension": "learning_outcome",
+    "extensions:EducationProgramIdentifierExtension": "education_program_identifier",
+}
+
+# Maps snake_case field names to the actual keys in originalJson (camelCase).
+_ORIGINAL_JSON_KEY_MAP: dict[str, str] = {
+    "language": "Language",
+    "ects": "ECTS",
+    "eqf": "EQF",
+    "learning_outcome": "learningOutcomes",
+    "education_program_identifier": "EducationProgramIdentifier",
+}
+
+
+def _extract_extension_values(
+    badgeclass: _BadgrBadgeclass | None,
+) -> _BadgeclassExtensions:
+    """Extract extension values from ``badgeclass.extensions``.
+
+    The awards service embeds extension data inside ``extensions`` entries
+    whose ``originalJson`` contains keys like ``Language``, ``ECTS``, ``EQF``,
+    ``learningOutcomes`` and ``EducationProgramIdentifier``.
+    """
+    if badgeclass is None or badgeclass.extensions is None:
+        log.debug("_extract_extension_values: badgeclass is None or has no extensions")
+        return _BadgeclassExtensions()
+
+    vals: dict[str, object] = {}
+    for ext in badgeclass.extensions:
+        ext_name = str(ext.get("name", ""))
+        original = ext.get("originalJson", {})
+        log.debug(
+            "_extract_extension_values: ext_name=%s, original=%s",
+            ext_name,
+            original,
+        )
+        if not isinstance(original, dict):
+            continue
+        if ext_name not in _EXT_MAP:
+            continue
+        field_name = _EXT_MAP[ext_name]
+        json_key = _ORIGINAL_JSON_KEY_MAP.get(field_name, field_name)
+        vals[field_name] = original.get(json_key)
+
+    _lang = vals.get("language")
+    _ects = vals.get("ects")
+    _eqf = vals.get("eqf")
+    _lo = vals.get("learning_outcome")
+    _epi = vals.get("education_program_identifier")
+    log.debug(
+        "_extract_extension_values: extracted vals=%s",
+        vals,
+    )
+
+    return _BadgeclassExtensions(
+        language=str(_lang) if _lang is not None else None,
+        ects=float(_ects) if isinstance(_ects, (int, float)) else None,
+        eqf=int(_eqf) if isinstance(_eqf, int) else None,
+        learning_outcome=_lo if isinstance(_lo, list) else None,
+        education_program_identifier=(
+            [str(v) for v in _epi] if isinstance(_epi, list) else None
+        ),
+    )
 
 
 def _to_ob3_award(
@@ -153,12 +296,50 @@ def _to_ob3_award(
     identifiers = _resolve_identifiers(dto)
     image = _resolve_image(dto, base_url)
 
+    valid_to = dto.expires_at
+    badgeclass = dto.badgeclass
+    ext_vals = _extract_extension_values(badgeclass)
+    credential_context = _credential_context_urls(
+        badgeclass=badgeclass, ext_vals=ext_vals
+    )
+
+    # Extension fields from badgeclass.extensions.originalJson take priority.
+    language = ext_vals.language or dto.language
+    ects = ext_vals.ects or dto.ects
+    eqf = ext_vals.eqf or dto.eqf
+    learning_outcome = ext_vals.learning_outcome or dto.learning_outcome
+    education_program_identifier = (
+        ext_vals.education_program_identifier
+        or dto.education_program_identifier
+    )
+
+    # Flat extension fields from badgeclass level.
+    participation = (
+        (badgeclass.participation if badgeclass else None)
+        or dto.participation
+    )
+    assessment_type = (
+        (badgeclass.assessment_type if badgeclass else None)
+        or dto.assessment_type
+    )
+    assessment_id_verified = (
+        badgeclass.assessment_id_verified
+        if badgeclass and badgeclass.assessment_id_verified is not None
+        else dto.assessment_id_verified
+    )
+    assessment_supervised = (
+        badgeclass.assessment_supervised
+        if badgeclass and badgeclass.assessment_supervised is not None
+        else dto.assessment_supervised
+    )
+
     return OB3Award(
         id=credential_id,
         type=["VerifiableCredential", "AchievementCredential"],
         name=badge_name,
         issuer=issuer,
         validFrom=valid_from,
+        validUntil=valid_to,
         credentialSubject=AchievementSubject(
             id=credential_id,
             type=["AchievementSubject"],
@@ -171,10 +352,60 @@ def _to_ob3_award(
                 description=achievement_data["description"],
                 name=badge_name,
                 image=image,
+                language=language,
+                ects=ects,
+                eqf=eqf,
+                learning_outcome=learning_outcome,
+                education_program_identifier=education_program_identifier,
+                participation=participation,
+                assessment_type=assessment_type,
+                assessment_id_verified=assessment_id_verified,
+                assessment_supervised=assessment_supervised,
             ),
             identifiers=identifiers,
         ),
+        credential_context=credential_context,
     )
+
+
+def _credential_context_urls(
+    *,
+    badgeclass: _BadgrBadgeclass | None,
+    ext_vals: _BadgeclassExtensions,
+) -> list[str]:
+    """Return the list of credential context URLs for non-None flat fields.
+
+    The URLs are built from ``EC_ISSUER_URL`` when set, otherwise
+    ``http://localhost:8000``.  Only non-None flat fields contribute a
+    context URL.
+    """
+    base = (
+        os.environ.get("EC_ISSUER_URL")
+        or "http://localhost:8000"
+    ).rstrip("/")
+
+    ext_dir = "/static/extensions"
+    bc = badgeclass if badgeclass else _BadgrBadgeclass(
+        name="", entity_id=None
+    )
+    ext_map: list[tuple[str, object]] = [
+        ("ParticipationFormExtension/context.json", bc.participation),
+        ("AssessmentTypeExtension/context.json", bc.assessment_type),
+        ("LanguageExtension/context.json", ext_vals.language),
+        ("ECTSExtension/context.json", ext_vals.ects),
+        ("EQFExtension/context.json", ext_vals.eqf),
+        ("LearningOutcomeExtension/context.json", ext_vals.learning_outcome),
+        (
+            "EducationProgramIdentifierExtension/context.json",
+            ext_vals.education_program_identifier,
+        ),
+    ]
+
+    return [
+        f"{base}{ext_dir}/{filename}"
+        for filename, field_value in ext_map
+        if field_value is not None
+    ]
 
 
 def _resolve_issuer(dto: _BadgrAwardResponse) -> Issuer:
@@ -210,7 +441,13 @@ def _resolve_achievement_data(dto: _BadgrAwardResponse) -> dict[str, str]:
     criteria_text = ""
     description = ""
     if badgeclass is not None:
-        if badgeclass.criteria_text:
+        # The awards service embeds criteria under badgeclass.criteria.narrative.
+        if (
+            badgeclass.criteria is not None
+            and badgeclass.criteria.narrative
+        ):
+            criteria_text = badgeclass.criteria.narrative
+        elif badgeclass.criteria_text:
             criteria_text = badgeclass.criteria_text
         if badgeclass.description:
             description = badgeclass.description
@@ -330,11 +567,29 @@ def ob3_award_from_badgr_api_response(
     return _to_ob3_award(dto, base_url)
 
 
+def ob3_award_to_json_dict(award: OB3Award) -> dict[str, object]:
+    """Serialize an OB3Award to a dict, omitting None values.
+
+    This is the counterpart to ``asdict`` that excludes fields with None values
+    so they do not appear as null in the JSON output.
+    """
+    return cast(dict[str, object], _remove_none(asdict(award)))
+
+
+def _remove_none(obj: object) -> object:
+    """Recursively remove None values from dicts and lists."""
+    if isinstance(obj, dict):
+        return {k: _remove_none(v) for k, v in obj.items() if v is not None}
+    if isinstance(obj, list):
+        return [_remove_none(item) for item in obj if item is not None]
+    return obj
+
+
 @dataclass
 class Criteria:
     """Criteria for earning an achievement."""
 
-    narrative: str
+    narrative: str = ""
 
 
 @dataclass
@@ -347,6 +602,15 @@ class Achievement:
     description: str
     name: str
     image: dict[str, str] | None = None
+    language: str | None = None
+    ects: float | None = None
+    eqf: int | None = None
+    learning_outcome: list[dict[str, str]] | None = None
+    education_program_identifier: list[str] | None = None
+    participation: str | None = None
+    assessment_type: str | None = None
+    assessment_id_verified: bool | None = None
+    assessment_supervised: bool | None = None
 
 
 @dataclass
@@ -390,7 +654,14 @@ def _ob3_default_schema() -> list[dict[str, str]]:
 
 @dataclass
 class OB3Award:
-    """Open Badges 3.0 AchievementCredential (unsigned)."""
+    """Open Badges 3.0 AchievementCredential (unsigned).
+
+    Fields beyond the OB3 core spec represent VCDM 2.0 extension properties.
+    They are serialized to JSON as top-level credential keys, not wrapped
+    in an ``extensions`` array, and are validated against the SSI-agent
+    template schema.  ``credential_context`` carries the ``@context`` URLs
+    needed by the SSI agent for signing.
+    """
 
     id: str
     type: list[str]
@@ -399,3 +670,7 @@ class OB3Award:
     validFrom: str
     credentialSubject: AchievementSubject
     credentialSchema: list[dict[str, str]] = field(default_factory=_ob3_default_schema)
+    # --- OB3 / VCDM 2.0 extension properties ---
+    validUntil: str | None = None
+    # Context for SSI-agent signing.
+    credential_context: list[str] | None = None

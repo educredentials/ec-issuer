@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ECTS Extension",
+  "description": "Specifies the notional workload of a learning experience in ECTS credits.",
+  "type": "object",
+  "properties": {
+    "ECTS": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 240,
+      "multipleOf": 0.5,
+      "description": "Workload in ECTS credits (0.5–240, increment of 0.5)."
+    }
+  },
+  "required": [
+    "ECTS"
+  ],
+  "additionalProperties": false
+}

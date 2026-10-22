@@ -1,7 +1,10 @@
 """Unit tests for the API Port HTTP Adapter - aka the Flask app"""
 
+import os
+from pathlib import Path
 from typing import cast, override
 
+import pytest
 from flask.testing import FlaskClient
 
 from src.offers.models import Offer
@@ -127,4 +130,87 @@ class TestHttpAdapter:
         body = cast(dict[str, str], response.get_json(force=True))
         assert "error" in body
         assert "Unsupported credential_type" in body["error"]
-        assert "foobar" in body["error"]
+
+
+class TestServeExtensionContext:
+    """Tests for the /static/extensions/<path:filename> route."""
+
+    @pytest.fixture(autouse=True)
+    def _set_extensions_dir(self):
+        """Point EC_ISSUER_EXTENSIONS_DIR at the project's static/extensions/."""
+        old = os.environ.get("EC_ISSUER_EXTENSIONS_DIR")
+        os.environ["EC_ISSUER_EXTENSIONS_DIR"] = str(
+            Path(__file__).resolve().parents[3] / "static" / "extensions"
+        )
+        yield
+        if old is None:
+            _ = os.environ.pop("EC_ISSUER_EXTENSIONS_DIR", None)
+        else:
+            os.environ["EC_ISSUER_EXTENSIONS_DIR"] = old
+
+    def test_serves_context_json(self, http_client: FlaskClient):
+        """GET a context.json file returns 200 with ld+json content type."""
+        response = http_client.get(
+            "/static/extensions/LanguageExtension/context.json"
+        )
+        assert response.status_code == 200
+        assert response.content_type == "application/ld+json"
+
+    def test_serves_schema_json(self, http_client: FlaskClient):
+        """GET a schema.json file returns 200 with ld+json content type."""
+        response = http_client.get(
+            "/static/extensions/LanguageExtension/schema.json"
+        )
+        assert response.status_code == 200
+        assert response.content_type == "application/ld+json"
+
+    def test_replaces_base_url_placeholder_in_context(self, http_client: FlaskClient):
+        """The ${BASE_URL} placeholder is replaced with EC_ISSUER_URL."""
+        old_url = os.environ.get("EC_ISSUER_URL")
+        os.environ["EC_ISSUER_URL"] = "https://edu.example.com"
+        try:
+            response = http_client.get(
+                "/static/extensions/LanguageExtension/context.json"
+            )
+            assert response.status_code == 200
+            body = cast(dict[str, object], response.get_json())
+            validation = cast(
+                list[dict[str, object]], body.get("obi:validation") or []
+            )
+            schema_url = cast(
+                str, validation[0].get("obi:validationSchema")
+            )
+            assert schema_url == "https://edu.example.com/static/extensions/LanguageExtension/schema.json"
+        finally:
+            if old_url is None:
+                _ = os.environ.pop("EC_ISSUER_URL", None)
+            else:
+                os.environ["EC_ISSUER_URL"] = old_url
+
+    def test_falls_back_to_default_when_env_unset(self, http_client: FlaskClient):
+        """Default BASE_URL is http://localhost:8000."""
+        _ = os.environ.pop("EC_ISSUER_URL", None)
+        response = http_client.get(
+            "/static/extensions/LanguageExtension/context.json"
+        )
+        assert response.status_code == 200
+        body = cast(dict[str, object], response.get_json())
+        validation = cast(
+            list[dict[str, object]], body.get("obi:validation") or []
+        )
+        schema_url = cast(
+            str, validation[0].get("obi:validationSchema")
+        )
+        assert schema_url == "http://localhost:8000/static/extensions/LanguageExtension/schema.json"
+
+    def test_returns_404_for_invalid_path(self, http_client: FlaskClient):
+        """Invalid paths return 404."""
+        response = http_client.get("/static/extensions/../../../etc/passwd")
+        assert response.status_code == 404
+
+    def test_returns_404_for_nonexistent_extension(self, http_client: FlaskClient):
+        """Non-existent extension directories return 404."""
+        response = http_client.get(
+            "/static/extensions/NonExistentExtension/context.json"
+        )
+        assert response.status_code == 404

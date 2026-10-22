@@ -1,7 +1,8 @@
 """Offer service for creating and retrieving credential offers."""
 
 import uuid
-from dataclasses import asdict
+
+from src.awards import models as awards_models
 
 from src.access_control.access_control_port import AccessControlPort
 from src.awards.awards_client_port import (
@@ -137,7 +138,7 @@ class OfferService:
         try:
             if credential_type == "edc":
                 ob3_award = self._awards_client.get_ob3(award_id, bearer_token)
-                raw_ob3 = asdict(ob3_award)
+                raw_ob3 = awards_models.ob3_award_to_json_dict(ob3_award)
                 edc_credential = self._credential_converter.convert(raw_ob3)
                 uri = self._offers_client.create_edc(offer_id, edc_credential)
             else:

@@ -165,6 +165,24 @@ class TestSsiAgentOffersClientAdapter:
         assert http_client.calls[1].method == "post"
         assert http_client.calls[1].url == "http://agent.example.com/v0/offers"
 
+    def test_create_ob3_omits_null_fields_from_credential(
+        self,
+        http_client: RequestsSpy,
+        subject: SsiAgentOffersClientAdapter,
+        sample_award: OB3Award,
+    ):
+        """create_ob3() serializes the award with null values removed."""
+        import json
+
+        _ = subject.create_ob3("offer-123", sample_award)
+        credential = http_client.calls[0].json  # type: ignore[union-attr]
+        assert isinstance(credential, dict)
+        credential_json = json.dumps(credential)
+        # Check that the serialized credential doesn't contain 'null'
+        assert "null" not in credential_json, (
+            f"Credential contains null values: {credential_json}"
+        )
+
     def test_create_ob3_returns_uri_from_offer_response(
         self,
         http_client: RequestsSpy,
@@ -368,3 +386,72 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             "VerifiableCredential", "EuropeanDigitalCredential"
         ]
         assert "credentialSubject" in credential
+
+    def test_create_ob3_uses_ob3_contexts(self, http_client: RequestsSpy):
+        """create_ob3() sets @context with OB3-specific hardcoded URLs."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["ob3_config"],
+            http_client=http_client,
+        )
+        _award = OB3Award(
+            id="http://example.com/credentials/3527",
+            type=["VerifiableCredential", "OpenBadgeCredential"],
+            name="Teamwork Badge",
+            issuer=Issuer(
+                id="https://example.com/issuers/876543",
+                type=["Profile"],
+                name="Example Corp",
+            ),
+            validFrom="2010-01-01T00:00:00Z",
+            credentialSubject=AchievementSubject(
+                id="did:example:ebfeb1f712ebc6f1c276e12ec21",
+                type=["AchievementSubject"],
+                achievement=Achievement(
+                    id="https://example.com/achievements/teamwork",
+                    type=["Achievement"],
+                    criteria=Criteria(
+                        narrative=(
+                            "Team members are nominated for this badge by their peers."
+                        )
+                    ),
+                    description="This badge recognizes the capacity to collaborate.",
+                    name="Teamwork",
+                ),
+            ),
+        )
+        _ = adapter.create_ob3("offer-123", _award)
+        credential_call = http_client.calls[0]
+        assert credential_call.json is not None
+        json_dict = cast(dict[str, object], credential_call.json)
+        credential = cast(dict[str, object], json_dict["credential"])
+        expected_contexts = [
+            "https://www.w3.org/ns/credentials/v2",
+            "http://agent.example.com/ob/v3p0/context-3.0.3.json",
+            "http://agent.example.com/ob/v3p0/extensions.json",
+        ]
+        assert credential["@context"] == expected_contexts
+        assert "credential_context" not in credential
+
+    def test_create_edc_uses_edc_contexts(self, http_client: RequestsSpy):
+        """create_edc() replaces @context with EDC-specific hardcoded URLs."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids=["ob3_config", "edc_config"],
+            http_client=http_client,
+        )
+        credential: dict[str, object] = self._SAMPLE_ELM_CREDENTIAL.copy()
+        credential["@context"] = [
+            "https://www.w3.org/ns/credentials/v2",
+            "http://data.europa.eu/snb/model/context/edc-ap",
+        ]
+        _ = adapter.create_edc("offer-123", credential)
+        credential_call = http_client.calls[0]
+        assert credential_call.json is not None
+        json_dict = cast(dict[str, object], credential_call.json)
+        credential_sent = cast(dict[str, object], json_dict["credential"])
+        expected_contexts = [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://www.w3.org/ns/credentials/v2",
+        ]
+        assert credential_sent["@context"] == expected_contexts

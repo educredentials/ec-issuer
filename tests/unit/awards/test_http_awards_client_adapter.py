@@ -50,6 +50,7 @@ _EXPECTED_BADGR_AWARD = OB3Award(
         name="Teamwork Badge",
     ),
     validFrom="2010-01-01T00:00:00Z",
+    validUntil=None,
     credentialSubject=AchievementSubject(
         id="https://DOMAIN/assertions/3527",
         type=["AchievementSubject"],
@@ -61,9 +62,19 @@ _EXPECTED_BADGR_AWARD = OB3Award(
             ),
             description=("Demonstrates the ability to work effectively"),
             name="Teamwork Badge",
+            language=None,
+            ects=None,
+            eqf=None,
+            learning_outcome=None,
+            education_program_identifier=None,
+            participation=None,
+            assessment_type=None,
+            assessment_id_verified=None,
+            assessment_supervised=None,
         ),
     ),
     credentialSchema=_ob3_default_schema(),
+    credential_context=[],
 )
 
 

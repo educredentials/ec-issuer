@@ -1,6 +1,6 @@
 """Unit tests for OfferService."""
 
-from dataclasses import asdict
+from src.awards.models import ob3_award_to_json_dict
 
 import pytest
 
@@ -177,9 +177,9 @@ class TestOfferServiceCreateOffer:
             credential_type="edc",
         )
 
-        # Converter should have received the OB3 award as dict
+        # Converter should have received the OB3 award as dict (nulls filtered)
         assert converter.calls == [
-            ("convert", {"credential": asdict(STUB_OB3_AWARD)})
+            ("convert", {"credential": ob3_award_to_json_dict(STUB_OB3_AWARD)})
         ]
 
         # create_edc should have received the converter's output

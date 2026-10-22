@@ -1,9 +1,17 @@
 """HTTP REST API adapter"""
 
+import os
+import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal, cast, override
 
-from flask import Flask, Request, jsonify, request
+from flask import (
+    Flask,
+    Request,
+    jsonify,
+    request,
+)
 from flask_cors import CORS
 from prometheus_flask_exporter import (  # pyright: ignore[reportMissingTypeStubs] PrometheusMetrics has no typing
     PrometheusMetrics,
@@ -97,6 +105,37 @@ class HttpApiAdapter(ApiPort):
             """Root endpoint."""
             return "Hello, World!"
 
+        @app.route("/static/extensions/<path:filename>")
+        def serve_extension_context(filename: str):  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
+            """Serve JSON-LD extension contexts from static/extensions/.
+
+            SSI agents dereference these @context URLs when validating
+            credentials.  Only files under /etc/static/extensions are
+            served.  The ``${BASE_URL}`` placeholder in context files
+            is replaced with the value of ``EC_ISSUER_URL`` so that
+            generated credentials carry the correct absolute URLs for
+            their validation schemas.
+            """
+            if not re.match(r"^[A-Za-z0-9_-]+/(context|schema)\.json$", filename):
+                return "not found", 404
+            ext_dir = os.environ.get(
+                "EC_ISSUER_EXTENSIONS_DIR", "/static/extensions"
+            )
+            base_url = os.environ.get("EC_ISSUER_URL", "http://localhost:8000")
+            path = os.path.join(ext_dir, filename)
+            resolved = os.path.realpath(path)
+            ext_dir_real = os.path.realpath(ext_dir)
+            if not resolved.startswith(ext_dir_real + os.sep):
+                return "not found", 404
+            if not os.path.isfile(path):
+                return "not found", 404
+            try:
+                content = Path(path).read_text(encoding="utf-8")
+            except OSError:
+                return "not found", 404
+            content = content.replace("${BASE_URL}", base_url)
+            return content, 200, {"Content-Type": "application/ld+json"}
+
         @app.route("/api/v1/offers", methods=["POST"])
         def create_offer():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
             """Create a credential offer for an achievement."""
@@ -142,8 +181,9 @@ class HttpApiAdapter(ApiPort):
 
     @override
     def run(self):
+        debug = os.environ.get("EC_ISSUER_DEBUG", "false").lower() == "true"
         self.flask_app.run(
-            host=self.config.server_host, port=self.config.server_port, debug=True
+            host=self.config.server_host, port=self.config.server_port, debug=debug
         )
 
     def _bearer_token(self, request: Request) -> str:

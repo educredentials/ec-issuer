@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Institution Identifier Extension",
+  "description": "An extension that allows you to add a single string InstitutionIdentifier to an issuer object.",
+  "type": "object",
+  "properties": {
+    "InstitutionIdentifier": {
+      "type": "string",
+      "description": "Unique identifier for the institution (e.g. BRIN number)."
+    }
+  },
+  "required": [
+    "InstitutionIdentifier"
+  ],
+  "additionalProperties": false
+}

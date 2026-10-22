@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "SupervisionType": "extensions:SupervisionTypeExtension"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:SupervisionTypeExtension",
+      "obi:validationSchema": "${BASE_URL}/static/extensions/SupervisionTypeExtension/schema.json"
+    }
+  ]
+}

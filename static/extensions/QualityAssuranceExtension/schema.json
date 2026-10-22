@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Quality Assurance Extension",
+  "description": "Specifies the quality assurance framework underpinning the BadgeClass or micro-credential.",
+  "type": "object",
+  "properties": {
+    "QualityAssuranceName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the quality framework."
+    },
+    "QualityAssuranceUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the quality framework documentation."
+    },
+    "QualityAssuranceDescription": {
+      "type": "string",
+      "description": "Description of the quality framework."
+    }
+  },
+  "required": [
+    "QualityAssuranceName"
+  ],
+  "additionalProperties": false
+}

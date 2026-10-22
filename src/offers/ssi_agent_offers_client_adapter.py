@@ -1,11 +1,12 @@
 """SSI-Agent Adapter for offer operations."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import override
+from itertools import chain
 
 import msgspec
 
-from src.awards.models import OB3Award
+from src.awards.models import OB3Award, ob3_award_to_json_dict
 from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .models import Offer
@@ -81,9 +82,12 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         Returns:
             The credential offer URI.
         """
+        credential = ob3_award_to_json_dict(award)
+        credential["@context"] = self._ob3_contexts(award)
+        _ = credential.pop("credential_context", None)
         self._create_credential_for_subject(
             offer_id,
-            asdict(award),
+            credential,
             self._credential_template_ids[0] if self._credential_template_ids else "",
         )
         offer_uri = self._create_offer(offer_id)
@@ -102,6 +106,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         Returns:
             The credential offer URI.
         """
+        credential["@context"] = self._edc_contexts(credential)
         self._create_credential_for_subject(
             offer_id,
             credential,
@@ -152,6 +157,36 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             award_id="",
             uri=uri,
         )
+
+    def _ob3_contexts(self, award: OB3Award) -> list[str]:
+        """Return the hardcoded @context list for an OpenBadgeCredential.
+
+        Args:
+            credential: The serialized OB3 credential
+
+        Returns:
+            The Open Badges 3.0 context array with
+            ``${SSI_AGENT_URL}`` substituted from the SSI agent base URL.
+        """
+        return list(chain([
+            "https://www.w3.org/ns/credentials/v2",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+            "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+        ], award.credential_context))
+
+    def _edc_contexts(self, credential: dict[str, object]) -> list[str]:
+        """Return the hardcoded @context list for a EuropeanDigitalCredential.
+
+        Args:
+            credential: The serialized EDC credential
+
+        Returns:
+            The EDC/W3C 2.0 context array.
+        """
+        return list(chain([
+            "https://www.w3.org/2018/credentials/v1",
+            "https://www.w3.org/ns/credentials/v2",
+        ], credential["credential_context"]))
 
     def _create_credential_for_subject(
         self,

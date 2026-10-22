@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "learningOutcomes": {
+      "@id": "extensions:learningOutcome",
+      "@container": "@set"
+    },
+    "dc": "http://purl.org/dc/terms/",
+    "description": "dc:description"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:LearningOutcomeExtension",
+      "obi:validationSchema": "${BASE_URL}/static/extensions/LearningOutcomeExtension/schema.json"
+    }
+  ]
+}
