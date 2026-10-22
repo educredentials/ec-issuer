@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Education Program Identifier Extension",
+  "description": "Specifies one or more identifiers of educational programmes associated with the BadgeClass.",
+  "type": "object",
+  "properties": {
+    "EducationProgramIdentifier": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Programme identifier codes (e.g. ISAT/CROHO codes).",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "EducationProgramIdentifier"
+  ],
+  "additionalProperties": false
+}

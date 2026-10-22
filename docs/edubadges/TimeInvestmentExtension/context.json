@@ -1,0 +1,16 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "timeInvestment": {
+      "@id": "extensions:timeInvestment",
+      "@type": "http://www.w3.org/2001/XMLSchema#decimal"
+    }
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:TimeInvestmentExtension",
+      "obi:validationSchema": "https://api.edubadges.nl/extensions/TimeInvestmentExtension/schema.json"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Time Investment Extension",
+  "description": "Specifies the estimated time investment required to earn the badge, expressed in hours.",
+  "type": "object",
+  "properties": {
+    "TimeInvestment": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Estimated time investment in hours. Must be greater than 0."
+    }
+  },
+  "required": [
+    "TimeInvestment"
+  ],
+  "additionalProperties": false
+}

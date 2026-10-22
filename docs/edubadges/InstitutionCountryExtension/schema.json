@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Institution Country Extension",
+  "description": "An extension that allows an issuer to specify the country or region of the institution.",
+  "type": "object",
+  "properties": {
+    "CountryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "2-letter ISO 3166-1 country code."
+    }
+  },
+  "required": [
+    "CountryCode"
+  ],
+  "additionalProperties": false
+}

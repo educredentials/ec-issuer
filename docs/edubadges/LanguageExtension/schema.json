@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Language Extension",
+  "description": "An extension that allows you to add a single string Language to a BadgeClass object that represents the language of instruction.",
+  "type": "object",
+  "properties": {
+    "Language": {
+      "type": "string",
+      "description": "Language code following BCP 47 / RFC 5646 (e.g. 'nl_NL')."
+    }
+  },
+  "required": [
+    "Language"
+  ],
+  "additionalProperties": false
+}

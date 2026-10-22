@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Integration Options Extension",
+  "description": "Specifies whether a micro-credential is standalone or stackable towards another credential.",
+  "type": "object",
+  "properties": {
+    "IntegrationOption": {
+      "type": "string",
+      "enum": [
+        "standalone",
+        "stackable"
+      ],
+      "description": "Whether the microcredential stands alone or stacks toward a larger credential."
+    }
+  },
+  "required": [
+    "IntegrationOption"
+  ],
+  "additionalProperties": false
+}

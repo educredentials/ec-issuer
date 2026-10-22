@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grade Achieved Extension",
+  "description": "Specifies the grade achieved by the recipient for this assertion.",
+  "type": "object",
+  "properties": {
+    "GradeAchieved": {
+      "type": "string",
+      "description": "The grade or mark achieved by the recipient."
+    }
+  },
+  "required": [
+    "GradeAchieved"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Participation Form Extension",
+  "description": "Specifies the form of participation in the learning activity.",
+  "type": "object",
+  "properties": {
+    "FormOfParticipation": {
+      "type": "string",
+      "enum": [
+        "online",
+        "onsite",
+        "blended",
+        "volunteering",
+        "workExperience",
+        "personalizedLearningActivities",
+        "byChoiceOfParticipant"
+      ],
+      "description": "Format of participation in the learning module."
+    }
+  },
+  "required": [
+    "FormOfParticipation"
+  ],
+  "additionalProperties": false
+}
