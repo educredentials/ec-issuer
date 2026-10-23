@@ -3,7 +3,7 @@ info:
   title: Awards Mock
   version: 1.0.0
 servers:
-  - url: http://localhost:8003/earner
+  - url: http://localhost:8003
 paths:
   /earner/awards/award-123:
     get:
@@ -40,10 +40,6 @@ paths:
                   image:
                     data: "https://example.com/badges/teamwork.png"
                     id: "https://example.com/badges/teamwork.png"
-                  issuer:
-                    id: "https://example.com/issuers/876543"
-                    name: "Example Corp"
-                    entity_id: "example-org"
               schema:
                 type: object
 
@@ -100,9 +96,5 @@ paths:
                   image:
                     data: "https://example.com/badges/teamwork.png"
                     id: "https://example.com/badges/teamwork.png"
-                  issuer:
-                    id: "https://example.com/issuers/876543"
-                    name: "Example Corp"
-                    entity_id: "example-org"
               schema:
                 type: object

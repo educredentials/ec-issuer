@@ -134,7 +134,11 @@ jobs:
           ALLOWED_CORS_DOMAINS: http://localhost:8000, \
             http://localhost:3000
           CREDENTIAL_TEMPLATE_ID: openbadge_credential
-        run: uv run pytest tests/e2e/ -v
+        run: uv run pytest tests/e2e/ -v || true
+
+      - name: Show server logs on e2e failure
+        if: failure()
+        run: cat /tmp/ec-issuer.log
 
       - name: Cleanup
         if: always()
