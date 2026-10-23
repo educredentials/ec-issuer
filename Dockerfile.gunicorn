@@ -35,7 +35,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV DEBUG=false
 ENV PYTHONPATH="/app/src"
 
-CMD ["gunicorn", "src.web:wsgi_app", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "src.web:wsgi_app", "--bind", "0.0.0.0:8080"]
 
 FROM gcr.io/distroless/base-debian12 AS cli
 
