@@ -13,7 +13,6 @@ nav = [
   { "Ports & adapters test" = "ports_adapters_test.md" },
   { "Configuration" = "configuration.md" },
   { "API reference" = "api.md" },
-  { "OpenAPI" = "openapi/" },
   { "Credential configuration" = "credential_configuration.md" },
   { "OIDC4VCI Issuer Agent" = "oidc4vci_issuer_agent.md" },
   { "Import in Wallet" = "import_in_wallet.md" },
@@ -113,7 +112,7 @@ pymdownx.keys = {}
 pymdownx.magiclink = {}
 pymdownx.mark = {}
 pymdownx.smartsymbols = {}
-# pymdownx.snippets.base_path = "includes"
+pymdownx.snippets.base_path = "includes"
 pymdownx.superfences.custom_fences = [
   { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
 ]
