@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Main application entry point for the EC Issuer."""
 
+import atexit
+import sys
 from flask import Flask
 
 from src.access_control.hardcoded_adapter import HardcodedAccessControlAdapter
@@ -69,7 +71,52 @@ class App:
 
     def run(self):
         """Start the application."""
+        # Monkey-patch psycopg_pool for Python 3.14 shutdown safety.
+        # Runs early so every pool instance inherits the safe __del__.
+        if sys.version_info >= (3, 14):
+            from psycopg_pool.pool import ConnectionPool
+
+            _orig = ConnectionPool.__del__
+
+            def _safe(self) -> None:
+                if not sys.is_finalizing():
+                    _orig(self)
+
+            ConnectionPool.__del__ = _safe
         self._api_port.run()
+
+
+_app = App()
+
+
+def _shutdown() -> None:
+    """Close the database pool gracefully before interpreter exit."""
+    try:
+        _repo = _app._api_port.offer_service._offers_repository
+        assert isinstance(_repo, PostgreSQLOffersRepositoryAdapter)
+        _repo._pool.close()  # pyright: ignore[reportUnknownMemberType]
+    except Exception:
+        # Best-effort: gunicorn workers may not run atexit during
+        # graceful shutdown; the pool closes on its own eventually.
+        pass
+
+
+_ = atexit.register(_shutdown)
+
+# Guard psycopg_pool.__del__ against Python 3.14's stricter finalization.
+# During interpreter shutdown, psycopg_pool.__del__ tries to join() internal
+# threads with a 5s timeout, but join() is not allowed during finalization
+# (raises PythonFinalizationError).  Skip it — the pool is already closing.
+if sys.version_info >= (3, 14):
+    from psycopg_pool.pool import ConnectionPool
+
+    _orig_pool_del = ConnectionPool.__del__
+
+    def _safe_pool_del(self) -> None:
+        if not sys.is_finalizing():
+            _orig_pool_del(self)
+
+    ConnectionPool.__del__ = _safe_pool_del
 
 
 def main() -> None:
@@ -80,7 +127,7 @@ def main() -> None:
 
 def __getattr__(name: str):
     if name == "wsgi_app":
-        return App().wsgi_app
+        return _app.wsgi_app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
