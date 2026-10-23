@@ -13,6 +13,7 @@ nav = [
   { "Ports & adapters test" = "ports_adapters_test.md" },
   { "Configuration" = "configuration.md" },
   { "API reference" = "api.md" },
+  { "OpenAPI" = "openapi/" },
   { "Credential configuration" = "credential_configuration.md" },
   { "OIDC4VCI Issuer Agent" = "oidc4vci_issuer_agent.md" },
   { "Import in Wallet" = "import_in_wallet.md" },

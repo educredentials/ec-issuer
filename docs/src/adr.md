@@ -14,6 +14,8 @@ Higher level ADRs, like business- or domain logic, requirements and other team-w
 | [ADR004](adr/ADR004-database-library.md) | Use psycopg for PostgreSQL database access | draft | 2026-05-20 |
 | [ADR005](adr/ADR005-Badgr-award-serialization.md) | Serialize Badgr API response as DTO before mapping to Award | accepted | 2026-08-07 |
 | [ADR006](adr/ADR006-bearer-token-passthrough.md) | Pass bearer token through awards client chain | accepted | 2026-08-07 |
+| [ADR007](adr/ADR007-edc-credential-type.md) | Support European Digital Credential (EDC) alongside Open Badges v3 | proposed | 2026-09-02 |
+| [ADR008](adr/ADR008-credential-converter-service.md) | Delegate OB3 → ELM mapping to the credential-converter service | proposed | 2026-09-04 |
 
 ## Developers: Template
 
