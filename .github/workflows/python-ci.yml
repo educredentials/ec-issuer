@@ -89,8 +89,7 @@ jobs:
       - name: Run integration tests
         env:
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: >
-            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          POSTGRES_CONNECTION_STRING: "postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
         run: uv run pytest tests/integration/ -v
 
       - name: Start ec-issuer service
@@ -130,8 +129,7 @@ jobs:
           SERVER_PORT: 8000
           EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: >
-            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          POSTGRES_CONNECTION_STRING: "postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
           AWARDS_SERVICE_URL: http://localhost:8003
           CREDENTIAL_CONVERTER_URL: http://localhost:8004
           ALLOWED_CORS_DOMAINS: http://localhost:8000, \
