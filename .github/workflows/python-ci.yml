@@ -100,7 +100,7 @@ jobs:
           export SSI_AGENT_URL=http://localhost:8001
           export DEBUG_METRICS=1
           export POSTGRES_CONNECTION_STRING="postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
-          export AWARDS_SERVICE_URL=http://localhost:8003
+          export AWARDS_SERVICE_URL=http://localhost:8003/earner
           export CREDENTIAL_CONVERTER_URL=http://localhost:8004
           export ALLOWED_CORS_DOMAINS="http://localhost:8000,\
             http://localhost:3000"
@@ -129,7 +129,7 @@ jobs:
           EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
           POSTGRES_CONNECTION_STRING: "postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
-          AWARDS_SERVICE_URL: http://localhost:8003
+          AWARDS_SERVICE_URL: http://localhost:8003/earner
           CREDENTIAL_CONVERTER_URL: http://localhost:8004
           ALLOWED_CORS_DOMAINS: http://localhost:8000, \
             http://localhost:3000
