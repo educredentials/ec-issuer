@@ -24,7 +24,7 @@ class PostgreSQLRepositoryBase:
             open=True,
             min_size=1,
             max_size=10,
-            timeout=5,
+            timeout=30,
         )
 
     def execute(self, sql: LiteralString, params: Params = ()) -> None:
