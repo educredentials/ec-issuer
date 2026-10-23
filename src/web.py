@@ -86,12 +86,11 @@ class App:
         self._api_port.run()
 
 
-_app = App()
-
-
 def _shutdown() -> None:
     """Close the database pool gracefully before interpreter exit."""
     try:
+        if "_app" not in globals():
+            return  # pdoc or similar tools may import without full init
         _repo = _app._api_port.offer_service._offers_repository
         assert isinstance(_repo, PostgreSQLOffersRepositoryAdapter)
         _repo._pool.close()  # pyright: ignore[reportUnknownMemberType]
@@ -126,7 +125,9 @@ def main() -> None:
 
 
 def __getattr__(name: str):
+    global _app
     if name == "wsgi_app":
+        _app = App()  # lazy: only instantiated when gunicorn accesses wsgi_app
         return _app.wsgi_app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
