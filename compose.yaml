@@ -13,7 +13,7 @@ services:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8008
       - ALLOWED_CORS_DOMAINS=http://localhost:8080,http://localhost:3000
-      - EC_ISSUER_URL=http://localhost:8008
+      - EC_ISSUER_URL=${EC_ISSUER_URL}
       - EC_ISSUER_EXTENSIONS_DIR=/app/static/extensions
       - SSI_AGENT_URL=${SSI_AGENT_URL}
       - AWARDS_SERVICE_URL=${AWARDS_SERVICE_URL}
@@ -40,6 +40,9 @@ services:
       - ./templates:/etc/templates/:Z
       - ./static:/app/static/:Z
     working_dir: /app
+    networks:
+      - default
+      - shared-network
 
   real-ssi-agent:
     platform: "linux/amd64"
@@ -127,3 +130,7 @@ services:
 
 volumes:
   postgresql_data:
+
+networks:
+  shared-network:
+    external: true
