@@ -78,11 +78,11 @@ class App:
 
             _orig = ConnectionPool.__del__
 
-            def _safe(self) -> None:
+            def _safe(_self) -> None:  # pyright: ignore[reportUnknownParameterType, reportMissingParameterType]
                 if not sys.is_finalizing():
-                    _orig(self)
+                    _orig(_self)
 
-            ConnectionPool.__del__ = _safe
+            ConnectionPool.__del__ = _safe  # pyright: ignore[reportAttributeAccessIssue]
         self._api_port.run()
 
 
@@ -91,9 +91,9 @@ def _shutdown() -> None:
     try:
         if "_app" not in globals():
             return  # pdoc or similar tools may import without full init
-        _repo = _app._api_port.offer_service._offers_repository
+        _repo = _app._api_port.offer_service._offers_repository  # pyright: ignore[reportPrivateUsage]
         assert isinstance(_repo, PostgreSQLOffersRepositoryAdapter)
-        _repo._pool.close()  # pyright: ignore[reportUnknownMemberType]
+        _repo._pool.close()  # pyright: ignore[reportPrivateUsage]
     except Exception:
         # Best-effort: gunicorn workers may not run atexit during
         # graceful shutdown; the pool closes on its own eventually.
@@ -111,11 +111,11 @@ if sys.version_info >= (3, 14):
 
     _orig_pool_del = ConnectionPool.__del__
 
-    def _safe_pool_del(self) -> None:
+    def _safe_pool_del(_self) -> None:  # pyright: ignore[reportUnknownParameterType, reportMissingParameterType]
         if not sys.is_finalizing():
-            _orig_pool_del(self)
+            _orig_pool_del(_self)
 
-    ConnectionPool.__del__ = _safe_pool_del
+    ConnectionPool.__del__ = _safe_pool_del  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def main() -> None:
