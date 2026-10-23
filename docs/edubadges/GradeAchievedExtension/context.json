@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "GradeAchieved": "extensions:GradeAchievedExtension"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:GradeAchievedExtension",
+      "obi:validationSchema": "https://api.edubadges.nl/extensions/GradeAchievedExtension/schema.json"
+    }
+  ]
+}

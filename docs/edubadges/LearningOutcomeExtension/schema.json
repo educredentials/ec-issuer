@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Learning Outcome Extension",
+  "description": "Specifies one or more learning outcomes achieved by the learner.",
+  "type": "object",
+  "properties": {
+    "learningOutcomes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "List of learning outcomes.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Optional identifier for this learning outcome."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description of what the student knows, understands, and can apply."
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "learningOutcomes"
+  ],
+  "additionalProperties": false
+}

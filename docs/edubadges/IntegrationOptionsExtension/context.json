@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "IntegrationOption": "extensions:IntegrationOptionsExtension"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:IntegrationOptionsExtension",
+      "obi:validationSchema": "https://api.edubadges.nl/extensions/IntegrationOptionsExtension/schema.json"
+    }
+  ]
+}

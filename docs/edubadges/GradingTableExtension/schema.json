@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grading Table Extension",
+  "description": "An extension that allows you to add a single URL to a webpage providing the institution grading table.",
+  "type": "object",
+  "properties": {
+    "GradingTableURL": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the institution's grading table webpage."
+    }
+  },
+  "required": [
+    "GradingTableURL"
+  ],
+  "additionalProperties": false
+}

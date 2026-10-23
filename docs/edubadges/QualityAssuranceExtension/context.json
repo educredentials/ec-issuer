@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "QualityAssuranceName": "extensions:QualityAssuranceName",
+    "QualityAssuranceUrl": {
+      "@id": "extensions:QualityAssuranceUrl",
+      "@type": "@id"
+    },
+    "QualityAssuranceDescription": "extensions:QualityAssuranceDescription"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:QualityAssuranceExtension",
+      "obi:validationSchema": "https://api.edubadges.nl/extensions/QualityAssuranceExtension/schema.json"
+    }
+  ]
+}

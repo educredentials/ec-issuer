@@ -5,7 +5,7 @@ info:
 servers:
   - url: http://localhost:8003
 paths:
-  /awards/award-123:
+  /earner/awards/award-123:
     get:
       responses:
         "200":
@@ -40,14 +40,10 @@ paths:
                   image:
                     data: "https://example.com/badges/teamwork.png"
                     id: "https://example.com/badges/teamwork.png"
-                  issuer:
-                    id: "https://example.com/issuers/876543"
-                    name: "Example Corp"
-                    entity_id: "example-org"
               schema:
                 type: object
 
-  /awards/award-999:
+  /earner/awards/award-999:
     get:
       responses:
         "404":
@@ -59,7 +55,7 @@ paths:
                 example:
                   error: "Award not found"
 
-  /awards/{award_id}:
+  /earner/awards/{award_id}:
     get:
       parameters:
         - name: award_id
@@ -100,9 +96,5 @@ paths:
                   image:
                     data: "https://example.com/badges/teamwork.png"
                     id: "https://example.com/badges/teamwork.png"
-                  issuer:
-                    id: "https://example.com/issuers/876543"
-                    name: "Example Corp"
-                    entity_id: "example-org"
               schema:
                 type: object

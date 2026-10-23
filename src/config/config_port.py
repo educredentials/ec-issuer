@@ -13,4 +13,4 @@ class ConfigRepoPort(Protocol):
     debug: bool
     postgresql_connection_string: str
     allowed_cors_domains: str
-    credential_configuration_id: str
+    credential_configuration_ids: list[str]

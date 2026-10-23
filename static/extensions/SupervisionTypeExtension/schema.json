@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Supervision Type Extension",
+  "description": "Specifies the type of supervision and identity verification used during assessment.",
+  "type": "object",
+  "properties": {
+    "SupervisionType": {
+      "type": "string",
+      "enum": [
+        "unsupervisedWithNoIdentityVerification",
+        "unsupervisedWithIdentityVerification",
+        "supervisedWithNoIdentityVerification",
+        "supervisedWithIdentityVerification"
+      ],
+      "description": "Whether the assessment was supervised and whether identity was verified."
+    }
+  },
+  "required": [
+    "SupervisionType"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Study Load Extension",
+  "description": "Specifies the nominal study load of the learning experience in hours.",
+  "type": "object",
+  "properties": {
+    "StudyLoad": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Nominal study load expressed in hours (SBU)."
+    }
+  },
+  "required": [
+    "StudyLoad"
+  ],
+  "additionalProperties": false
+}

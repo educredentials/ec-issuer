@@ -7,9 +7,9 @@ import msgspec
 import pytest
 
 from tests.e2e.support.admin_client import AdminHttpClient
-from tests.e2e.support.http_client import HttpClient
 from tests.e2e.support.config import Config
-from tests.e2e.support.utilities import assert_schema, jsonpath_value
+from tests.e2e.support.http_client import HttpClient
+from tests.e2e.support.utilities import assert_schema
 
 
 @dataclass
@@ -34,14 +34,19 @@ class CreateOfferResponse:
 class TestOffer:
     """Test the offer endpoint."""
 
-    def test_create_offer(self, admin_client: AdminHttpClient, config: Config):
+    @pytest.mark.parametrize(
+        "credential_type",
+        ["ob3", "edc"],
+    )
+    def test_create_offer(
+        self,
+        admin_client: AdminHttpClient,
+        config: Config,
+        credential_type: str,
+    ):
         """Test that POST /api/v1/offers creates an offer and returns URI + offer_id."""
-        response = admin_client.post("api/v1/offers", json={"award_id": "award-123"})
-        assert response.status_code == 201, (
-            f"Expected 201, got {response.status_code}: {response.text[:200]}"
-        )
-        create_offer_response = msgspec.json.decode(
-            response.text, type=CreateOfferResponse
+        create_offer_response = admin_client.create_offer(
+            award_id="award-123", credential_type=credential_type
         )
         assert_schema(asdict(create_offer_response), "create_offer_response")
 
@@ -51,16 +56,22 @@ class TestOffer:
         parsed: str = parse_qs(urlparse(uri).query)["credential_offer_uri"][0]
         assert parsed == f"{config.ssi_agent_url}/openid4vci/offers/{offer_id}"
 
+    @pytest.mark.parametrize(
+        "credential_type",
+        ["ob3", "edc"],
+    )
     def test_get_offer(
-        self, admin_client: AdminHttpClient, http_client: HttpClient, config: Config
+        self,
+        admin_client: AdminHttpClient,
+        http_client: HttpClient,
+        config: Config,
+        credential_type: str,
     ):
         """Test that GET credential_offer_uri returns a credential offer object."""
-        create_response = admin_client.post(
-            "api/v1/offers", json={"award_id": "award-123"}
+        create_response = admin_client.create_offer(
+            award_id="award-123", credential_type=credential_type
         )
-        create_body: object = create_response.json()  # pyright: ignore[reportAny]
-        offer_uri: str = jsonpath_value(create_body, "$.uri")  # pyright: ignore[reportAssignmentType]
-        credential_offer_uri: str = parse_qs(urlparse(offer_uri).query)[
+        credential_offer_uri: str = parse_qs(urlparse(create_response.uri).query)[
             "credential_offer_uri"
         ][0]
         response = http_client.get(credential_offer_uri)
@@ -73,16 +84,21 @@ class TestOffer:
         # The issuer is the expected openid4vci-agent
         assert offer.credential_issuer == config.ssi_agent_url
 
+    @pytest.mark.parametrize(
+        "credential_type",
+        ["ob3", "edc"],
+    )
     def test_offer_is_authorization_code_flow(
-        self, admin_client: AdminHttpClient, http_client: HttpClient
+        self,
+        admin_client: AdminHttpClient,
+        http_client: HttpClient,
+        credential_type: str,
     ):
         """Test that a credential offer has attributes for authorization code flow."""
-        create_response = admin_client.post(
-            "api/v1/offers", json={"award_id": "award-123"}
+        create_response = admin_client.create_offer(
+            award_id="award-123", credential_type=credential_type
         )
-        create_body: object = create_response.json()  # pyright: ignore[reportAny]
-        offer_uri: str = jsonpath_value(create_body, "$.uri")  # pyright: ignore[reportAssignmentType]
-        credential_offer_uri: str = parse_qs(urlparse(offer_uri).query)[
+        credential_offer_uri: str = parse_qs(urlparse(create_response.uri).query)[
             "credential_offer_uri"
         ][0]
         response = http_client.get(credential_offer_uri)
