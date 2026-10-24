@@ -6,15 +6,15 @@ domain models. Covers edge cases: missing fields, None badgeclass, fallback chai
 
 import pytest
 
-from src.awards.models import (
+from src.awards.badgr_mapping import (
     AwardMappingError,
-    OB3Award,
     _BadgrAwardResponse,  # pyright:ignore[reportPrivateUsage]
     _resolve_badge_name,  # pyright:ignore[reportPrivateUsage]
     _resolve_credential_id,  # pyright:ignore[reportPrivateUsage]
     _resolve_valid_from,  # pyright:ignore[reportPrivateUsage]
     ob3_award_from_badgr_api_response,
 )
+from src.awards.models import OB3Award
 
 # Minimal valid Badgr award response with all fields populated.
 _VALID_BADGR_RESPONSE = {

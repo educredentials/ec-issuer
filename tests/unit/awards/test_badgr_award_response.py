@@ -9,26 +9,26 @@ from textwrap import dedent
 
 import pytest
 
-from src.awards.models import (
-    Achievement,
-    AchievementSubject,
+from src.awards.badgr_mapping import (
     AwardMappingError,
-    Criteria,
-    Issuer,
-    OB3Award,
     _BadgeclassExtensions,  # pyright:ignore[reportPrivateUsage]
     _BadgrAwardResponse,  # pyright:ignore[reportPrivateUsage]
     _BadgrBadgeclass,  # pyright:ignore[reportPrivateUsage]
     _BadgrFaculty,  # pyright:ignore[reportPrivateUsage]
     _BadgrIssuer,  # pyright:ignore[reportPrivateUsage]
     _credential_context_urls,  # pyright:ignore[reportPrivateUsage]
-    _ob3_default_schema,  # pyright:ignore[reportPrivateUsage]
     _resolve_identifiers,  # pyright:ignore[reportPrivateUsage]
     _to_ob3_award,  # pyright:ignore[reportPrivateUsage]
     ob3_award_from_badgr_api_response,
 )
 from src.awards.models import (
+    Achievement,
+    AchievementSubject,
+    Criteria,
     IdentityObject as _IdentityObject,
+    Issuer,
+    OB3Award,
+    _ob3_default_schema,  # pyright:ignore[reportPrivateUsage]
 )
 
 
@@ -382,6 +382,8 @@ class TestCredentialContextUrls:
             name="Test", entity_id="https://DOMAIN/badges/1"
         )
         assert _credential_context_urls(
+            issuer_base_url="http://localhost:8000",
+            extensions_url_prefix="/static/extensions",
             badgeclass=badgeclass,
             ext_vals=_BadgeclassExtensions(),
         ) == []
@@ -394,6 +396,8 @@ class TestCredentialContextUrls:
             participation="enrolment",
         )
         urls = _credential_context_urls(
+            issuer_base_url="http://localhost:8000",
+            extensions_url_prefix="/static/extensions",
             badgeclass=badgeclass,
             ext_vals=_BadgeclassExtensions(language="nl"),
         )
@@ -416,6 +420,8 @@ class TestCredentialContextUrls:
             assessment_type="formative",
         )
         urls = _credential_context_urls(
+            issuer_base_url="http://localhost:8000",
+            extensions_url_prefix="/static/extensions",
             badgeclass=badgeclass,
             ext_vals=_BadgeclassExtensions(
                 language="nl",
@@ -434,6 +440,8 @@ class TestCredentialContextUrls:
             participation="enrolment",
         )
         urls = _credential_context_urls(
+            issuer_base_url="http://localhost:8000",
+            extensions_url_prefix="/static/extensions",
             badgeclass=badgeclass,
             ext_vals=_BadgeclassExtensions(language="nl", ects=None),
         )
@@ -446,6 +454,8 @@ class TestCredentialContextUrls:
         )
         with _patch_env("EC_ISSUER_URL", "https://educredentials.nl"):
             urls = _credential_context_urls(
+                issuer_base_url="https://educredentials.nl",
+                extensions_url_prefix="/static/extensions",
                 badgeclass=badgeclass,
                 ext_vals=_BadgeclassExtensions(language="nl"),
             )
@@ -461,6 +471,8 @@ class TestCredentialContextUrls:
                 participation="enrolment",
             )
             urls = _credential_context_urls(
+                issuer_base_url="https://educredentials.nl",
+                extensions_url_prefix="/static/extensions",
                 badgeclass=badgeclass,
                 ext_vals=_BadgeclassExtensions(),
             )
@@ -476,6 +488,8 @@ class TestCredentialContextUrls:
             assessment_type="formative",
         )
         urls = _credential_context_urls(
+            issuer_base_url="http://localhost:8000",
+            extensions_url_prefix="/static/extensions",
             badgeclass=badgeclass,
             ext_vals=_BadgeclassExtensions(language="nl"),
         )
@@ -764,7 +778,7 @@ class TestOb3AwardWithNewFields:
                 ],
             },
         }
-        result = ob3_award_from_badgr_api_response(raw, base_url="https://DOMAIN")
+        result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")
         ach = result.credentialSubject.achievement
         assert ach.language == "nl_NL"
         assert ach.education_program_identifier == ["56823"]
@@ -791,7 +805,7 @@ class TestOb3AwardWithNewFields:
                 },
             },
         }
-        result = ob3_award_from_badgr_api_response(raw, base_url="https://DOMAIN")
+        result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")
         ach = result.credentialSubject.achievement
         assert ach.criteria.narrative == (
             "Will appreciate the benefits of learning a foreign language."

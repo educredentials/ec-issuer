@@ -16,11 +16,8 @@ from .awards_client_port import (
     AwardsClientError,
     AwardsClientPort,
 )
-from .models import (
-    AwardMappingError,
-    OB3Award,
-    ob3_award_from_badgr_api_response,
-)
+from .badgr_mapping import AwardMappingError, ob3_award_from_badgr_api_response
+from .models import OB3Award
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -83,7 +80,11 @@ class HttpAwardsClientAdapter(AwardsClientPort):
         base_url = urlunparse(parsed._replace(path=""))
 
         try:
-            ob3 = ob3_award_from_badgr_api_response(raw, base_url=base_url)
+            ob3 = ob3_award_from_badgr_api_response(
+                raw,
+                issuer_base_url=base_url,
+                extensions_url_prefix="/static/extensions",
+            )
         except AwardMappingError as e:
             raise AwardsClientError(
                 f"Invalid award data from awards service: {e}"
