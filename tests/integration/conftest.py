@@ -5,6 +5,7 @@ from collections.abc import Generator
 
 import pytest
 
+from src.offers.models import CredentialType
 from src.offers.postgresql_offers_repository_adapter import (
     PostgreSQLOffersRepositoryAdapter,
 )
@@ -34,5 +35,5 @@ def offers_repo() -> Generator[PostgreSQLOffersRepositoryAdapter, None, None]:
 def offers_client() -> SsiAgentOffersClientAdapter:
     return SsiAgentOffersClientAdapter(
         ssi_agent_url=_SSI_AGENT_URL,
-        credential_template_ids=["openbadge_credential"],
+        credential_template_ids={CredentialType.OB3: "openbadge_credential"},
     )

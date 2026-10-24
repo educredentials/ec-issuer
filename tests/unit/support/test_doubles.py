@@ -15,7 +15,7 @@ from src.awards.models import (
     OB3Award,
 )
 from src.config.config_port import ConfigRepoPort
-from src.offers.models import Offer
+from src.offers.models import CredentialType, Offer
 from src.offers.offer_service import (
     OfferService,
     PermissionDeniedError,
@@ -288,11 +288,16 @@ class ConfigRepoStub(ConfigRepoPort):
     postgresql_connection_string: str = "postgresql://test:test@localhost:5432/test"
     awards_service_url: str = "http://awards.example.com"
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com"
+    ec_issuer_url: str = "http://localhost:8000"
+    ec_issuer_extensions_dir: str = "/static/extensions"
     credential_converter_url: str = "http://credential-converter:8000"
 
     def __init__(self) -> None:
         """Initialize with default test values."""
-        self.credential_configuration_ids: list[str] = ["static-config-id"]
+        self.credential_configuration_ids: dict[CredentialType, str] = {
+            CredentialType.OB3: "static-ob3-config-id",
+            CredentialType.EDC: "static-edc-config-id",
+        }
 
 
 class AccessControlStub(AccessControlPort):

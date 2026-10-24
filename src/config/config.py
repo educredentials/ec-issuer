@@ -3,6 +3,8 @@
 from collections.abc import Mapping
 from os import environ
 
+from src.offers.models import CredentialType
+
 
 class EnvConfigRepo:
     """Configuration repository using environment variables."""
@@ -14,13 +16,15 @@ class EnvConfigRepo:
     debug: bool
     postgresql_connection_string: str
     allowed_cors_domains: str
-    credential_configuration_ids: list[str]
+    ec_issuer_url: str
+    ec_issuer_extensions_dir: str
+    credential_configuration_ids: dict[CredentialType, str]
     credential_converter_url: str
 
     def __init__(
         self,
         env: Mapping[str, str] = environ,
-        credential_configuration_ids: list[str] | None = None,
+        credential_configuration_ids: dict[CredentialType, str] | None = None,
     ) -> None:
         """Initialize with optional environment mapping.
 
@@ -36,4 +40,8 @@ class EnvConfigRepo:
         self.debug = env.get("DEBUG", "false").lower() in ("true", "1", "yes")
         self.postgresql_connection_string = env["POSTGRES_CONNECTION_STRING"]
         self.allowed_cors_domains = env["ALLOWED_CORS_DOMAINS"]
-        self.credential_configuration_ids = credential_configuration_ids or []
+        self.ec_issuer_url = env.get("EC_ISSUER_URL", "http://localhost:8000")
+        self.ec_issuer_extensions_dir = env.get(
+            "EC_ISSUER_EXTENSIONS_DIR", "/static/extensions"
+        )
+        self.credential_configuration_ids = credential_configuration_ids or {}

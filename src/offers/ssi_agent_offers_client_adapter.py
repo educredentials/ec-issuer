@@ -9,7 +9,7 @@ import msgspec
 from src.awards.models import OB3Award, ob3_award_to_json_dict
 from src.lib.http_client import HttpClient, RequestsHttpClient
 
-from .models import Offer
+from .models import CredentialType, Offer
 from .offers_client_port import (
     OfferNotFound,
     OffersClientError,
@@ -47,12 +47,12 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
 
     _ssi_agent_admin_base_url: str
     _http_client: HttpClient
-    _credential_template_ids: list[str]
+    _credential_template_ids: dict[CredentialType, str]
 
     def __init__(
         self,
         ssi_agent_url: str,
-        credential_template_ids: list[str] | None = None,
+        credential_template_ids: dict[CredentialType, str] | None = None,
         http_client: HttpClient | None = None,
     ) -> None:
         """Initialize the adapter.
@@ -60,12 +60,12 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         Args:
             ssi_agent_url: The admin base URL of the SSI agent.
             credential_template_ids: The credential template IDs to use
-                for offers.
+                for offers, keyed by ``CredentialType``.
             http_client: The HTTP client to use for requests.
                 Defaults to requests module.
         """
         self._ssi_agent_admin_base_url = ssi_agent_url.rstrip("/")
-        self._credential_template_ids = credential_template_ids or []
+        self._credential_template_ids = credential_template_ids or {}
         if http_client is not None:
             self._http_client = http_client
         else:
@@ -88,7 +88,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         self._create_credential_for_subject(
             offer_id,
             credential,
-            self._credential_template_ids[0] if self._credential_template_ids else "",
+            self._credential_template_ids.get(CredentialType.OB3, ""),
         )
         offer_uri = self._create_offer(offer_id)
         return offer_uri
@@ -110,9 +110,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         self._create_credential_for_subject(
             offer_id,
             credential,
-            self._credential_template_ids[1]
-            if len(self._credential_template_ids) > 1
-            else "",
+            self._credential_template_ids.get(CredentialType.EDC, ""),
         )
         offer_uri = self._create_offer(offer_id)
         return offer_uri
@@ -172,7 +170,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             "https://www.w3.org/ns/credentials/v2",
             "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
             "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
-        ], award.credential_context))
+        ], award.credential_context or []))
 
     def _edc_contexts(self, credential: dict[str, object]) -> list[str]:
         """Return the hardcoded @context list for a EuropeanDigitalCredential.
@@ -183,10 +181,11 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         Returns:
             The EDC/W3C 2.0 context array.
         """
+        credential_context: list[str] = credential["credential_context"]  # pyright: ignore[reportAssignmentType]
         return list(chain([
             "https://www.w3.org/2018/credentials/v1",
             "https://www.w3.org/ns/credentials/v2",
-        ], credential["credential_context"]))
+        ], credential_context))
 
     def _create_credential_for_subject(
         self,
@@ -214,7 +213,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             f"{self._ssi_agent_admin_base_url}/v0/offers",
             json={
                 "offerId": offer_id,
-                "templateIds": self._credential_template_ids,
+                "templateIds": list(self._credential_template_ids.values()),
             },
         )
 

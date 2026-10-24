@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from src.config.config import EnvConfigRepo
+from src.offers.models import CredentialType
 
 
 def _make_env(
@@ -61,7 +62,7 @@ class TestEnvConfigRepo:
             config.allowed_cors_domains
             == "http://localhost:8000,https://app.example.com"
         )
-        assert config.credential_configuration_ids == []
+        assert config.credential_configuration_ids == {}
 
     def test_debug_defaults_to_false_when_absent(self) -> None:
         """DEBUG env var is optional and defaults to false."""
@@ -108,14 +109,19 @@ class TestEnvConfigRepo:
         """Credential template id can be pre-resolved."""
         env = _make_env()
         config = EnvConfigRepo(
-            env=env, credential_configuration_ids=["pre-resolved-id"]
+            env=env,
+            credential_configuration_ids={
+                CredentialType.OB3: "pre-resolved-id",
+            },
         )
 
-        assert config.credential_configuration_ids == ["pre-resolved-id"]
+        assert config.credential_configuration_ids == {
+            CredentialType.OB3: "pre-resolved-id",
+        }
 
     def test_default_credential_configuration_ids_is_empty(self) -> None:
-        """credential_configuration_ids defaults to empty list."""
+        """credential_configuration_ids defaults to empty dict."""
         env = _make_env()
         config = EnvConfigRepo(env=env)
 
-        assert config.credential_configuration_ids == []
+        assert config.credential_configuration_ids == {}

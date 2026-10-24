@@ -1,8 +1,9 @@
 """Credential template bootstrap logic.
 
-Resolves a credential template ID by reading a JSON file,
-parsing it with msgspec into a CredentialTemplate, and
-delegating to the service to find or create it on the SSI Agent.
+Resolves credential template IDs by reading JSON files, parsing them
+with msgspec into CredentialTemplate, deriving the credential type from
+the ``dataModel`` field, and delegating to the service to find or
+create each template on the SSI Agent.
 """
 
 import os
@@ -20,6 +21,7 @@ from src.credential_configurations.credential_configurations_service import (
     CredentialTemplateService,
 )
 from src.credential_configurations.models import CredentialTemplate
+from src.offers.models import CredentialType, is_known_credential_type
 
 
 def resolve_credential_template_id() -> str:
@@ -53,43 +55,58 @@ def resolve_credential_template_id() -> str:
     )
 
 
-def resolve_credential_template_ids() -> list[str]:
+def resolve_credential_template_ids(
+    json_dir: str | None = None,
+) -> dict[CredentialType, str]:
     """Resolve credential template IDs from a directory of JSON files.
 
-    Reads all .json files from the directory specified by
-    CREDENTIAL_TEMPLATE_JSON_DIR, registers each template with the
-    SSI Agent, and returns the list of resolved IDs.
+    Each template's credential type is derived from its ``dataModel`` field
+    (``open_badges_3-0`` → OB3, ``european_learning_model_v3-3`` → EDC).
+    Fails fast if either type is missing, duplicated, or unrecognised.
 
-    Falls back to CREDENTIAL_TEMPLATE_JSON_FILE (single file) if no
-    directory is configured, returning a single-element list.
+    Args:
+        json_dir: Path to the directory containing template JSON files.
+            Falls back to ``CREDENTIAL_TEMPLATE_JSON_DIR`` env var.
 
     Returns:
-        A list of resolved credential template IDs (one per JSON file).
+        A dict mapping ``CredentialType.OB3`` and ``CredentialType.EDC``
+        to their resolved template IDs.
 
     Raises:
-        RuntimeError: If the directory is missing/empty, no templates
-            could be resolved, or the SSI Agent is unreachable.
+        RuntimeError: If the directory is missing/empty, contains
+            invalid/unrecognised templates, or the SSI Agent is unreachable.
     """
-    json_dir = os.environ.get("CREDENTIAL_TEMPLATE_JSON_DIR", "").strip()
-    if json_dir:
-        return load_from_directory(json_dir)
+    if json_dir is None:
+        json_dir = (os.environ.get("CREDENTIAL_TEMPLATE_JSON_DIR", "")).strip()
 
-    # Fallback to single-file mode, return as single-element list
-    return [resolve_credential_template_id()]
+    if not json_dir:
+        raise RuntimeError(
+            "Credential template directory not configured. "
+            + "Set CREDENTIAL_TEMPLATE_JSON_DIR."
+        )
+
+    return load_from_directory(json_dir)
 
 
-def load_from_directory(json_dir: str) -> list[str]:
-    """Load all .json credential templates from a directory.
+def load_from_directory(
+    json_dir: str,
+) -> dict[CredentialType, str]:
+    """Load credential templates from a directory, keyed by type.
+
+    Parses each .json file, derives its credential type from the
+    ``dataModel`` field, registers it on the SSI Agent, and returns
+    a dict of ``CredentialType -> template_id``.
 
     Args:
         json_dir: Path to the directory containing .json template files.
 
     Returns:
-        A list of resolved credential template IDs.
+        A dict mapping each resolved ``CredentialType`` to its template ID.
 
     Raises:
         RuntimeError: If the directory is missing, empty, contains
-            invalid templates, or the SSI Agent is unreachable.
+            invalid templates, duplicates, or unknown types, or the
+            SSI Agent is unreachable.
     """
     dir_path = Path(json_dir)
 
@@ -111,7 +128,7 @@ def load_from_directory(json_dir: str) -> list[str]:
     )
     service = CredentialTemplateService(client=client)
 
-    template_ids: list[str] = []
+    template_ids: dict[CredentialType, str] = {}
 
     for json_file in json_files:
         try:
@@ -136,6 +153,25 @@ def load_from_directory(json_dir: str) -> list[str]:
                 + f"(file: {json_file})."
             )
 
+        # Derive credential type from dataModel field.
+        if template.dataModel is None:
+            raise RuntimeError(
+                f"Credential template {json_file} is missing a 'dataModel' field."
+            )
+        try:
+            cred_type: CredentialType = is_known_credential_type(template.dataModel)
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Unrecognised dataModel in {json_file}: {template.dataModel}. "
+                + "Expected 'open_badges_3-0' or 'european_learning_model_v3-3'."
+            ) from exc
+
+        if cred_type in template_ids:
+            raise RuntimeError(
+                f"Duplicate credential type {cred_type.value} in {json_file}. "
+                + f"Already resolved from {template_ids[cred_type]}"
+            )
+
         try:
             created = service.ensure_by_title(template, ssi_agent_url=ssi_agent_url)
         except RuntimeError as exc:
@@ -153,7 +189,15 @@ def load_from_directory(json_dir: str) -> list[str]:
                 + f"(file: {json_file}). This indicates an upstream issue."
             )
 
-        template_ids.append(created.id)
+        template_ids[cred_type] = created.id
+
+    # Fail fast: both types are required.
+    for required_type in CredentialType:
+        if required_type not in template_ids:
+            raise RuntimeError(
+                f"Missing credential template for type {required_type.value} "
+                + f"in directory: {json_dir}"
+            )
 
     return template_ids
 

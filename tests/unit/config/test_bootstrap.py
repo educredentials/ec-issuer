@@ -13,6 +13,7 @@ from src.credential_configurations.bootstrap import (
     resolve_credential_template_id,
     resolve_credential_template_ids,
 )
+from src.offers.models import CredentialType
 from src.credential_configurations.credential_configurations_client_port import (
     CredentialTemplateClientError,
     CredentialTemplateClientPort,
@@ -337,8 +338,12 @@ class TestResolveCredentialTemplateIds:
             json_dir / "template1.json",
             json_dir / "template2.json",
         ]
-        _ = json_files[0].write_text('{"title": "Template One", "type": []}')
-        _ = json_files[1].write_text('{"title": "Template Two", "type": []}')
+        _ = json_files[0].write_text(
+            '{"title": "Template One", "type": [], "dataModel": "open_badges_3-0"}'
+        )
+        template_two = '{"title": "Template Two", "type": [], "dataModel": "'
+        template_two += 'european_learning_model_v3-3"}'
+        _ = json_files[1].write_text(template_two)
 
         mock_client = _MockClientPort(
             list_result=[
@@ -361,45 +366,27 @@ class TestResolveCredentialTemplateIds:
         ):
             resolved_ids = resolve_credential_template_ids()
 
-        assert resolved_ids == ["id-one", "id-two"]
+        assert resolved_ids == {
+            CredentialType.OB3: "id-one",
+            CredentialType.EDC: "id-two",
+        }
 
-    def test_falls_back_to_single_file_mode(self, tmp_path: Path) -> None:
-        """Without JSON_DIR, falls back to single-file resolve."""
-        json_file = tmp_path / "template.json"
-        _ = json_file.write_text('{"title": "Single", "type": []}')
-
-        mock_client = _MockClientPort(
-            create_result=_make_template("Single", "single-id"),
-        )
-
-        with (
-            patch.dict(
-                "os.environ",
-                {
-                    "CREDENTIAL_TEMPLATE_JSON_DIR": "",
-                    "CREDENTIAL_TEMPLATE_JSON_FILE": str(json_file),
-                    "CREDENTIAL_TEMPLATE_ID": "",
-                    "SSI_AGENT_URL": "http://agent.example.com",
-                },
-            ),
-            _patch_adapter(mock_client),
-        ):
-            resolved_ids = resolve_credential_template_ids()
-
-        assert resolved_ids == ["single-id"]
-
-    def test_falls_back_to_env_var_when_no_json(self) -> None:
-        """Without any JSON config, falls back to CREDENTIAL_TEMPLATE_ID."""
+    def test_requires_directory_and_returns_dict(self) -> None:
+        """Without JSON_DIR, raises RuntimeError (no single-file fallback)."""
         with patch.dict(
             "os.environ",
             {
                 "CREDENTIAL_TEMPLATE_JSON_DIR": "",
                 "CREDENTIAL_TEMPLATE_JSON_FILE": "",
-                "CREDENTIAL_TEMPLATE_ID": "env-fallback-id",
+                "CREDENTIAL_TEMPLATE_ID": "",
             },
         ):
-            resolved_ids = resolve_credential_template_ids()
-            assert resolved_ids == ["env-fallback-id"]
+            with pytest.raises(RuntimeError) as exc_info:
+                _ = resolve_credential_template_ids()
+
+            assert "Credential template directory not configured" in str(
+                exc_info.value
+            )
 
 
 class TestLoadFromDirectory:
@@ -423,25 +410,26 @@ class TestLoadFromDirectory:
         assert str(json_dir) in str(exc_info.value)
 
     def test_loads_all_json_files(self, tmp_path: Path) -> None:
-        """All .json files in directory are loaded."""
+        """All .json files in directory are loaded, keyed by credential type."""
         json_dir = tmp_path / "templates"
         json_dir.mkdir()
 
         template1 = json_dir.joinpath("template1.json")
         template2 = json_dir.joinpath("template2.json")
-        template3 = json_dir.joinpath("template3.json")
         # Non-JSON file should be ignored
         _ = json_dir.joinpath("readme.txt").write_text("not a template")
 
-        _ = template1.write_text('{"title": "One", "type": []}')
-        _ = template2.write_text('{"title": "Two", "type": []}')
-        _ = template3.write_text('{"title": "Three", "type": []}')
+        _ = template1.write_text(
+            '{"title": "One", "type": [], "dataModel": "open_badges_3-0"}'
+        )
+        _ = template2.write_text(
+            '{"title": "Two", "type": [], "dataModel": "european_learning_model_v3-3"}'
+        )
 
         mock_client = _MockClientPort(
             list_result=[
                 _make_template("One", "id-one"),
                 _make_template("Two", "id-two"),
-                _make_template("Three", "id-three"),
             ],
         )
 
@@ -451,20 +439,23 @@ class TestLoadFromDirectory:
         ):
             result = load_from_directory(str(json_dir))
 
-        assert len(result) == 3
-        assert result == ["id-one", "id-two", "id-three"]
+        assert len(result) == 2
+        assert result == {
+            CredentialType.OB3: "id-one",
+            CredentialType.EDC: "id-two",
+        }
 
     def test_json_files_loaded_in_sorted_order(self, tmp_path: Path) -> None:
         """Files are loaded in sorted filename order."""
         json_dir = tmp_path / "templates"
         json_dir.mkdir()
 
-        # Create files that won't sort alphabetically
+        # Create files with different dataModel values so both are accepted.
         _ = json_dir.joinpath("z_template.json").write_text(
-            '{"title": "Z", "type": []}'
+            '{"title": "Z", "type": [], "dataModel": "european_learning_model_v3-3"}'
         )
         _ = json_dir.joinpath("a_template.json").write_text(
-            '{"title": "A", "type": []}'
+            '{"title": "A", "type": [], "dataModel": "open_badges_3-0"}'
         )
 
         mock_client = _MockClientPort(
@@ -480,16 +471,23 @@ class TestLoadFromDirectory:
         ):
             result = load_from_directory(str(json_dir))
 
-        # Sorted alphabetically: a_template.json before z_template.json
-        assert result == ["a-id", "z-id"]
+        # Sorted alphabetically: a_template.json (OB3) first, then z_template.json (EDC)
+        assert result == {
+            CredentialType.OB3: "a-id",
+            CredentialType.EDC: "z-id",
+        }
 
     def test_missing_title_in_any_file_raises(self, tmp_path: Path) -> None:
         """Missing title in any file raises RuntimeError."""
         json_dir = tmp_path / "templates"
         json_dir.mkdir()
 
-        _ = json_dir.joinpath("good.json").write_text('{"title": "Good", "type": []}')
-        _ = json_dir.joinpath("no_title.json").write_text('{"type": []}')
+        _ = json_dir.joinpath("good.json").write_text(
+            '{"title": "Good", "type": [], "dataModel": "open_badges_3-0"}'
+        )
+        _ = json_dir.joinpath("no_title.json").write_text(
+            '{"type": [], "dataModel": "european_learning_model_v3-3"}'
+        )
 
         # Mock create with a valid ID so "no ID" error doesn't mask the
         # "missing title" error we're testing for (second file)
@@ -512,11 +510,19 @@ class TestLoadFromDirectory:
         """Templates are created when they don't exist on SSI Agent."""
         json_dir = tmp_path / "templates"
         json_dir.mkdir()
-        _ = json_dir.joinpath("new.json").write_text('{"title": "New", "type": []}')
+        _ = json_dir.joinpath("ob3.json").write_text(
+            '{"title": "OB3", "type": [], "dataModel": "open_badges_3-0"}'
+        )
+        _ = json_dir.joinpath("edc.json").write_text(
+            '{"title": "EDC", "type": [], "dataModel": "european_learning_model_v3-3"}'
+        )
 
         mock_client = _MockClientPort(
-            list_result=[],
-            create_result=_make_template("New", "new-id"),
+            list_result=[
+                _make_template("OB3", "ob3-id"),
+                _make_template("EDC", "edc-id"),
+            ],
+            create_result=_make_template("OB3", "ob3-id"),
         )
 
         with (
@@ -526,5 +532,9 @@ class TestLoadFromDirectory:
             result = load_from_directory(str(json_dir))
 
         assert mock_client.list_called
-        assert mock_client.create_called
-        assert result == ["new-id"]
+        # Templates are found in list_result, so no create is needed.
+        assert not mock_client.create_called
+        assert result == {
+            CredentialType.OB3: "ob3-id",
+            CredentialType.EDC: "edc-id",
+        }

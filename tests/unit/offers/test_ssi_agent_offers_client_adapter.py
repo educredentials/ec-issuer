@@ -12,7 +12,7 @@ from src.awards.models import (
     OB3Award,
 )
 from src.lib.http_client import HttpClient
-from src.offers.models import Offer
+from src.offers.models import CredentialType, Offer
 from src.offers.offers_client_port import OfferNotFound, OffersClientError
 from src.offers.ssi_agent_offers_client_adapter import SsiAgentOffersClientAdapter
 
@@ -50,7 +50,7 @@ def subject(http_client: HttpClient) -> SsiAgentOffersClientAdapter:
     """Provide the adapter wired to the spy."""
     return SsiAgentOffersClientAdapter(
         ssi_agent_url="http://agent.example.com",
-        credential_template_ids=["openbadge_credential"],
+        credential_template_ids={CredentialType.OB3: "openbadge_credential"},
         http_client=http_client,
     )
 
@@ -258,11 +258,14 @@ class TestSsiAgentOffersClientAdapter:
         """create_ob3() uses the provided credential_template_ids in requests."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["test_credential_config", "european_credential"],
+            credential_template_ids={
+                CredentialType.OB3: "test_credential_config",
+                CredentialType.EDC: "european_credential",
+            },
             http_client=http_client,
         )
         _ = adapter.create_ob3("offer-123", sample_award)
-        # Check that templateId in credential creation uses first ID
+        # Check that templateId in credential creation uses OB3 ID
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
         json_dict = cast(dict[str, object], credential_call.json)
@@ -308,7 +311,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_edc() first POSTs to /v0/credentials then to /v0/offers."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["openbadge_credential", "european_credential"],
+            credential_template_ids={
+                CredentialType.OB3: "openbadge_credential",
+                CredentialType.EDC: "european_credential",
+            },
             http_client=http_client,
         )
         _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
@@ -324,7 +330,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_edc() returns the URI from the offer creation response."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["openbadge_credential", "european_credential"],
+            credential_template_ids={
+                CredentialType.OB3: "openbadge_credential",
+                CredentialType.EDC: "european_credential",
+            },
             http_client=http_client,
         )
         # First call (credential): default 200; second call (offer): returns the URI
@@ -342,7 +351,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_edc() uses the second credential template ID."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["ob3_config", "edc_config"],
+            credential_template_ids={
+                CredentialType.OB3: "ob3_config",
+                CredentialType.EDC: "edc_config",
+            },
             http_client=http_client,
         )
         _ = adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
@@ -362,7 +374,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_edc() raises OffersClientError when the credential POST fails."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["ob3_config", "edc_config"],
+            credential_template_ids={
+                CredentialType.OB3: "ob3_config",
+                CredentialType.EDC: "edc_config",
+            },
             http_client=http_client,
         )
         http_client.set_response(
@@ -378,7 +393,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_edc() raises OffersClientError when the offer POST fails."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["ob3_config", "edc_config"],
+            credential_template_ids={
+                CredentialType.OB3: "ob3_config",
+                CredentialType.EDC: "edc_config",
+            },
             http_client=http_client,
         )
         # First call (credential) succeeds, second call (offer) fails
@@ -396,7 +414,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_edc() posts the raw VCDM credential dict as-is."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["ob3_config", "edc_config"],
+            credential_template_ids={
+                CredentialType.OB3: "ob3_config",
+                CredentialType.EDC: "edc_config",
+            },
             http_client=http_client,
         )
         http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
@@ -418,7 +439,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_ob3() sets @context with OB3 hardcoded + credential_context."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["ob3_config"],
+            credential_template_ids={CredentialType.OB3: "ob3_config"},
             http_client=http_client,
         )
         _award = OB3Award(
@@ -466,7 +487,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         """create_edc() chains hardcoded + credential_context @context."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
-            credential_template_ids=["ob3_config", "edc_config"],
+            credential_template_ids={
+                CredentialType.OB3: "ob3_config",
+                CredentialType.EDC: "edc_config",
+            },
             http_client=http_client,
         )
         credential: dict[str, object] = self._SAMPLE_ELM_CREDENTIAL.copy()

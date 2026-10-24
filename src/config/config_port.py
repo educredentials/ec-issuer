@@ -2,6 +2,8 @@
 
 from typing import Protocol
 
+from src.offers.models import CredentialType
+
 
 class ConfigRepoPort(Protocol):
     """Port: Configuration repository interface."""
@@ -13,4 +15,6 @@ class ConfigRepoPort(Protocol):
     debug: bool
     postgresql_connection_string: str
     allowed_cors_domains: str
-    credential_configuration_ids: list[str]
+    ec_issuer_url: str
+    ec_issuer_extensions_dir: str
+    credential_configuration_ids: dict[CredentialType, str]
