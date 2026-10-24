@@ -1,11 +1,9 @@
 """HTTP REST API adapter"""
 
-import os
-import re
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Literal, cast, override
+from typing import override
 
+import msgspec
 from flask import (
     Flask,
     Request,
@@ -19,12 +17,15 @@ from prometheus_flask_exporter import (  # pyright: ignore[reportMissingTypeStub
 
 from src.config.config_port import ConfigRepoPort
 from src.offers.offer_service import (
+    NotFoundError,
     OfferService,
+    OfferServiceError,
     PermissionDeniedError,
     UnknownCredentialTypeError,
 )
 
 from .api_port import ApiPort
+from .extension_context_server import ExtensionContextServer
 
 
 class MissingTokenError(Exception):
@@ -36,25 +37,7 @@ class CreateOfferBody:
     """Parsed request body for the create offer endpoint."""
 
     award_id: str
-    credential_type: Literal["ob3", "edc"] = "ob3"
-
-
-@dataclass
-class Proof:
-    """Proof object for credential request."""
-
-    proof_type: str
-    jwt: str
-
-
-@dataclass
-class CredentialRequestBody:
-    """Parsed request body for the credential endpoint."""
-
-    format: str
-    credential_configuration_id: str
-    proof: Proof
-    issuer_state: str
+    credential_type: str = "ob3"
 
 
 class HttpApiAdapter(ApiPort):
@@ -64,6 +47,7 @@ class HttpApiAdapter(ApiPort):
     flask_app: Flask
     offer_service: OfferService
     config: ConfigRepoPort
+    _extension_context_server: ExtensionContextServer
 
     def __init__(
         self,
@@ -74,12 +58,14 @@ class HttpApiAdapter(ApiPort):
 
         Args:
             config: Application configuration.
-            metadata_service: Service for credential issuer metadata.
             offer_service: Service for creating credential offers.
-            credential_service: Service for requesting credentials.
         """
         self.offer_service = offer_service
         self.config = config
+        self._extension_context_server = ExtensionContextServer(
+            base_url=config.ec_issuer_url,
+            extensions_dir=config.ec_issuer_extensions_dir,
+        )
         self.flask_app = self._flask_app()
 
     def _flask_app(self) -> Flask:
@@ -110,31 +96,13 @@ class HttpApiAdapter(ApiPort):
             """Serve JSON-LD extension contexts from static/extensions/.
 
             SSI agents dereference these @context URLs when validating
-            credentials.  Only files under /etc/static/extensions are
-            served.  The ``${BASE_URL}`` placeholder in context files
-            is replaced with the value of ``EC_ISSUER_URL`` so that
-            generated credentials carry the correct absolute URLs for
-            their validation schemas.
+            credentials.  Only files under the configured extensions
+            directory are served.
             """
-            if not re.match(r"^[A-Za-z0-9_-]+/(context|schema)\.json$", filename):
-                return "not found", 404
-            ext_dir = os.environ.get(
-                "EC_ISSUER_EXTENSIONS_DIR", "/static/extensions"
+            content, status_code, headers = self._extension_context_server.serve(
+                filename
             )
-            base_url = os.environ.get("EC_ISSUER_URL", "http://localhost:8000")
-            path = os.path.join(ext_dir, filename)
-            resolved = os.path.realpath(path)
-            ext_dir_real = os.path.realpath(ext_dir)
-            if not resolved.startswith(ext_dir_real + os.sep):
-                return "not found", 404
-            if not os.path.isfile(path):
-                return "not found", 404
-            try:
-                content = Path(path).read_text(encoding="utf-8")
-            except OSError:
-                return "not found", 404
-            content = content.replace("${BASE_URL}", base_url)
-            return content, 200, {"Content-Type": "application/ld+json"}
+            return content, status_code, headers
 
         @app.route("/api/v1/offers", methods=["POST"])
         def create_offer():  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
@@ -144,13 +112,13 @@ class HttpApiAdapter(ApiPort):
             except MissingTokenError:
                 return jsonify({"error": "Unauthorized"}), 401
 
-            _raw = request.get_json(silent=True) or {}
-            body = CreateOfferBody(
-                award_id=cast(str, _raw.get("award_id", "")),
-                credential_type=cast(
-                    Literal["ob3", "edc"], _raw.get("credential_type", "ob3")
-                ),
-            )
+            try:
+                body: CreateOfferBody = msgspec.json.decode(  # type: ignore[return-value]
+                    request.get_data(),
+                    type=CreateOfferBody,
+                )
+            except (msgspec.ValidationError, msgspec.DecodeError):
+                return jsonify({"error": "Missing or invalid request body"}), 400
 
             try:
                 offer = self.offer_service.create_offer(
@@ -158,10 +126,14 @@ class HttpApiAdapter(ApiPort):
                     bearer_token=bearer_token,
                     credential_type=body.credential_type,
                 )
+            except NotFoundError as exc:
+                return jsonify({"error": str(exc)}), 404
             except PermissionDeniedError:
                 return jsonify({"error": "Forbidden"}), 403
             except UnknownCredentialTypeError as exc:
                 return jsonify({"error": str(exc)}), 400
+            except OfferServiceError as exc:
+                return jsonify({"error": str(exc)}), 502
 
             return jsonify({"offer_id": offer.offer_id, "uri": offer.uri}), 201
 
@@ -180,8 +152,9 @@ class HttpApiAdapter(ApiPort):
         return [domain.strip() for domain in domains.split(",")]
 
     @override
-    def run(self):
-        debug = os.environ.get("EC_ISSUER_DEBUG", "false").lower() == "true"
+    def run(self) -> None:
+        """Start the HTTP API server."""
+        debug = self.config.debug
         self.flask_app.run(
             host=self.config.server_host, port=self.config.server_port, debug=debug
         )

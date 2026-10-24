@@ -3,6 +3,7 @@
 See docs/src/test_doubles.md for naming conventions and rules.
 """
 
+from pathlib import Path
 from typing import override
 
 from src.access_control.access_control_port import AccessControlPort
@@ -289,7 +290,9 @@ class ConfigRepoStub(ConfigRepoPort):
     awards_service_url: str = "http://awards.example.com"
     allowed_cors_domains: str = "http://localhost:8000,https://app.example.com"
     ec_issuer_url: str = "http://localhost:8000"
-    ec_issuer_extensions_dir: str = "/static/extensions"
+    ec_issuer_extensions_dir: str = str(
+        Path(__file__).resolve().parents[3] / "static" / "extensions"
+    )
     credential_converter_url: str = "http://credential-converter:8000"
 
     def __init__(self) -> None:
