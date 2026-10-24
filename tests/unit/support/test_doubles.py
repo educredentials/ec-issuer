@@ -219,6 +219,10 @@ class OffersRepositoryStub(OffersRepositoryPort):
         """
         return Offer(offer_id=offer_id, award_id="award-123", uri=None)
 
+    @override
+    def close(self) -> None:
+        """No-op close."""
+
 
 class OffersRepositoryStubNotFound(OffersRepositoryStub):
     """Stub: get() always raises KeyError (missing offer in the repository)."""
@@ -277,6 +281,10 @@ class OffersRepositorySpy(OffersRepositoryPort):
             award_id="achievement-1234",
             uri=f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}",
         )
+
+    @override
+    def close(self) -> None:
+        """No-op close."""
 
 
 class ConfigRepoStub(ConfigRepoPort):

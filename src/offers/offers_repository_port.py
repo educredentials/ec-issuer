@@ -29,3 +29,7 @@ class OffersRepositoryPort(ABC):
             OfferNotFound: When no offer with the given id exists.
         """
         ...
+
+    @abstractmethod
+    def close(self) -> None:
+        """Close any resources held by this repository."""

@@ -54,6 +54,10 @@ class _OffersRepositoryStub(OffersRepositoryPort):
     def get(self, offer_id: str) -> Offer:
         return Offer(offer_id=offer_id, award_id="", uri=None)
 
+    @override
+    def close(self) -> None:
+        pass
+
 
 class _OffersClientSpy(OffersClientPort):
     """Records all calls to create_ob3() for assertion."""
@@ -112,11 +116,18 @@ _SAMPLE_ELM_CREDENTIAL: dict[str, object] = {
 }
 
 
-class _CredentialConverterStub:
+class _CredentialConverterStub:  # noqa: PLR0903
     """Stub that returns a fixed ELM credential from convert()."""
 
-    def convert(self, _credential: dict[str, object]) -> dict[str, object]:
-        """Return the fixed ELM credential dict."""
+    def convert(self, credential: dict[str, object]) -> dict[str, object]:  # pyright: ignore[reportUnusedParameter]
+        """Return the fixed ELM credential dict.
+
+        Args:
+            credential: The credential to convert (ignored).
+
+        Returns:
+            The fixed ELM credential dict.
+        """
         return _SAMPLE_ELM_CREDENTIAL
 
 

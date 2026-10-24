@@ -13,6 +13,7 @@ from src.config.config_port import ConfigRepoPort
 from src.credential_configurations.bootstrap import resolve_credential_template_ids
 from src.credential_converter.http_adapter import HttpCredentialConverterAdapter
 from src.offers.offer_service import OfferService
+from src.offers.offers_repository_port import OffersRepositoryPort
 from src.offers.postgresql_offers_repository_adapter import (
     PostgreSQLOffersRepositoryAdapter,
 )
@@ -24,6 +25,7 @@ class App:
 
     config: ConfigRepoPort
     _api_port: HttpApiAdapter
+    offers_repository: OffersRepositoryPort
 
     def __init__(self):
         """Initialise and wire all application dependencies."""
@@ -48,6 +50,8 @@ class App:
         offers_repository = PostgreSQLOffersRepositoryAdapter(
             self.config.postgresql_connection_string,
         )
+        self.offers_repository = offers_repository
+
         offer_service = OfferService(
             access_control=access_control,
             awards_client=awards_client,
@@ -87,13 +91,11 @@ class App:
 
 
 def _shutdown() -> None:
-    """Close the database pool gracefully before interpreter exit."""
+    """Close the repository gracefully before interpreter exit."""
     try:
         if "_app" not in globals():
             return  # pdoc or similar tools may import without full init
-        _repo = _app._api_port.offer_service._offers_repository  # pyright: ignore[reportPrivateUsage]
-        assert isinstance(_repo, PostgreSQLOffersRepositoryAdapter)
-        _repo._pool.close()  # pyright: ignore[reportPrivateUsage]
+        _app.offers_repository.close()
     except Exception:
         # Best-effort: gunicorn workers may not run atexit during
         # graceful shutdown; the pool closes on its own eventually.

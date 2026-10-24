@@ -5,6 +5,7 @@ from typing import override
 from psycopg.rows import class_row
 
 from src.lib.postgresql_base import PostgreSQLRepositoryBase
+
 from .models import Offer
 from .offers_repository_port import OffersRepositoryPort
 
@@ -84,3 +85,8 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
             raise KeyError(f"Offer with id {offer_id} not found")
 
         return row
+
+    @override
+    def close(self) -> None:
+        """Close the database connection pool."""
+        self.close_db()
