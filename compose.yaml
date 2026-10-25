@@ -16,6 +16,7 @@ services:
       - EC_ISSUER_URL=${EC_ISSUER_URL}
       - EC_ISSUER_EXTENSIONS_DIR=/app/static/extensions
       - SSI_AGENT_URL=${SSI_AGENT_URL}
+      - SSI_AGENT_EDC_URL=${SSI_AGENT_EDC_URL}
       - AWARDS_SERVICE_URL=${AWARDS_SERVICE_URL}
       - CREDENTIAL_CONVERTER_URL=${CREDENTIAL_CONVERTER_URL}
       - POSTGRES_CONNECTION_STRING=${POSTGRES_CONNECTION_STRING}
@@ -24,6 +25,8 @@ services:
       postgresql:
         condition: service_healthy
       mock-ssi-agent:
+        condition: service_started
+      mock-ssi-agent-edc:
         condition: service_started
       mock-oidc-auth:
         condition: service_started
@@ -69,6 +72,15 @@ services:
     command: mock -h 0.0.0.0 /app/mock.yaml
     volumes:
       - ./dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml:Z
+
+  mock-ssi-agent-edc:
+    platform: "linux/amd64"
+    image: stoplight/prism:4
+    ports:
+      - "8005:4010"
+    command: mock -h 0.0.0.0 /app/mock.yaml
+    volumes:
+      - ./dependencies/prism/ssi-agent-mock-edc.yaml:/app/mock.yaml:Z
 
   mock-oidc-auth:
     platform: "linux/amd64"

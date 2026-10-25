@@ -12,6 +12,7 @@ class EnvConfigRepo:
     server_host: str
     server_port: int
     ssi_agent_url: str
+    edc_ssi_agent_url: str
     awards_service_url: str
     debug: bool
     postgresql_connection_string: str
@@ -35,6 +36,9 @@ class EnvConfigRepo:
         self.server_host = env["SERVER_HOST"]
         self.server_port = int(env["SERVER_PORT"])
         self.ssi_agent_url = env["SSI_AGENT_URL"]
+        self.edc_ssi_agent_url = env.get(
+            "SSI_AGENT_EDC_URL", self.ssi_agent_url
+        )
         self.awards_service_url = env["AWARDS_SERVICE_URL"]
         self.credential_converter_url = env["CREDENTIAL_CONVERTER_URL"]
         self.debug = env.get("DEBUG", "false").lower() in ("true", "1", "yes")

@@ -46,6 +46,7 @@ class App:
         offers_client = SsiAgentOffersClientAdapter(
             ssi_agent_url=self.config.ssi_agent_url,
             credential_template_ids=self.config.credential_configuration_ids,
+            edc_ssi_agent_url=self.config.edc_ssi_agent_url,
         )
         offers_repository = PostgreSQLOffersRepositoryAdapter(
             self.config.postgresql_connection_string,

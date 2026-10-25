@@ -58,6 +58,11 @@ class _SsiAgentAddPayload:
         default_factory=lambda: {"type": "never"},
     )
 
+    def to_dict(self) -> dict[str, object]:
+        """Serialize to dict, excluding None values."""
+        data: dict[str, object] = asdict(self)
+        return {k: v for k, v in data.items() if v is not None}
+
     @staticmethod
     def from_credential_template(
         template: CredentialTemplate,
@@ -122,7 +127,7 @@ class SsiAgentCredentialTemplateClientAdapter(CredentialTemplateClientPort):
             ValueError: When the credential configuration ID is not set.
         """
         payload = _SsiAgentAddPayload.from_credential_template(template)
-        payload_dict = asdict(payload)
+        payload_dict = payload.to_dict()
         url = f"{self._ssi_agent_admin_base_url}/v0/create-new-template"
 
         response = self._http_client.post(url, json=payload_dict)

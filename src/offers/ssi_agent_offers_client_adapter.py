@@ -46,6 +46,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
     """Adapter for SSI Agent offers API."""
 
     _ssi_agent_admin_base_url: str
+    _ssi_agent_edc_admin_base_url: str
     _http_client: HttpClient
     _credential_template_ids: dict[CredentialType, str]
 
@@ -54,17 +55,23 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         ssi_agent_url: str,
         credential_template_ids: dict[CredentialType, str] | None = None,
         http_client: HttpClient | None = None,
+        edc_ssi_agent_url: str | None = None,
     ) -> None:
         """Initialize the adapter.
 
         Args:
-            ssi_agent_url: The admin base URL of the SSI agent.
+            ssi_agent_url: The admin base URL of the SSI agent for OB3 offers.
             credential_template_ids: The credential template IDs to use
                 for offers, keyed by ``CredentialType``.
             http_client: The HTTP client to use for requests.
                 Defaults to requests module.
+            edc_ssi_agent_url: Optional admin base URL for EDC offers.
+                Defaults to ``ssi_agent_url`` if not provided.
         """
         self._ssi_agent_admin_base_url = ssi_agent_url.rstrip("/")
+        self._ssi_agent_edc_admin_base_url = (
+            (edc_ssi_agent_url or ssi_agent_url).rstrip("/")
+        )
         self._credential_template_ids = credential_template_ids or {}
         if http_client is not None:
             self._http_client = http_client
@@ -107,12 +114,12 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             The credential offer URI.
         """
         credential["@context"] = self._edc_contexts(credential)
-        self._create_credential_for_subject(
+        self._create_credential_for_subject_edc(
             offer_id,
             credential,
             self._credential_template_ids.get(CredentialType.EDC, ""),
         )
-        offer_uri = self._create_offer(offer_id)
+        offer_uri = self._create_offer_edc(offer_id)
         return offer_uri
 
     @override
@@ -208,9 +215,46 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 f"Upstream error: {response.status_code} - {response.content.decode()}"
             )
 
+    def _create_credential_for_subject_edc(
+        self,
+        offer_id: str,
+        credential: dict[str, object],
+        template_id: str,
+    ) -> None:
+        response = self._http_client.post(
+            f"{self._ssi_agent_edc_admin_base_url}/v0/credentials",
+            json={
+                "offerId": offer_id,
+                "credential": credential,
+                "templateId": template_id,
+                "expiresAt": "never",
+            },
+        )
+
+        if 400 <= response.status_code < 600:
+            raise OffersClientError(
+                f"Upstream error: {response.status_code} - {response.content.decode()}"
+            )
+
     def _create_offer(self, offer_id: str) -> str:
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/offers",
+            json={
+                "offerId": offer_id,
+                "templateIds": list(self._credential_template_ids.values()),
+            },
+        )
+
+        if 400 <= response.status_code < 600:
+            raise OffersClientError(
+                f"Upstream error: {response.status_code} - {response.content.decode()}"
+            )
+
+        return response.text
+
+    def _create_offer_edc(self, offer_id: str) -> str:
+        response = self._http_client.post(
+            f"{self._ssi_agent_edc_admin_base_url}/v0/offers",
             json={
                 "offerId": offer_id,
                 "templateIds": list(self._credential_template_ids.values()),

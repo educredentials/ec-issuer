@@ -65,6 +65,15 @@ jobs:
             -v "$WS/dependencies/prism/converter-mock.yaml:/app/mock.yaml" \
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
+      - name: Start mock EDC SSI agent
+        run: |
+          WS="${{ github.workspace }}"
+          docker run -d \
+            --name mock-ssi-agent-edc \
+            -p 8005:4010 \
+            -v "$WS/dependencies/prism/ssi-agent-mock-edc.yaml:/app/mock.yaml" \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -89,7 +98,8 @@ jobs:
       - name: Run integration tests
         env:
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: "postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
+          POSTGRES_CONNECTION_STRING: >-
+            "postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
         run: uv run pytest tests/integration/ -v
 
       - name: Start ec-issuer service
@@ -98,8 +108,10 @@ jobs:
           export SERVER_HOST=0.0.0.0
           export SERVER_PORT=8000
           export SSI_AGENT_URL=http://localhost:8001
+          export SSI_AGENT_EDC_URL=http://localhost:8005
           export DEBUG_METRICS=1
-          export POSTGRES_CONNECTION_STRING="postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
+          export POSTGRES_CONNECTION_STRING=>-
+            "postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
           export AWARDS_SERVICE_URL=http://localhost:8003/earner
           export CREDENTIAL_CONVERTER_URL=http://localhost:8004
           export ALLOWED_CORS_DOMAINS="http://localhost:8000,\
@@ -128,13 +140,13 @@ jobs:
           SERVER_PORT: 8000
           EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: "postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
+          SSI_AGENT_EDC_URL: http://localhost:8005
           AWARDS_SERVICE_URL: http://localhost:8003/earner
           CREDENTIAL_CONVERTER_URL: http://localhost:8004
           ALLOWED_CORS_DOMAINS: http://localhost:8000, \
             http://localhost:3000
           CREDENTIAL_TEMPLATE_JSON_DIR: ${{ github.workspace }}/templates
-        run: uv run pytest tests/e2e/ -v || true
+        run: uv run pytest tests/e2e/ -v
 
       - name: Show server logs on e2e failure
         if: failure()
@@ -146,11 +158,13 @@ jobs:
           pkill -f "ec-issuer-web" || true
           docker stop \
             mock-ssi-agent \
+            mock-ssi-agent-edc \
             mock-oidc-auth \
             mock-awards \
             mock-converter 2>/dev/null || true
           docker rm \
             mock-ssi-agent \
+            mock-ssi-agent-edc \
             mock-oidc-auth \
             mock-awards \
             mock-converter 2>/dev/null || true
@@ -185,7 +199,9 @@ jobs:
 
       - name: Extract version from pyproject.toml
         id: version
-        run: echo "VERSION=$(grep '^version' pyproject.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+        run: >-
+          echo "VERSION=$(grep '^version' pyproject.toml | cut -d'"' -f2)"
+          >> $GITHUB_OUTPUT
 
       - name: Get Git tag if available
         id: git_tag

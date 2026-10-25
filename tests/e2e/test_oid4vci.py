@@ -32,33 +32,38 @@ class TestOID4VCIFlow:
         callback_url = Browser().open(auth_url)
         credential = wallet_client.open_callback_url(callback_url, offer, metadata)
 
-        # localhost:8001 is the OID4VCI agent
-        assert credential.claims["iss"] == "did:web:localhost%3A8001"
+        # OB3 uses mock-ssi-agent on port 8001, EDC uses mock on port 8005
+        port = 8005 if credential_type == "edc" else 8001
+        assert credential.claims["iss"] == f"did:web:localhost%3A{port}"
 
+    @pytest.mark.parametrize("credential_type", ["ob3", "edc"])
     def test_get_credential_type(
         self,
         admin_client: AdminHttpClient,
         wallet_client: WalletClient,
+        credential_type: str,
     ):
         """
         Given an offer is created
         And the credential offer is used by a wallet
         Then the issued credential contains the expected credential type.
-
-        Note: the ssi-agent mock returns the same static OB3 example
-        credential for every credential configuration, so EDC content
-        cannot be asserted here yet. The EDC issuance flow itself is
-        covered by test_get_credential_credential_type[edc].
         """
-        create_offer_response = admin_client.create_offer("award-123")
+        create_offer_response = admin_client.create_offer(
+            "award-123", credential_type=credential_type
+        )
         offer, metadata, auth_url = wallet_client.use_offer(create_offer_response.uri)
 
         callback_url = Browser().open(auth_url)
-        credential = wallet_client.open_callback_url(callback_url, offer, metadata)
+        credential = wallet_client.open_callback_url(
+            callback_url, offer, metadata
+        )
 
         credential_types = credential.claims["type"]
         assert isinstance(credential_types, list), "Credential type must be a list"
-        assert "OpenBadgeCredential" in credential_types
+        if credential_type == "ob3":
+            assert "OpenBadgeCredential" in credential_types
+        else:
+            assert "EuropeanDigitalCredential" in credential_types
 
 
 @pytest.mark.e2e

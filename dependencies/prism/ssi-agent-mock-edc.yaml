@@ -1,0 +1,375 @@
+openapi: "3.0.0"
+info:
+  title: "edubadges SSI Agent OpenID4VCIServer Mock (EDC)"
+  version: "0.4.0"
+servers:
+  - url: "http://localhost:8005"
+
+paths:
+  /openid4vci/issuer-metadata:
+    get:
+      summary: Credential Issuer metadata
+      responses:
+        "200":
+          description: Credential Issuer metadata
+          content:
+            application/json:
+              example:
+                credential_issuer: "http://localhost:8005"
+                credential_endpoint: >-
+                  http://localhost:8005/openid4vci/credential
+                authorization_server:
+                  issuer: "http://localhost:8002"
+                  token_endpoint: "http://localhost:8002/auth/token"
+                  pushed_authorization_request_endpoint: >-
+                    http://localhost:8002/auth/par
+                  authorization_endpoint: >-
+                    http://localhost:8002/auth/authorize
+                credential_supported:
+                  - id: "EuropeanDigitalCredential"
+                    format: "jwt_vc_json"
+                    cryptographicsuitesupported: ["EdDSA"]
+                    credential_configuration:
+                      - "@context":
+                          - "https://www.w3.org/2018/credentials/v1"
+                          - "https://www.w3.org/ns/credentials/v2"
+                          - "https://uri.etsi.org/cs/elm/v3"
+                        type:
+                          - "VerifiableCredential"
+                          - "EuropeanDigitalCredential"
+                display:
+                  - name: "eduCredentials"
+                    locale: "en"
+                    logo:
+                      uri: "https://example.com/images/logo.png"
+                      alt_text: "eduCredentials Logo"
+                authorization_endpoint: >-
+                  http://localhost:8002/auth/authorize
+                token_endpoint: "http://localhost:8002/auth/token"
+                pushed_authorization_request_endpoint: >-
+                  http://localhost:8002/auth/par
+
+  /openid4vci/nonce:
+    post:
+      responses:
+        "200":
+          description: Nonce endpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  c_nonce:
+                    type: string
+                    example: edc-nonce-mock
+
+  /openid4vci/credential:
+    post:
+      requestBody:
+        content:
+          application/json: {}
+      responses:
+        "200":
+          description: Credential endpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credentials:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        credential:
+                          type: string
+                          example: >-
+                            eyJ0eXAiOiJkYytzZC1qd3QiLCJhbGciOiJF
+                            ZERTQSJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53
+                            My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dH
+                            BzOi8vd3d3LnczLm9yZy9ucy9jcmVkZW50aWFscy9
+                            yMiIsImh0dHBzOi8vdXJpLmV0c2lhLm9yZy9jcy9lb
+                            G0vdjMiXSwiaWQiOiJodHRwczovL2V4YW1wbGUuY29
+                            tL2NyZWRlbnRpYWxzL2VkYy0xMjMiLCJ0eXBlIjpbI
+                            VZlcmlmaWFibGVDcmVkZW50aWFsIiwiRXVyb3BlYW5
+                            EaWdpdGFsQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaW
+                            QiOiJkaWQ6d2ViOmxvY2FsaG9zdCUzQTgwMDUiLCJ0e
+                            XBlIjpbIlByb2ZpbGUiXX0sInZhbGlkRnJvbSI6IjIwM
+                            jUtMDEtMDFUMDA6MDA6MDBaIiwiY3JlZGVudGlhbFN1Y
+                            mVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOnN1YmplY3Qi
+                            LCJ0eXBlIjpbIkFjaGlldmVtZW50U3ViamVjdCJdLCJh
+                            Y2hpZXZlbWVudCI6eyJpZCI6Imh0dHBzOi8vZXhhbXBs
+                            ZS5jb20vYWNoaWV2ZW1lbnRzL3N0dWIiLCJ0eXBlIjpbI
+                            kFjaGlldmVtZW50Il0sIm5hbWUiOiJTdHViIEFjaGlldm
+                            VtZW50IiwiZGVzY3JpcHRpb24iOiJBY2hpZXZlbWVudCBk
+                            ZXNjcmlwdGlvbi4iLCJjcml0ZXJpYSI6eyJuYXJyYXRp
+                            dmUiOiJTdHViIGNyaXRlcmlhIG5hcnJhdGl2ZS4ifX0s
+                            ImlzcyI6ImRpZDp3ZWI6bG9jYWxob3N0JTNBODAwNS
+                            IsImp0aSI6Imh0dHBzOi8vZXhhbXBsZS5jb20vY3JlZG
+                            VudGlhbHMvZWRjLTEyMyIsInN1YiI6ImRpZDpleGFtcG
+                            xlOnN1YmplY3QifQ.dummy_signature_for_mocking_purposes_always_valid
+
+  /v0/create-new-template:
+    post:
+      summary: Create a new credential template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: {type: array, items: {type: string}}
+                title: {type: string}
+                dataModel: {type: string}
+                holderType: {type: string}
+                status: {type: string}
+                visibility: {type: string}
+                description: {type: string}
+                display:
+                  type: object
+                  properties:
+                    name: {type: string}
+                    locale: {type: string}
+                    description: {type: string}
+                    logo:
+                      type: object
+                      properties:
+                        uri: {type: string}
+                        alt_text: {type: string}
+                tags: {type: array, items: {type: string}}
+                schema: {type: object}
+                credentialExpiration: {type: object}
+            example:
+              title: "eduCredentials EDC Credential"
+              display:
+                - name: "European Digital Credential"
+                  locale: "en"
+              dataModel: "european_learning_model_v3-3"
+              holderType: "individual"
+              status: "published"
+              type:
+                - "VerifiableCredential"
+                - "EuropeanDigitalCredential"
+              schema:
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+              credentialExpiration:
+                type: "never"
+      responses:
+        "200":
+          description: Credential template created
+          content:
+            application/json:
+              example:
+                type:
+                  - "VerifiableCredential"
+                  - "EuropeanDigitalCredential"
+                id: "EuropeanDigitalCredential"
+                title: "eduCredentials EDC Credential"
+                display:
+                  name: "European Digital Credential"
+                dataModel: "european_learning_model_v3-3"
+                holderType: "individual"
+                status: "published"
+                tags:
+                  - "educredentials"
+                  - "edc"
+                  - "elm"
+                  - "identity"
+                visibility: "public"
+                description: >-
+                  eduCredentials European Digital Credential
+
+  /v0/list-all-templates:
+    get:
+      summary: List all credential templates
+      responses:
+        "200":
+          description: List of credential templates
+          content:
+            application/json:
+              example:
+                - type:
+                    - "VerifiableCredential"
+                    - "EuropeanDigitalCredential"
+                  id: "EuropeanDigitalCredential"
+                  title: "eduCredentials EDC Credential"
+                  display:
+                    name: "European Digital Credential"
+                  dataModel: "european_learning_model_v3-3"
+                  holderType: "individual"
+                  status: "published"
+                  tags:
+                    - "educredentials"
+                    - "edc"
+                    - "elm"
+                    - "identity"
+                  visibility: "public"
+                  description: >-
+                    eduCredentials European Digital Credential
+
+  /v0/templates/delete-template:
+    post:
+      summary: Delete a template
+      description: Marks a template as deleted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                templateId:
+                  type: string
+                  description: The ID of the template to delete
+              required:
+                - templateId
+            example:
+              templateId: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "204":
+          description: Template deleted successfully
+        "404":
+          description: Template not found
+
+  /v0/offers:
+    post:
+      summary: Create a credential offer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId: {type: string}
+                templateIds: {type: array, items: {type: string}}
+            example:
+              offerId: "offer-123"
+              templateIds:
+                - "EuropeanDigitalCredential"
+      responses:
+        "200":
+          description: Credential offer created
+          content:
+            application/json:
+              example: >-
+                openid-credential-offer://?credential_offer_uri=
+                http%3A%2F%2Flocalhost%3A8005%2Fopenid4vci%2F
+                offers%2Foffer-123
+
+  /v0/credentials:
+    post:
+      summary: Create a new credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId: {type: string}
+                credential: {type: object}
+                templateId: {type: string}
+                expiresAt: {type: string}
+            example:
+              offerId: "offer-123"
+              credential:
+                "@context":
+                  - "https://www.w3.org/2018/credentials/v1"
+                  - "https://www.w3.org/ns/credentials/v2"
+                type:
+                  - "VerifiableCredential"
+                  - "EuropeanDigitalCredential"
+              templateId: "EuropeanDigitalCredential"
+              expiresAt: "never"
+      responses:
+        "200":
+          description: Credential created
+
+  /v0/offers/{offerId}:
+    get:
+      summary: Get an offer by ID
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Offer details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string}
+                  grant_types: {type: array, items: {type: string}}
+                  credential_offer_uri:
+                    type: object
+                    properties:
+                      "http://localhost:8005/openid4vci/credential":
+                        type: string
+                  credential_offer:
+                    type: object
+                    properties:
+                      credential_issuer: {type: string}
+                      credential_template_id: {type: string}
+                      grants: {type: object}
+                  subject_id: {type: string, nullable: true}
+                  credential_ids: {type: array, items: {type: string}}
+                  form_url_encoded_credential_offer: {type: string}
+                  pre_authorized_code:
+                    type: object
+                    properties:
+                      cx_nonce: {type: string}
+                      cx_nonce_endpoint: {type: string}
+                  credential_response: {type: string, nullable: true}
+                  status: {type: string, example: "Pending"}
+                  tx_code: {type: string, nullable: true}
+                  delivery_options: {type: string, nullable: true}
+
+  /.well-known/openid-credential-issuer:
+    get:
+      summary: OIDC Credential Issuer Metadata
+      responses:
+        "200":
+          description: Credential Issuer Metadata
+          content:
+            application/json:
+              example:
+                credential_issuer: "http://localhost:8005"
+                credential_endpoint: >-
+                  http://localhost:8005/openid4vci/credential
+                authorization_server:
+                  issuer: "http://localhost:8002"
+                  token_endpoint: "http://localhost:8002/auth/token"
+                  pushed_authorization_request_endpoint: >-
+                    http://localhost:8002/auth/par
+                  authorization_endpoint: >-
+                    http://localhost:8002/auth/authorize
+                credential_supported:
+                  - id: "EuropeanDigitalCredential"
+                    format: "jwt_vc_json"
+                    cryptographicsuitesupported: ["EdDSA"]
+                    credential_configuration:
+                      - "@context":
+                          - "https://www.w3.org/2018/credentials/v1"
+                          - "https://www.w3.org/ns/credentials/v2"
+                          - "https://uri.etsi.org/cs/elm/v3"
+                        type:
+                          - "VerifiableCredential"
+                          - "EuropeanDigitalCredential"
+                display:
+                  - name: "eduCredentials"
+                    locale: "en"
+                    logo:
+                      uri: "https://example.com/images/logo.png"
+                      alt_text: "eduCredentials Logo"
+                authorization_endpoint: >-
+                  http://localhost:8002/auth/authorize
+                token_endpoint: "http://localhost:8002/auth/token"
+                pushed_authorization_request_endpoint: >-
+                  http://localhost:8002/auth/par

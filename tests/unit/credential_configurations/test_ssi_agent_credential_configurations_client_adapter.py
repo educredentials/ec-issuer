@@ -2,6 +2,9 @@
 
 import msgspec
 import pytest
+from typing import cast
+
+from collections.abc import Mapping
 
 from src.credential_configurations.credential_configurations_client_port import (
     CredentialTemplateNotFound,
@@ -107,11 +110,6 @@ def create_response() -> MockResponse:
 
 def _expected_payload(_template_id: str) -> dict[str, object]:
     return {
-        "title": None,
-        "dataModel": None,
-        "holderType": None,
-        "status": None,
-        "description": None,
         "type": ["VerifiableCredential"],
         "display": {
             "name": "Test Credential",
@@ -150,9 +148,10 @@ class TestSsiAgentCredentialTemplateClientAdapter:
     ):
         # The create response contains a valid template
         http_client.set_response(create_response)
+        # Second call is list -> returns merged metadata
         http_client.set_response(valid_metadata_response)
 
-        result = subject.update(credential_template)
+        result = subject.create(credential_template)
 
         assert result.id == "credential_template_id"
 
@@ -306,9 +305,17 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         # Second call is get from create -> returns merged metadata
         http_client.set_response(valid_metadata_response)
 
+        expected_request = RecordedRequest(
+            method="post",
+            url="http://agent.example.com/v0/create-new-template",
+            json=_expected_payload(credential_template.id),
+        )
+
         result = subject.update(credential_template)
 
         assert result.id == "credential_template_id"
+        assert len(http_client.calls) == 1
+        assert http_client.calls[0] == expected_request
 
     def test_update_raises_not_found_on_404(
         self,
@@ -369,3 +376,27 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         )
         with pytest.raises(CredentialTemplateClientError, match="Upstream error"):
             subject.delete("template-123")
+
+    def test_create_omits_none_fields_from_payload(
+        self,
+        http_client: RequestsSpy,
+        subject: SsiAgentCredentialTemplateClientAdapter,
+    ) -> None:
+        """Payload omits None fields, includes only explicitly set values."""
+        minimal_template = CredentialTemplate(
+            type=["VerifiableCredential"],
+        )
+        create_response = MockResponse(
+            status_code=200,
+            _content=msgspec.json.encode(
+                {"type": ["VerifiableCredential"], "format": "jwt_vc_json"}
+            ),
+        )
+        http_client.set_response(create_response)
+        _ = subject.create(minimal_template)
+
+        raw_payload = http_client.calls[0].json  # type: ignore[union-attr]
+        assert raw_payload is not None
+        payload = cast(Mapping[str, object], raw_payload)
+        for key, value in payload.items():
+            assert value is not None, f"Payload contains None for key {key!r}"
