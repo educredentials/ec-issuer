@@ -50,13 +50,6 @@ module-root = ""
 select = ["E", "F"]
 exclude = ["Justfile"]
 
-[tool.basedpyright]
-typeCheckingMode = "recommended"
-reportUnknownMemberType = "hint"
-reportUnknownArgumentType = "hint"
-reportUnknownVariableType = "hint"
-reportArgumentType = "none"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"

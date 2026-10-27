@@ -108,7 +108,7 @@ class RequestsSpy:
     def post(
         self,
         url: str,
-        json: JSON,  # pyright: ignore[reportExplicitAny, reportAny]
+        json: JSON,
     ) -> MockResponse:
         """Record a POST request and return a mock response.
 
@@ -119,7 +119,7 @@ class RequestsSpy:
         Returns:
             A mock Response object.
         """
-        self._calls.append(RecordedRequest(method="post", url=url, json=json))  # pyright: ignore[reportAny]
+        self._calls.append(RecordedRequest(method="post", url=url, json=json))
         return self._next_response_or_default(url=url)
 
     def put(

@@ -1,5 +1,7 @@
 """End-to-end tests for infrastructure endpoints."""
 
+import typing
+
 import pytest
 
 from tests.e2e.support.http_client import HttpClient
@@ -9,11 +11,11 @@ from tests.e2e.support.http_client import HttpClient
 class TestHealthEndpoint:
     """Test the health endpoint."""
 
-    def test_health_success(self, http_client: HttpClient):
+    def test_health_success(self, http_client: HttpClient) -> None:
         """Test that the health endpoint returns OK."""
         response = http_client.get("/health")
         assert response.status_code == 200
-        data = response.json()
+        data = typing.cast(dict[str, str], response.json())
         assert data == {"status": "healthy", "database": "ok"}
 
 
