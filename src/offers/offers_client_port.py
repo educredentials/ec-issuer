@@ -61,3 +61,12 @@ class OffersClientPort(ABC):
             OffersClientError: When the upstream service returns an error.
         """
         ...
+
+    @abstractmethod
+    def rollback(self, offer_id: str) -> None:
+        """Rollback a partially created offer (delete credential + offer).
+
+        Args:
+            offer_id: The offer identifier to roll back.
+        """
+        ...

@@ -58,6 +58,10 @@ class _OffersRepositoryStub(OffersRepositoryPort):
     def close(self) -> None:
         pass
 
+    @override
+    def health_check(self) -> bool:
+        return True
+
 
 class _OffersClientSpy(OffersClientPort):
     """Records all calls to create_ob3() for assertion."""
@@ -107,6 +111,15 @@ class _OffersClientSpy(OffersClientPort):
             A stub Offer.
         """
         return Offer(offer_id=offer_id, award_id="", uri=None)
+
+    @override
+    def rollback(self, offer_id: str) -> None:
+        """Rollback a partially created offer (no-op for spies).
+
+        Args:
+            offer_id: The offer identifier to roll back.
+        """
+        pass
 
 
 _SAMPLE_ELM_CREDENTIAL: dict[str, object] = {

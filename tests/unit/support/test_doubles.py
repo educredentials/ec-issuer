@@ -114,6 +114,15 @@ class OffersClientStub(OffersClientPort):
             uri=f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}",
         )
 
+    @override
+    def rollback(self, offer_id: str) -> None:
+        """Rollback a partially created offer (no-op for stubs).
+
+        Args:
+            offer_id: The offer identifier to roll back.
+        """
+        pass
+
 
 class OffersClientStubNotFound(OffersClientStub):
     """Stub: get() always raises OfferNotFound (missing offer in the client)."""
@@ -129,6 +138,15 @@ class OffersClientStubNotFound(OffersClientStub):
             OfferNotFound: Always.
         """
         raise OfferNotFound(f"Offer {offer_id} not found")
+
+    @override
+    def rollback(self, offer_id: str) -> None:
+        """Rollback a partially created offer (no-op for stubs).
+
+        Args:
+            offer_id: The offer identifier to roll back.
+        """
+        pass
 
 
 class OffersClientSpy(OffersClientPort):
@@ -195,6 +213,15 @@ class OffersClientSpy(OffersClientPort):
             uri=f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}",
         )
 
+    @override
+    def rollback(self, offer_id: str) -> None:
+        """Record the rollback call.
+
+        Args:
+            offer_id: The offer identifier to roll back.
+        """
+        self._calls.append(("rollback", {"offer_id": offer_id}))
+
 
 class OffersRepositoryStub(OffersRepositoryPort):
     """Stub: OffersRepositoryPort with in-memory behaviour."""
@@ -223,6 +250,11 @@ class OffersRepositoryStub(OffersRepositoryPort):
     def close(self) -> None:
         """No-op close."""
 
+    @override
+    def health_check(self) -> bool:
+        """Return True for the stub."""
+        return True
+
 
 class OffersRepositoryStubNotFound(OffersRepositoryStub):
     """Stub: get() always raises KeyError (missing offer in the repository)."""
@@ -246,6 +278,11 @@ class OffersRepositorySpy(OffersRepositoryPort):
     def __init__(self) -> None:
         """Initialise with empty call log."""
         self._calls: list[tuple[str, dict[str, str | Offer]]] = []
+
+    @override
+    def health_check(self) -> bool:
+        """Return True for the spy."""
+        return True
 
     @property
     def calls(self) -> list[tuple[str, dict[str, str | Offer]]]:
@@ -504,5 +541,28 @@ class CredentialConverterStub:
         """
         self._calls.append(("convert", {"credential": credential}))
         return self._sample_response
+
+
+class UnhealthyOfferServiceStub(OfferService):
+    """Stub: health_check always returns False (simulates DB outage)."""
+
+    def __init__(self) -> None:
+        """Initialise with stub dependencies."""
+        super().__init__(
+            access_control=AccessControlStub(),
+            offers_repository=OffersRepositoryStub(),
+            offers_client=OffersClientStub(),
+            awards_client=AwardsClientStub(),
+            credential_converter=CredentialConverterStub(),
+        )
+
+    @override
+    def health_check(self) -> bool:
+        """Always return False to simulate an unhealthy database.
+
+        Returns:
+            False.
+        """
+        return False
 
 

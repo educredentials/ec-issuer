@@ -90,3 +90,13 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
     def close(self) -> None:
         """Close the database connection pool."""
         self.close_db()
+
+    @override
+    def health_check(self) -> bool:
+        """Return True when the database is reachable."""
+        try:
+            with self._pool.connection() as conn:
+                _ = conn.execute("SELECT 1").fetchone()
+            return True
+        except Exception:
+            return False

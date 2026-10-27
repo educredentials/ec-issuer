@@ -13,7 +13,8 @@ class TestHealthEndpoint:
         """Test that the health endpoint returns OK."""
         response = http_client.get("/health")
         assert response.status_code == 200
-        assert response.text == "OK"
+        data = response.json()
+        assert data == {"status": "healthy", "database": "ok"}
 
 
 @pytest.mark.e2e

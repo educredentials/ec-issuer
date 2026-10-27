@@ -153,9 +153,12 @@ class OfferService:
         except CredentialConverterClientError as e:
             raise OfferServiceError(str(e)) from e
 
-        # TODO: wrap in transaction
-        offer = Offer(offer_id=offer_id, award_id=award_id, uri=uri)
-        self._offers_repository.store(offer)
+        try:
+            offer = Offer(offer_id=offer_id, award_id=award_id, uri=uri)
+            self._offers_repository.store(offer)
+        except Exception:
+            self._offers_client.rollback(offer_id)
+            raise
 
         return offer
 
@@ -189,3 +192,7 @@ class OfferService:
             award_id=stored_offer.award_id,
             uri=upstream_offer.uri,
         )
+
+    def health_check(self) -> bool:
+        """Return True when the database is reachable."""
+        return self._offers_repository.health_check()

@@ -5,7 +5,7 @@ import atexit
 import sys
 from flask import Flask
 
-from src.access_control.hardcoded_adapter import HardcodedAccessControlAdapter
+from src.access_control.token_adapter import TokenAccessControlAdapter
 from src.api.http_adapter import HttpApiAdapter
 from src.awards.http_awards_client_adapter import HttpAwardsClientAdapter
 from src.config.config import EnvConfigRepo
@@ -37,7 +37,7 @@ class App:
             credential_configuration_ids=credential_configuration_ids,
         )
 
-        access_control = HardcodedAccessControlAdapter()
+        access_control = TokenAccessControlAdapter()
 
         awards_client = HttpAwardsClientAdapter(
             awards_service_url=self.config.awards_service_url,

@@ -267,3 +267,18 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             )
 
         return response.text
+
+    @override
+    def rollback(self, offer_id: str) -> None:
+        """Rollback a partially created offer.
+
+        The SSI agent does not expose a delete endpoint for credentials or
+        offers, so this is a no-op.  The repository store failure that
+        triggers this path is expected to be transient (e.g. connection
+        hiccup or unique constraint violation) and the partial credential
+        and offer will be cleaned up by the SSI agent's garbage collection.
+
+        Args:
+            offer_id: The offer identifier to roll back.
+        """
+        ...

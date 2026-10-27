@@ -13,13 +13,13 @@ paths:
           content:
             application/json:
               example:
-                id: 123
+                id: "123"
                 entity_id: "award-123"
                 name: "Teamwork Badge"
                 issued_on: "2024-01-01"
                 image: "https://example.com/badges/teamwork.png"
                 badgeclass:
-                  id: 456
+                  id: "456"
                   name: "Teamwork"
                   description: "Demonstrates team collaboration"
                   type: ["VerifiableCredential", "OpenBadgeCredential"]
@@ -37,9 +37,7 @@ paths:
                         addressCountry: "NL"
                       identifier: "example-org"
                   badgeclass_url: "https://badgr.com/badgeclasses/456"
-                  image:
-                    data: "https://example.com/badges/teamwork.png"
-                    id: "https://example.com/badges/teamwork.png"
+                  image: "https://example.com/badges/teamwork.png"
               schema:
                 type: object
 
@@ -69,13 +67,13 @@ paths:
           content:
             application/json:
               example:
-                id: 123
+                id: "123"
                 entity_id: "award-123"
                 name: "Teamwork Badge"
                 issued_on: "2024-01-01"
                 image: "https://example.com/badges/teamwork.png"
                 badgeclass:
-                  id: 456
+                  id: "456"
                   name: "Teamwork"
                   description: "Demonstrates team collaboration"
                   type: ["VerifiableCredential", "OpenBadgeCredential"]
@@ -93,8 +91,6 @@ paths:
                         addressCountry: "NL"
                       identifier: "example-org"
                   badgeclass_url: "https://badgr.com/badgeclasses/456"
-                  image:
-                    data: "https://example.com/badges/teamwork.png"
-                    id: "https://example.com/badges/teamwork.png"
+                  image: "https://example.com/badges/teamwork.png"
               schema:
                 type: object

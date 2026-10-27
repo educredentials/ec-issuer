@@ -12,7 +12,11 @@ from src.offers.offer_service import (
 )
 
 from ..api.conftest import setup_http_client
-from ..support.test_doubles import DenyingOfferServiceStub, OfferServiceSpy
+from ..support.test_doubles import (
+    DenyingOfferServiceStub,
+    OfferServiceSpy,
+    UnhealthyOfferServiceStub,
+)
 
 
 class TestHttpAdapter:
@@ -204,6 +208,24 @@ class TestHttpAdapter:
             json={},
         )
         assert response.status_code == 400
+
+    def test_health_returns_200_when_db_healthy(self, http_client: FlaskClient):
+        """GET /health returns 200 with healthy DB status."""
+        response = http_client.get("/health")
+        assert response.status_code == 200
+        body = cast(dict[str, str], response.get_json(force=True))
+        assert body["status"] == "healthy"
+        assert body["database"] == "ok"
+
+    def test_health_returns_503_when_db_unhealthy(self):
+        """GET /health returns 503 when database is unreachable."""
+        unhealthy_service = UnhealthyOfferServiceStub()
+        unhealthy_http_client: FlaskClient = setup_http_client(unhealthy_service)
+        response = unhealthy_http_client.get("/health")
+        assert response.status_code == 503
+        body = cast(dict[str, str], response.get_json(force=True))
+        assert body["status"] == "unhealthy"
+        assert body["database"] == "error"
 
 
 class TestServeExtensionContext:

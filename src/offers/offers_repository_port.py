@@ -33,3 +33,7 @@ class OffersRepositoryPort(ABC):
     @abstractmethod
     def close(self) -> None:
         """Close any resources held by this repository."""
+
+    @abstractmethod
+    def health_check(self) -> bool:
+        """Return True when the database is reachable."""

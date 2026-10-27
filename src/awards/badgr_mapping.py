@@ -466,7 +466,11 @@ def _resolve_image(
 
 
 def _resolve_identifiers(dto: _BadgrAwardResponse) -> list[IdentityObject]:
-    """Build an identifier list from recipient data in the DTO."""
+    """Build an identifier list from recipient data in the DTO.
+
+    TODO: hash identity values before storing (salted SHA-256, pending team
+    discussion on salt management).
+    """
     identifiers: list[IdentityObject] = []
     if dto.email:
         identifiers.append(

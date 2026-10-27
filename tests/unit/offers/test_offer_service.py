@@ -1,5 +1,7 @@
 """Unit tests for OfferService."""
 
+from typing import override
+
 from src.awards.models import ob3_award_to_json_dict
 
 import pytest
@@ -256,6 +258,39 @@ class TestOfferServiceGetOffer:
 
         with pytest.raises(OfferServiceError):
             _ = service.get_offer("test-123")
+
+
+class TestOfferServiceTransactionRollback:
+    """Tests for transaction rollback on store failure."""
+
+    def test_rollback_called_when_repository_store_fails(self):
+        """create_offer rolls back the client when repository store raises."""
+
+        class _FailingRepositoryStub(OffersRepositoryStub):
+            """Stub that raises on store to simulate a transient failure."""
+
+            @override
+            def store(self, offer: Offer) -> None:
+                """Raise an exception to simulate a transient failure."""
+                raise RuntimeError("transient db failure")
+
+        offers_client = OffersClientSpy()
+        service = OfferService(
+            access_control=AccessControlStub(),
+            offers_repository=_FailingRepositoryStub(),
+            offers_client=offers_client,
+            awards_client=AwardsClientStub(),
+            credential_converter=_CONVERTER,
+        )
+
+        with pytest.raises(RuntimeError, match="transient db failure"):
+            _ = service.create_offer(award_id="award-42", bearer_token="test-token")
+
+        # Verify create_ob3 was called first, then rollback was called
+        assert len(offers_client.calls) == 2
+        assert offers_client.calls[0][0] == "create_ob3"
+        assert offers_client.calls[1][0] == "rollback"
+        assert offers_client.calls[1][1] == {"offer_id": offers_client.calls[0][1]["offer_id"]}
 
 
 class TestOfferServiceCreateOfferCredentialType:

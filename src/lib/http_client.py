@@ -1,7 +1,4 @@
 """HTTP client interface for dependency injection."""
-# BK: Ignored, because this is how "requests" works, and wrapping it to avoid
-# typing issues adds far too much complexity.
-# pyright: reportExplicitAny=false, reportAny=false
 
 from typing import Any, Protocol, TypeAlias
 
@@ -134,7 +131,7 @@ class RequestsHttpClient:
         json: JSON | None = None,
         headers: dict[str, str] | None = None,
     ) -> HttpResponse:
-        kwargs: dict[str, object] = {"timeout": self._default_timeout}
+        kwargs: dict[str, Any] = {}
         if json is not None:
             kwargs["json"] = json
         if headers is not None:
@@ -142,5 +139,6 @@ class RequestsHttpClient:
         return requests.request(
             method=method,
             url=url,
+            timeout=self._default_timeout,
             **kwargs,
         )

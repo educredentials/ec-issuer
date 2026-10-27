@@ -82,9 +82,16 @@ class HttpApiAdapter(ApiPort):
 
         @app.route("/health")
         @self._prometheus_metrics.do_not_track()
-        def health() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
-            """Health check endpoint."""
-            return "OK"
+        def health() -> tuple[dict[str, str], int]:  # pyright: ignore[reportUnusedFunction]
+            """Health check endpoint.
+
+            Returns 200 with DB status when healthy, or 503 when the
+            database is unreachable.
+            """
+            db_ok = self.offer_service.health_check()
+            if db_ok:
+                return {"status": "healthy", "database": "ok"}, 200
+            return {"status": "unhealthy", "database": "error"}, 503
 
         @app.route("/")
         def root() -> str:  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
