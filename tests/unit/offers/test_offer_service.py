@@ -290,7 +290,8 @@ class TestOfferServiceTransactionRollback:
         assert len(offers_client.calls) == 2
         assert offers_client.calls[0][0] == "create_ob3"
         assert offers_client.calls[1][0] == "rollback"
-        assert offers_client.calls[1][1] == {"offer_id": offers_client.calls[0][1]["offer_id"]}
+        offer_id = offers_client.calls[0][1]["offer_id"]
+        assert offers_client.calls[1][1] == {"offer_id": offer_id}
 
 
 class TestOfferServiceCreateOfferCredentialType:
