@@ -188,7 +188,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         Returns:
             The EDC/W3C 2.0 context array.
         """
-        credential_context: list[str] = credential["credential_context"]  # pyright: ignore[reportAssignmentType]
+        credential_context: list[str] = credential.get("credential_context") or []  # pyright: ignore[reportAssignmentType]
         return list(chain([
             "https://www.w3.org/2018/credentials/v1",
             "https://www.w3.org/ns/credentials/v2",
