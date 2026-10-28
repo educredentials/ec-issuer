@@ -144,8 +144,7 @@ jobs:
           SSI_AGENT_EDC_URL: http://localhost:8005
           AWARDS_SERVICE_URL: http://localhost:8003/earner
           CREDENTIAL_CONVERTER_URL: http://localhost:8004
-          ALLOWED_CORS_DOMAINS: http://localhost:8000, \
-            http://localhost:3000
+          ALLOWED_CORS_DOMAINS: "http://localhost:8000, http://localhost:3000"
           CREDENTIAL_TEMPLATE_JSON_DIR: ${{ github.workspace }}/templates
           POSTGRES_CONNECTION_STRING: >-
             postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
