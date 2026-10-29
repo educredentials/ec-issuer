@@ -67,15 +67,6 @@ jobs:
             -v "$WS/dependencies/prism/converter-mock.yaml:/app/mock.yaml" \
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
-      - name: Start mock EDC SSI agent
-        run: |
-          WS="${{ github.workspace }}"
-          docker run -d \
-            --name mock-ssi-agent-edc \
-            -p 8005:4010 \
-            -v "$WS/dependencies/prism/ssi-agent-mock-edc.yaml:/app/mock.yaml" \
-            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
-
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -109,7 +100,6 @@ jobs:
           export SERVER_HOST=0.0.0.0
           export SERVER_PORT=8000
           export SSI_AGENT_URL=http://localhost:8001
-          export SSI_AGENT_EDC_URL=http://localhost:8005
           export DEBUG_METRICS=1
           DB_URL="postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
           export POSTGRES_CONNECTION_STRING="$DB_URL"
@@ -141,7 +131,6 @@ jobs:
           SERVER_PORT: 8000
           EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
-          SSI_AGENT_EDC_URL: http://localhost:8005
           AWARDS_SERVICE_URL: http://localhost:8003/earner
           CREDENTIAL_CONVERTER_URL: http://localhost:8004
           ALLOWED_CORS_DOMAINS: "http://localhost:8000, http://localhost:3000"
@@ -160,13 +149,11 @@ jobs:
           pkill -f "ec-issuer-web" || true
           docker stop \
             mock-ssi-agent \
-            mock-ssi-agent-edc \
             mock-oidc-auth \
             mock-awards \
             mock-converter 2>/dev/null || true
           docker rm \
             mock-ssi-agent \
-            mock-ssi-agent-edc \
             mock-oidc-auth \
             mock-awards \
             mock-converter 2>/dev/null || true
