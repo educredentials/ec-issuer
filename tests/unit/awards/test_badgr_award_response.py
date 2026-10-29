@@ -726,6 +726,7 @@ class TestOb3AwardWithNewFields:
         }
         result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")
         assert result.credentialSubject.achievement.time_investment == 25.5
+        assert result.validFrom == "2024-01-01T00:00:00Z"
 
     def test_to_ob3_award_issuer_type_from_flat_field(self) -> None:
         """_resolve_issuer uses the flat Type field from _BadgrIssuer."""
@@ -813,6 +814,7 @@ class TestOb3AwardWithNewFields:
         ach = result.credentialSubject.achievement
         assert ach.language == "nl_NL"
         assert ach.education_program_identifier == ["56823"]
+        assert result.validFrom == "2024-01-01T00:00:00Z"
 
     def test_criteria_narrative_from_nested_criteria(self) -> None:
         """criteria.narrative is extracted from badgeclass.criteria."""
@@ -841,3 +843,4 @@ class TestOb3AwardWithNewFields:
         assert ach.criteria.narrative == (
             "Will appreciate the benefits of learning a foreign language."
         )
+        assert result.validFrom == "2024-01-01T00:00:00Z"
