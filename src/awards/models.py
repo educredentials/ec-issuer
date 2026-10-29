@@ -69,6 +69,7 @@ class Achievement:
     assessment_type: str | None = None
     assessment_id_verified: bool | None = None
     assessment_supervised: bool | None = None
+    time_investment: float | None = None
 
 
 @dataclass

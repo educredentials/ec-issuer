@@ -42,7 +42,7 @@ class TestBadgrAwardResponseDeserialization:
             {
                 "id": "https://DOMAIN/assertions/3527",
                 "name": "Teamwork Badge",
-                "issued_on": "2010-01-01T00:00:00Z",
+                "issuedOn": "2010-01-01T00:00:00Z",
                 "badgr": null,
                 "revoked": false,
                 "public": true,
@@ -215,6 +215,7 @@ class TestToOb3Award:
                     assessment_type=None,
                     assessment_id_verified=None,
                     assessment_supervised=None,
+                    time_investment=None,
                 ),
                 identifiers=[
                     _IdentityObject(
@@ -689,16 +690,9 @@ class TestOb3AwardWithNewFields:
                 ),
                 participation="enrolment",
                 assessment_type="summative",
-                extensions=[
-                    {
-                        "name": "extensions:LanguageExtension",
-                        "originalJson": {"Language": "nl"},
-                    },
-                    {
-                        "name": "extensions:ECTSExtension",
-                        "originalJson": {"ECTS": 5},
-                    },
-                ],
+                language="nl",
+                ects=5,
+                time_investment=42.0,
             ),
         )
         result = _to_ob3_award(dto)
@@ -706,6 +700,7 @@ class TestOb3AwardWithNewFields:
         assert result.validUntil == "2025-01-01T00:00:00Z"
         assert ach.language == "nl"
         assert ach.ects == 5
+        assert ach.time_investment == 42.0
         assert ach.assessment_type == "summative"
         assert ach.assessment_id_verified is None
         assert ach.assessment_supervised is None
@@ -713,6 +708,61 @@ class TestOb3AwardWithNewFields:
         # 4 flat fields: participation, assessment_type, language, ects
         assert result.credential_context is not None
         assert len(result.credential_context) == 4
+
+    def test_to_ob3_award_time_investment_from_raw_json(self) -> None:
+        """time_investment flows from flat JSON field through to Achievement."""
+        raw: dict[str, object] = {
+            "id": "https://DOMAIN/assertions/1",
+            "issuedOn": "2024-01-01T00:00:00Z",
+            "badgeclass": {
+                "id": "https://DOMAIN/badges/1",
+                "name": "Badge",
+                "issuer": {
+                    "id": "https://DOMAIN/issuers/1",
+                    "name": {"en": "Issuer"},
+                },
+                "TimeInvestment": 25.5,
+            },
+        }
+        result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")
+        assert result.credentialSubject.achievement.time_investment == 25.5
+
+    def test_to_ob3_award_issuer_type_from_flat_field(self) -> None:
+        """_resolve_issuer uses the flat Type field from _BadgrIssuer."""
+        dto = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/1",
+            issued_on="2024-01-01T00:00:00Z",
+            badgeclass=_BadgrBadgeclass(
+                name="Badge",
+                entity_id="https://DOMAIN/badges/1",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/1",
+                    name_english="Issuer",
+                    faculty=None,
+                    type="Organization",
+                ),
+            ),
+        )
+        result = _to_ob3_award(dto)
+        assert result.issuer.type == ["Organization"]
+
+    def test_to_ob3_award_issuer_type_fallback(self) -> None:
+        """_resolve_issuer falls back to Profile when Type is missing."""
+        dto = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/1",
+            issued_on="2024-01-01T00:00:00Z",
+            badgeclass=_BadgrBadgeclass(
+                name="Badge",
+                entity_id="https://DOMAIN/badges/1",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/1",
+                    name_english="Issuer",
+                    faculty=None,
+                ),
+            ),
+        )
+        result = _to_ob3_award(dto)
+        assert result.issuer.type == ["Profile"]
 
     def test_to_ob3_award_assessment_fields_produce_context_urls(self) -> None:
         """_to_ob3_award includes assessment-related context URLs when flat
@@ -742,7 +792,7 @@ class TestOb3AwardWithNewFields:
     def test_extensions_from_raw_json(self) -> None:
         """_extract_extension_values works when data arrives via msgspec from
         raw JSON (simulating the real API flow)."""
-        raw = {
+        raw: dict[str, object] = {
             "id": "https://DOMAIN/assertions/1",
             "issuedOn": "2024-01-01T00:00:00Z",
             "expiresAt": "2025-01-01T00:00:00Z",
@@ -755,27 +805,8 @@ class TestOb3AwardWithNewFields:
                         "en": "Issuer",
                     },
                 },
-                "extensions": [
-                    {
-                        "name": "extensions:LanguageExtension",
-                        "originalJson": {
-                            "@context": "http://example.com/context.json",
-                            "type": ["Extension", "extensions:LanguageExtension"],
-                            "Language": "nl_NL",
-                        },
-                    },
-                    {
-                        "name": "extensions:EducationProgramIdentifierExtension",
-                        "originalJson": {
-                            "@context": "http://example.com/context.json",
-                            "type": [
-                                "Extension",
-                                "extensions:EducationProgramIdentifierExtension",
-                            ],
-                            "EducationProgramIdentifier": [56823],
-                        },
-                    },
-                ],
+                "Language": "nl_NL",
+                "EducationProgramIdentifier": ["56823"],
             },
         }
         result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")

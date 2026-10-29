@@ -22,7 +22,7 @@ from ..support.requests_doubles import MockResponse, RequestsSpy
 
 _BADGR_AWARD_JSON = (
     b'{"id":"https://DOMAIN/assertions/3527","name":"Teamwork Badge",'
-    b'"issued_on":"2010-01-01T00:00:00Z",'
+    b'"issuedOn":"2010-01-01T00:00:00Z",'
     b'"badgr":null,"revoked":false,"public":true,'
     b'"grade_achieved":null,"expires_at":null,'
     b'"badgeclass":{"id":"https://DOMAIN/badges/21","name":"Teamwork Badge",'
@@ -36,7 +36,7 @@ _BADGR_AWARD_JSON = (
 
 _BADGR_AWARD_JSON_WITHOUT_ID = (
     b'{"name":"Teamwork Badge",'
-    b'"issued_on":"2010-01-01T00:00:00Z",'
+    b'"issuedOn":"2010-01-01T00:00:00Z",'
     b'"badgeclass":{"name":"Teamwork Badge"}}'
 )
 

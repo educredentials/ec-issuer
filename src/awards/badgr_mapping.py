@@ -77,6 +77,8 @@ class _BadgrIssuer(msgspec.Struct):
     name_dutch: str | None = None
     name_english: str | None = None
     faculty: _BadgrFaculty | None = None
+    # Flat extension field from the issuer.
+    type: str | None = msgspec.field(name="Type", default=None)
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrIssuer:
@@ -105,13 +107,24 @@ class _BadgrBadgeclass(msgspec.Struct):
     image: str | None = msgspec.field(name="image", default=None)
     criteria: _BadgrCriteria | None = None
     issuer: _BadgrIssuer | None = None
-    # Flat extension fields (top-level on badgeclass).
+    # Flat extension fields from the badgeclass.
+    eqf: int | None = msgspec.field(name="EQF", default=None)
+    ects: float | None = msgspec.field(name="ECTS", default=None)
+    language: str | None = msgspec.field(name="Language", default=None)
+    learning_outcome: list[dict[str, str]] | None = msgspec.field(
+        name="LearningOutcome", default=None
+    )
+    time_investment: float | None = msgspec.field(
+        name="TimeInvestment", default=None
+    )
+    education_program_identifier: list[str] | None = msgspec.field(
+        name="EducationProgramIdentifier", default=None
+    )
+    # Assessment/participation flat fields.
     participation: str | None = None
     assessment_type: str | None = None
     assessment_id_verified: bool | None = None
     assessment_supervised: bool | None = None
-    # Array of extension objects from the awards service.
-    extensions: list[dict[str, object]] | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrBadgeclass:
@@ -124,7 +137,7 @@ class _BadgrAwardResponse(msgspec.Struct):
 
     entity_id: str | None = msgspec.field(name="id", default=None)
     name: str | None = None
-    issued_on: str | None = None
+    issued_on: str | None = msgspec.field(name="issuedOn", default=None)
     image: str | None = msgspec.field(name="image", default=None)
     badgeclass: _BadgrBadgeclass | None = None
     # Person/learner fields.
@@ -152,6 +165,9 @@ class _BadgrAwardResponse(msgspec.Struct):
     education_program_identifier: list[str] | None = msgspec.field(
         name="education_program_identifier", default=None
     )
+    time_investment: float | None = msgspec.field(
+        name="time_investment", default=None
+    )
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrAwardResponse:
@@ -169,72 +185,40 @@ class _BadgeclassExtensions(msgspec.Struct):
     education_program_identifier: list[str] | None = None
 
 
-_EXT_MAP: dict[str, str] = {
-    "extensions:LanguageExtension": "language",
-    "extensions:ECTSExtension": "ects",
-    "extensions:EQFExtension": "eqf",
-    "extensions:LearningOutcomeExtension": "learning_outcome",
-    "extensions:EducationProgramIdentifierExtension": "education_program_identifier",
-}
+
 
 # Maps snake_case field names to the actual keys in originalJson (camelCase).
-_ORIGINAL_JSON_KEY_MAP: dict[str, str] = {
-    "language": "Language",
-    "ects": "ECTS",
-    "eqf": "EQF",
-    "learning_outcome": "learningOutcomes",
-    "education_program_identifier": "EducationProgramIdentifier",
-}
+
 
 
 def _extract_extension_values(
     badgeclass: _BadgrBadgeclass | None,
 ) -> _BadgeclassExtensions:
-    """Extract extension values from ``badgeclass.extensions``."""
-    if badgeclass is None or badgeclass.extensions is None:
-        log.debug("_extract_extension_values: badgeclass is None or has no extensions")
+    """Extract extension values from flat badgeclass fields."""
+    if badgeclass is None:
         return _BadgeclassExtensions()
 
-    vals: dict[str, object] = {}
-    for ext in badgeclass.extensions:
-        ext_name = str(ext.get("name", ""))
-        original = ext.get("originalJson", {})
-        log.debug(
-            "_extract_extension_values: ext_name=%s, original=%s",
-            ext_name,
-            original,
-        )
-        if not isinstance(original, dict):
-            continue
-        if ext_name not in _EXT_MAP:
-            continue
-        field_name = _EXT_MAP[ext_name]
-        json_key = _ORIGINAL_JSON_KEY_MAP.get(field_name, field_name)
-        vals[field_name] = original.get(json_key)
-
-    _lang = vals.get("language")
-    _ects = vals.get("ects")
-    _eqf = vals.get("eqf")
-    _lo = vals.get("learning_outcome")
-    _epi = vals.get("education_program_identifier")
-    log.debug("_extract_extension_values: extracted vals=%s", vals)
-
-    try:
-        _ects_float = float(_ects) if isinstance(_ects, (int, float)) else None
-    except (TypeError, ValueError):
-        _ects_float = None
-    try:
-        _eqf_int = int(_eqf) if isinstance(_eqf, int) else None
-    except (TypeError, ValueError):
-        _eqf_int = None
-
     return _BadgeclassExtensions(
-        language=str(_lang) if _lang is not None else None,
-        ects=_ects_float,
-        eqf=_eqf_int,
-        learning_outcome=_lo if isinstance(_lo, list) else None,
+        language=(
+            str(badgeclass.language)
+            if badgeclass.language is not None else None
+        ),
+        ects=(
+            float(badgeclass.ects)
+            if isinstance(badgeclass.ects, (int, float)) else None
+        ),
+        eqf=(
+            int(badgeclass.eqf)
+            if isinstance(badgeclass.eqf, int) else None
+        ),
+        learning_outcome=(
+            badgeclass.learning_outcome
+            if isinstance(badgeclass.learning_outcome, list) else None
+        ),
         education_program_identifier=(
-            [str(v) for v in _epi] if isinstance(_epi, list) else None
+            [str(v) for v in badgeclass.education_program_identifier]
+            if isinstance(badgeclass.education_program_identifier, list)
+            else None
         ),
     )
 
@@ -322,7 +306,7 @@ def _to_ob3_award(
         ext_vals=ext_vals,
     )
 
-    # Extension fields from badgeclass.extensions.originalJson take priority.
+    # Extension fields from badgeclass flat fields take priority.
     language = ext_vals.language or dto.language
     ects = ext_vals.ects or dto.ects
     eqf = ext_vals.eqf or dto.eqf
@@ -331,6 +315,10 @@ def _to_ob3_award(
         ext_vals.education_program_identifier
         or dto.education_program_identifier
     )
+    # Flat field from badgeclass level, fallback to dto root.
+    time_investment = (
+        badgeclass.time_investment if badgeclass else None
+    ) or dto.time_investment
 
     # Flat extension fields from badgeclass level.
     participation = (
@@ -380,6 +368,7 @@ def _to_ob3_award(
                 assessment_type=assessment_type,
                 assessment_id_verified=assessment_id_verified,
                 assessment_supervised=assessment_supervised,
+                time_investment=time_investment,
             ),
             identifiers=identifiers,
         ),
@@ -391,16 +380,20 @@ def _resolve_issuer(dto: _BadgrAwardResponse) -> Issuer:
     """Resolve the issuer from the DTO."""
     badgeclass = dto.badgeclass
     issuer_name = ""
+    issuer_type = ["Profile"]
     if badgeclass is not None and badgeclass.issuer is not None:
         issuer_id = badgeclass.issuer.entity_id or ""
         issuer_name = badgeclass.issuer.name_english or ""
+        flat_type = badgeclass.issuer.type
+        if flat_type:
+            issuer_type = [flat_type]
     else:
         issuer_id = ""
     if not issuer_name and badgeclass is not None:
         issuer_name = badgeclass.name or ""
     return Issuer(
         id=issuer_id,
-        type=["Profile"],
+        type=issuer_type,
         name=issuer_name,
     )
 
