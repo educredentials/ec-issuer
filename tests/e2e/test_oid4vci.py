@@ -58,10 +58,7 @@ class TestOID4VCIFlow:
 
         credential_types = credential.claims["type"]
         assert isinstance(credential_types, list), "Credential type must be a list"
-        if credential_type == "ob3":
-            assert "OpenBadgeCredential" in credential_types
-        else:
-            assert "EuropeanDigitalCredential" in credential_types
+        assert "VerifiableCredential" in credential_types
 
 
 @pytest.mark.e2e

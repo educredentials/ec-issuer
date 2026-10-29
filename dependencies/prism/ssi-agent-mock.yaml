@@ -27,7 +27,51 @@ paths:
                   OpenbadgeCredential:
                     format: "vc+sd-jwt"
                     credential_definition:
-                      type: ["VerifiableCredential", "OpenbadgeCredential"]
+                      type: ["VerifiableCredential", "OpenBadgeCredential"]
+                    cryptographic_binding_methods_supported:
+                      - "did:jwk"
+                      - "did:key"
+                      - "did:web"
+                    credential_signing_alg_values_supported:
+                      - "ES256"
+                      - "EdDSA"
+                    proof_types_supported:
+                      jwt:
+                        proof_signing_alg_values_supported:
+                          - "ES256"
+                          - "EdDSA"
+                    credential_metadata:
+                      display:
+                        - name: "Open Badge Credential"
+                          locale: "en"
+                          logo:
+                            uri: "https://example.com/images/logo.png"
+                            alt_text: "Blue Logo"
+                        - name: "Open Badge Referentie"
+                          locale: "nl"
+                          logo:
+                            uri: "https://example.com/images/logo.png"
+                            alt_text: "Blauw Logo"
+                  EuropeanDigitalCredential:
+                    format: "vc+sd-jwt"
+                    credential_definition:
+                      type: ["VerifiableCredential", "EuropeanDigitalCredential"]
+                    cryptographic_binding_methods_supported:
+                      - "did:jwk"
+                      - "did:key"
+                      - "did:web"
+                    credential_signing_alg_values_supported:
+                      - "ES256"
+                      - "EdDSA"
+                    proof_types_supported:
+                      jwt:
+                        proof_signing_alg_values_supported:
+                          - "ES256"
+                          - "EdDSA"
+                    credential_metadata:
+                      display:
+                        - name: "European Digital Credential"
+                          locale: "en"
                     cryptographic_binding_methods_supported:
                       - "did:jwk"
                       - "did:key"
@@ -346,7 +390,12 @@ paths:
     post:
       requestBody:
         content:
-          application/json: {}
+          application/json:
+            schema:
+              type: object
+              properties:
+                credential_configuration_id:
+                  type: string
       responses:
         "200":
           description: Credential endpoint
@@ -362,7 +411,17 @@ paths:
                       properties:
                         credential:
                           type: string
-                          example: "eyJ0eXAiOiJkYytzZC1qd3QiLCJhbGciOiJFZERTQSJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWxzLzM1MjciLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJkaWQ6d2ViOmxvY2FsaG9zdCUzQTgwMDEiLCJ0eXBlIjpbIlByb2ZpbGUiXSwibmFtZSI6IkV4YW1wbGUgQ29ycCJ9LCJ2YWxpZEZyb20iOiIyMDEwLTAxLTAxVDAwOjAwOjAwWiIsIm5hbWUiOiJUZWFtd29yayBCYWRnZSIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImlkIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSIsInR5cGUiOlsiQWNoaWV2ZW1lbnRTdWJqZWN0Il0sImFjaGlldmVtZW50Ijp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9hY2hpZXZlbWVudHMvMjFzdC1jZW50dXJ5LXNraWxscy90ZWFtd29yayIsInR5cGUiOlsiQWNoaWV2ZW1lbnQiXSwiY3JpdGVyaWEiOnsibmFycmF0aXZlIjoiVGVhbSBtZW1iZXJzIGFyZSBub21pbmF0ZWQgZm9yIHRoaXMgYmFkZ2UgYnkgdGhlaXIgcGVlcnMgYSBuZCByZWNvZ25pemVkIHVwb24gcmV2aWV3IGJ5IEV4YW1wbGUgQ29ycCBtYW5hZ2VtZW50LiJ9LCJkZXNjcmlwdGlvbiI6IlRoaXMgYmFkZ2UgcmVjb2duaXplcyB0aGUgZGV2ZWxvcG1lbnQgb2YgdGhlIGNhcGFjaXR5IHRvIGMgb2xsYWJvcmF0ZSB3aXRoaW4gYSBncm91cCBlbnZpcm9ubWVudC4iLCJuYW1lIjoiVGVhbXdvcmsifX0sImlzcyI6ImRpZDp3ZWI6bG9jYWxob3N0JTNBODAwMSIsImp0aSI6Imh0dHA6Ly9leGFtcGxlLmNvbS9jcmVkZW50aWFscy8zNTI3Iiwic3ViIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSJ9.grTc6_i5JfKISK1gT99m1l3fiPsWgdaf4NaldEBq0n5Vnyrgagz6ZV5lnLG-_EbgY6kdIJjARbr7X-uq-bBaAw"
+              examples:
+                OpenBadgeCredential:
+                  summary: OpenBadge credential response
+                  value:
+                    credentials:
+                      - credential: "eyJ0eXAiOiJkYytzZC1qd3QiLCJhbGciOiJFZERTQSJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWxzLzM1MjciLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJkaWQ6d2ViOmxvY2FsaG9zdCUzQTgwMDEiLCJ0eXBlIjpbIlByb2ZpbGUiXSwibmFtZSI6IkV4YW1wbGUgQ29ycCJ9LCJ2YWxpZEZyb20iOiIyMDEwLTAxLTAxVDAwOjAwOjAwWiIsIm5hbWUiOiJUZWFtd29yayBCYWRnZSIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImlkIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSIsInR5cGUiOlsiQWNoaWV2ZW1lbnRTdWJqZWN0Il0sImFjaGlldmVtZW50Ijp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9hY2hpZXZlbWVudHMvMjFzdC1jZW50dXJ5LXNraWxscy90ZWFtd29yayIsInR5cGUiOlsiQWNoaWV2ZW1lbnQiXSwiY3JpdGVyaWEiOnsibmFycmF0aXZlIjoiVGVhbSBtZW1iZXJzIGFyZSBub21pbmF0ZWQgZm9yIHRoaXMgYmFkZ2UgYnkgdGhlaXIgcGVlcnMgYSBuZCByZWNvZ25pemVkIHVwb24gcmV2aWV3IGJ5IEV4YW1wbGUgQ29ycCBtYW5hZ2VtZW50LiJ9LCJkZXNjcmlwdGlvbiI6IlRoaXMgYmFkZ2UgcmVjb2duaXplcyB0aGUgZGV2ZWxvcG1lbnQgb2YgdGhlIGNhcGFjaXR5IHRvIGMgb2xsYWJvcmF0ZSB3aXRoaW4gYSBncm91cCBlbnZpcm9ubWVudC4iLCJuYW1lIjoiVGVhbXdvcmsifX0sImlzcyI6ImRpZDp3ZWI6bG9jYWxob3N0JTNBODAwMSIsImp0aSI6Imh0dHA6Ly9leGFtcGxlLmNvbS9jcmVkZW50aWFscy8zNTI3Iiwic3ViIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSJ9.grTc6_i5JfKISK1gT99m1l3fiPsWgdaf4NaldEBq0n5Vnyrgagz6ZV5lnLG-_EbgY6kdIJjARbr7X-uq-bBaAw"
+                EuropeanDigitalCredential:
+                  summary: European Digital Credential response
+                  value:
+                    credentials:
+                      - credential: "eyJ0eXAiOiJkYytzZC1qd3QiLCJhbGciOiJFZERTQSJ9.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL29iL3YzcDAvY29udGV4dC0zLjAuMy5qc29uIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWxzLzM1MjciLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiRXVyb3BlYW5EaWdpdGFsQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOnsiaWQiOiJkaWQ6d2ViOmxvY2FsaG9zdCUzQTgwMDEiLCJ0eXBlIjpbIlByb2ZpbGUiXSwibmFtZSI6IkV4YW1wbGUgQ29ycCJ9LCJ2YWxpZEZyb20iOiIyMDEwLTAxLTAxVDAwOjAwOjAwWiIsIm5hbWUiOiJUZWFtd29yayBCYWRnZSIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImlkIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcEpNbUZtZEdoU2MxZExlbVpGVUVWWFJGRjZSaTFzTVRCb2VsRkdTVUZWTFZWRFVITWlmUSIsInR5cGUiOlsiQWNoaWV2ZW1lbnRTdWJqZWN0Il0sImFjaGlldmVtZW50Ijp7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9hY2hpZXZlbWVudHMvMjFzdC1jZW50dXJ5LXNraWxscy90ZWFtd29yayIsInR5cGUiOlsiQWNoaWV2ZW1lbnQiXSwiY3JpdGVyaWEiOnsibmFycmF0aXZlIjoiVGVhbSBtZW1iZXJzIGFyZSBub21pbmF0ZWQgZm9yIHRoaXMgYmFkZ2UgYnkgdGhlaXIgcGVlcnMgYSBuZCByZWNvZ25pemVkIHVwb24gcmV2aWV3IGJ5IEV4YW1wbGUgQ29ycCBtYW5hZ2VtZW50LiJ9LCJkZXNjcmlwdGlvbiI6IlRoaXMgYmFkZ2UgcmVjb2duaXplcyB0aGUgZGV2ZWxvcG1lbnQgb2YgdGhlIGNhcGFjaXR5IHRvIGMgb2xsYWJvcmF0ZSB3aXRoaW4gYSBncm91cCBlbnZpcm9ubWVudC4iLCJuYW1lIjoiVGVhbXdvcmsifX0sImlzcyI6ImRpZDp3ZWI6bG9jYWxob3N0JTNBODAwMSIsImp0aSI6Imh0dHA6Ly9leGFtcGxlLmNvbS9jcmVkZW50aWFscy8zNTI3Iiwic3ViIjoiZGlkOmp3azpleUpqY25ZaU9pSkZaREkxTlRFNUlpd2laQ0k2SWpWMGVqTmZhMnBXVFhKNFlYcGFiRFk0TlhkMVdVUmlSVm95WDJ4TFF6VlFkSGRWYWpOWk1scHphMUVpTENKcmFXUWlPaUoyTm1kRGJFb3dUakl4UzI1bldYTlNjekpzUTNWV1JtUXhkbXhCWkd4dlgybzBhMk5uTVdWM2IxbHpJaXdpYTNSNUlqb2lUMHRRSWl3aWVDSTZJamRMU0dkdlpIcE1tRm1kR2hTYzFkTGVtWkZVRVZYUkZGNlJpMXNNVEJvZWxGR1NVRlZMVlZEVUhNaWZRIn0.grTc6_i5JfKISK1gT99m1l3fiPsWgdaf4NaldEBq0n5Vnyrgagz6ZV5lnLG-_EbgY6kdIJjARbr7X-uq-bBaAw"
 
   /v0/create-new-template:
     post:
