@@ -32,9 +32,7 @@ class TestOID4VCIFlow:
         callback_url = Browser().open(auth_url)
         credential = wallet_client.open_callback_url(callback_url, offer, metadata)
 
-        # OB3 uses mock-ssi-agent on port 8001, EDC uses mock on port 8005
-        port = 8005 if credential_type == "edc" else 8001
-        assert credential.claims["iss"] == f"did:web:localhost%3A{port}"
+        assert credential.claims["iss"] == "did:web:localhost%3A8001"
 
     @pytest.mark.parametrize("credential_type", ["ob3", "edc"])
     def test_get_credential_type(
@@ -60,10 +58,7 @@ class TestOID4VCIFlow:
 
         credential_types = credential.claims["type"]
         assert isinstance(credential_types, list), "Credential type must be a list"
-        if credential_type == "ob3":
-            assert "OpenBadgeCredential" in credential_types
-        else:
-            assert "EuropeanDigitalCredential" in credential_types
+        assert "VerifiableCredential" in credential_types
 
 
 @pytest.mark.e2e

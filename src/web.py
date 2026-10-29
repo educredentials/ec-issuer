@@ -46,7 +46,6 @@ class App:
         offers_client = SsiAgentOffersClientAdapter(
             ssi_agent_url=self.config.ssi_agent_url,
             credential_template_ids=self.config.credential_configuration_ids,
-            edc_ssi_agent_url=self.config.edc_ssi_agent_url,
         )
         offers_repository = PostgreSQLOffersRepositoryAdapter(
             self.config.postgresql_connection_string,
@@ -100,7 +99,7 @@ def _shutdown() -> None:
     except Exception:
         # Best-effort: gunicorn workers may not run atexit during
         # graceful shutdown; the pool closes on its own eventually.
-        pass
+        pass  # nosec: B110
 
 
 _ = atexit.register(_shutdown)

@@ -253,11 +253,10 @@ paths:
         "200":
           description: Credential offer created
           content:
-            application/json:
-              example: >-
-                openid-credential-offer://?credential_offer_uri=
-                http%3A%2F%2Flocalhost%3A8005%2Fopenid4vci%2F
-                offers%2Foffer-123
+            text/plain:
+              schema:
+                type: string
+                example: openid-credential-offer://?credential_offer_uri=http%3A%2F%2Flocalhost%3A8005%2Fopenid4vci%2Foffers%2Foffer-123
 
   /v0/credentials:
     post:

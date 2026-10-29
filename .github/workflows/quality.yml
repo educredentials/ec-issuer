@@ -1,0 +1,48 @@
+name: Code Quality check
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9
+        with:
+          version: 0.9.26
+          enable-cache: false
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Bandit
+        run: |
+          uv tool install bandit[sarif]
+          bandit -r src/ -f sarif -o bandit.sarif --skip B101 -lll
+        continue-on-error: false
+
+      - name: Semgrep
+        run: |
+          uv tool install semgrep
+          semgrep scan \
+            --config=p/security-audit \
+            --config=p/owasp-top-ten \
+            --config=p/python \
+            --config=r/python.lang.security.audit.crypto.insecure-deserialization.pickle \
+            --sarif --output=semgrep.sarif
+
+      # Upload all SARIF files to GitHub Code Scanning
+      - name: Upload Bandit SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: "bandit.sarif" }
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: "semgrep.sarif" }

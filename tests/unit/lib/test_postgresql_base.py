@@ -46,4 +46,4 @@ class TestPostgreSQLRepositoryBaseInit:
         """__init__ should wrap connection pool failures in DatabaseConnectionError."""
         mock_pool_class.side_effect = RuntimeError("host unreachable")
         with pytest.raises(DatabaseConnectionError, match="Failed to connect"):
-            PostgreSQLRepositoryBase("postgresql://localhost/test")
+            _ = PostgreSQLRepositoryBase("postgresql://localhost/test")

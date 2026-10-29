@@ -11,6 +11,7 @@ jobs:
   test:
     name: Lint, Typecheck, Unit Test, Integration Test
     runs-on: ubuntu-latest
+    permissions: {}
     services:
       postgresql:
         image: postgres:16-alpine
@@ -27,7 +28,10 @@ jobs:
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
 
       - name: Start mock SSI agent
         run: |
@@ -65,19 +69,11 @@ jobs:
             -v "$WS/dependencies/prism/converter-mock.yaml:/app/mock.yaml" \
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
-      - name: Start mock EDC SSI agent
-        run: |
-          WS="${{ github.workspace }}"
-          docker run -d \
-            --name mock-ssi-agent-edc \
-            -p 8005:4010 \
-            -v "$WS/dependencies/prism/ssi-agent-mock-edc.yaml:/app/mock.yaml" \
-            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
-
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9
         with:
           version: 0.9.26
+          enable-cache: false
 
       - name: Set up Python
         run: uv python install
@@ -94,7 +90,6 @@ jobs:
       - name: Run unit tests
         run: uv run pytest tests/unit/ -v
 
-
       - name: Run integration tests
         env:
           SSI_AGENT_URL: http://localhost:8001
@@ -108,9 +103,9 @@ jobs:
           export SERVER_HOST=0.0.0.0
           export SERVER_PORT=8000
           export SSI_AGENT_URL=http://localhost:8001
-          export SSI_AGENT_EDC_URL=http://localhost:8005
           export DEBUG_METRICS=1
-          export POSTGRES_CONNECTION_STRING=postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+          DB_URL="postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
+          export POSTGRES_CONNECTION_STRING="$DB_URL"
           export AWARDS_SERVICE_URL=http://localhost:8003/earner
           export CREDENTIAL_CONVERTER_URL=http://localhost:8004
           export ALLOWED_CORS_DOMAINS="http://localhost:8000,\
@@ -139,12 +134,12 @@ jobs:
           SERVER_PORT: 8000
           EC_ISSUER_URL: http://localhost:8000
           SSI_AGENT_URL: http://localhost:8001
-          SSI_AGENT_EDC_URL: http://localhost:8005
           AWARDS_SERVICE_URL: http://localhost:8003/earner
           CREDENTIAL_CONVERTER_URL: http://localhost:8004
-          ALLOWED_CORS_DOMAINS: http://localhost:8000, \
-            http://localhost:3000
+          ALLOWED_CORS_DOMAINS: "http://localhost:8000, http://localhost:3000"
           CREDENTIAL_TEMPLATE_JSON_DIR: ${{ github.workspace }}/templates
+          POSTGRES_CONNECTION_STRING: >-
+            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
         run: uv run pytest tests/e2e/ -v
 
       - name: Show server logs on e2e failure
@@ -157,21 +152,20 @@ jobs:
           pkill -f "ec-issuer-web" || true
           docker stop \
             mock-ssi-agent \
-            mock-ssi-agent-edc \
             mock-oidc-auth \
             mock-awards \
             mock-converter 2>/dev/null || true
           docker rm \
             mock-ssi-agent \
-            mock-ssi-agent-edc \
             mock-oidc-auth \
             mock-awards \
             mock-converter 2>/dev/null || true
 
-
   build:
     name: Build Docker image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: test
     # When a commit or tag is pushed to main
     if: >-
@@ -179,22 +173,24 @@ jobs:
       (github.ref == 'refs/heads/main' ||
        startsWith(github.ref, 'refs/tags/'))
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
 
       - name: curl
-        uses: sozo-design/curl@v1.0.2
+        uses: sozo-design/curl@9e6da804ad94d62490903732384156b27dc7d387
         with:
           args: ifconfig.me
 
       - name: Log in to SDP Container Registry "Harbor"
-        uses: docker/login-action@v4
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           registry: cr.surf.nl
           username: ${{ secrets.CR_SURF_USERNAME }}
           password: ${{ secrets.CR_SURF_PASSWORD }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
 
       - name: Extract version from pyproject.toml
         id: version
@@ -214,7 +210,7 @@ jobs:
           fi
 
       - name: Build and push Docker image (web dev service)
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           file: Dockerfile
@@ -235,7 +231,7 @@ jobs:
             }}
 
       - name: Build and push Docker image (web gunicorn service)
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           file: Dockerfile.gunicorn
@@ -256,7 +252,7 @@ jobs:
             }}
 
       - name: Build and push Docker image (cli, init container)
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           target: cli

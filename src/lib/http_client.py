@@ -1,12 +1,12 @@
 """HTTP client interface for dependency injection."""
 
-from typing import Any, Protocol, TypeAlias
+from typing import Protocol, TypeAlias
 
 import requests
 
 
-# any object that can be serialized to JSON. Used exactly like this in requests
-JSON: TypeAlias = Any
+# Any object that can be serialized to JSON. Used exactly like this in requests.
+JSON: TypeAlias = object
 
 
 class HttpResponse(Protocol):
@@ -131,14 +131,10 @@ class RequestsHttpClient:
         json: JSON | None = None,
         headers: dict[str, str] | None = None,
     ) -> HttpResponse:
-        kwargs: dict[str, Any] = {}
-        if json is not None:
-            kwargs["json"] = json
-        if headers is not None:
-            kwargs["headers"] = headers
         return requests.request(
             method=method,
             url=url,
             timeout=self._default_timeout,
-            **kwargs,
+            json=json,
+            headers=headers,
         )

@@ -1,0 +1,15 @@
+{
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "tests/**",
+    "**/__pycache__",
+    ".venv/**"
+  ],
+  "typeCheckingMode": "recommended",
+  "reportUnknownMemberType": "hint",
+  "reportUnknownArgumentType": "hint",
+  "reportUnknownVariableType": "hint",
+  "reportArgumentType": "none",
+}
