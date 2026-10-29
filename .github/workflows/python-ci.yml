@@ -81,6 +81,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --all-extras --dev
 
+      - name: Check lock file freshness
+        run: uv lock --locked
+
       - name: Run linting
         run: uv run ruff check .
 
