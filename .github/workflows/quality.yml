@@ -1,3 +1,12 @@
+name: Code Quality check
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
+    branches: [main]
+
 jobs:
   quality:
     runs-on: ubuntu-latest
