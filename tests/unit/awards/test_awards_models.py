@@ -20,7 +20,7 @@ from src.awards.models import OB3Award
 _VALID_BADGR_RESPONSE = {
     "id": "https://DOMAIN/assertions/42",
     "name": "Teamwork Badge",
-    "issuedOn": "2024-06-15T10:00:00Z",
+    "issued_on": "2024-06-15T10:00:00Z",
     "badgeclass": {
         "id": "https://DOMAIN/badges/18",
         "name": "Teamwork Badge",
@@ -39,7 +39,7 @@ _VALID_BADGR_RESPONSE = {
 _BADGR_RESPONSE_WITH_IMAGE = {
     "id": "https://DOMAIN/assertions/43",
     "name": "Coding Badge",
-    "issuedOn": "2024-06-15T11:00:00Z",
+    "issued_on": "2024-06-15T11:00:00Z",
     "badgeclass": {
         "id": "https://DOMAIN/badges/19",
         "name": "Coding Badge",
@@ -102,7 +102,7 @@ class TestResolveValidFrom:
 
     def test_returns_empty_string_when_issued_on_missing(self):
         """_resolve_valid_from returns '' when dto.issued_on is None."""
-        dto = _BadgrAwardResponse.from_dict({"issuedOn": None})
+        dto = _BadgrAwardResponse.from_dict({"issued_on": None})
         assert _resolve_valid_from(dto) == ""
 
 
@@ -146,7 +146,7 @@ class TestOb3AwardFromBadgrApi:
             {
                 "id": "https://DOMAIN/assertions/44",
                 "name": "Double Image",
-                "issuedOn": "2024-06-15T12:00:00Z",
+                "issued_on": "2024-06-15T12:00:00Z",
                 "badgeclass": {
                     "id": "https://DOMAIN/badges/20",
                     "name": "Double Image",

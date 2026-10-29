@@ -42,7 +42,7 @@ class TestBadgrAwardResponseDeserialization:
             {
                 "id": "https://DOMAIN/assertions/3527",
                 "name": "Teamwork Badge",
-                "issuedOn": "2010-01-01T00:00:00Z",
+                "issued_on": "2010-01-01T00:00:00Z",
                 "badgr": null,
                 "revoked": false,
                 "public": true,
@@ -713,7 +713,7 @@ class TestOb3AwardWithNewFields:
         """time_investment flows from flat JSON field through to Achievement."""
         raw: dict[str, object] = {
             "id": "https://DOMAIN/assertions/1",
-            "issuedOn": "2024-01-01T00:00:00Z",
+            "issued_on": "2024-01-01T00:00:00Z",
             "badgeclass": {
                 "id": "https://DOMAIN/badges/1",
                 "name": "Badge",
@@ -794,7 +794,7 @@ class TestOb3AwardWithNewFields:
         raw JSON (simulating the real API flow)."""
         raw: dict[str, object] = {
             "id": "https://DOMAIN/assertions/1",
-            "issuedOn": "2024-01-01T00:00:00Z",
+            "issued_on": "2024-01-01T00:00:00Z",
             "expiresAt": "2025-01-01T00:00:00Z",
             "badgeclass": {
                 "id": "https://DOMAIN/badges/1",
@@ -818,7 +818,7 @@ class TestOb3AwardWithNewFields:
         """criteria.narrative is extracted from badgeclass.criteria."""
         raw = {
             "id": "https://DOMAIN/assertions/1",
-            "issuedOn": "2024-01-01T00:00:00Z",
+            "issued_on": "2024-01-01T00:00:00Z",
             "badgeclass": {
                 "id": "https://DOMAIN/badges/1",
                 "name": "Badge",

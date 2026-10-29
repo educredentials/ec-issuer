@@ -137,7 +137,7 @@ class _BadgrAwardResponse(msgspec.Struct):
 
     entity_id: str | None = msgspec.field(name="id", default=None)
     name: str | None = None
-    issued_on: str | None = msgspec.field(name="issuedOn", default=None)
+    issued_on: str | None = msgspec.field(name="issued_on", default=None)
     image: str | None = msgspec.field(name="image", default=None)
     badgeclass: _BadgrBadgeclass | None = None
     # Person/learner fields.
