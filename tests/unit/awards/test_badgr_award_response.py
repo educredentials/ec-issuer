@@ -691,7 +691,7 @@ class TestOb3AwardWithNewFields:
                 participation="enrolment",
                 assessment_type="summative",
                 language="nl",
-                ects=5,
+                ects="5",
                 time_investment=42.0,
             ),
         )
@@ -699,7 +699,7 @@ class TestOb3AwardWithNewFields:
         ach = result.credentialSubject.achievement
         assert result.validUntil == "2025-01-01T00:00:00Z"
         assert ach.language == "nl"
-        assert ach.ects == 5
+        assert ach.ects == "5"
         assert ach.time_investment == 42.0
         assert ach.assessment_type == "summative"
         assert ach.assessment_id_verified is None

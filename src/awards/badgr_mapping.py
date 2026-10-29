@@ -107,9 +107,9 @@ class _BadgrBadgeclass(msgspec.Struct):
     image: str | None = msgspec.field(name="image", default=None)
     criteria: _BadgrCriteria | None = None
     issuer: _BadgrIssuer | None = None
-    # Flat extension fields from the badgeclass.
-    eqf: int | None = msgspec.field(name="EQF", default=None)
-    ects: float | None = msgspec.field(name="ECTS", default=None)
+    # Flat extension fields from the badgeclass — accept raw JSON types.
+    eqf: object | None = msgspec.field(name="EQF", default=None)
+    ects: object | None = msgspec.field(name="ECTS", default=None)
     language: str | None = msgspec.field(name="Language", default=None)
     learning_outcome: str | None = msgspec.field(
         name="LearningOutcome", default=None
@@ -117,7 +117,7 @@ class _BadgrBadgeclass(msgspec.Struct):
     time_investment: float | None = msgspec.field(
         name="TimeInvestment", default=None
     )
-    education_program_identifier: list[str] | None = msgspec.field(
+    education_program_identifier: object | None = msgspec.field(
         name="EducationProgramIdentifier", default=None
     )
     # Assessment/participation flat fields.
@@ -147,8 +147,8 @@ class _BadgrAwardResponse(msgspec.Struct):
     # Extended fields from the awards service.
     expires_at: str | None = msgspec.field(name="expires_at", default=None)
     language: str | None = msgspec.field(name="language", default=None)
-    ects: float | None = msgspec.field(name="ects", default=None)
-    eqf: int | None = msgspec.field(name="eqf", default=None)
+    ects: object | None = msgspec.field(name="ects", default=None)
+    eqf: object | None = msgspec.field(name="eqf", default=None)
     participation: str | None = msgspec.field(name="participation", default=None)
     assessment_type: str | None = msgspec.field(
         name="assessment_type", default=None
@@ -162,7 +162,7 @@ class _BadgrAwardResponse(msgspec.Struct):
     learning_outcome: str | None = msgspec.field(
         name="learning_outcome", default=None
     )
-    education_program_identifier: list[str] | None = msgspec.field(
+    education_program_identifier: object | None = msgspec.field(
         name="education_program_identifier", default=None
     )
     time_investment: float | None = msgspec.field(
@@ -176,11 +176,11 @@ class _BadgrAwardResponse(msgspec.Struct):
 
 
 class _BadgeclassExtensions(msgspec.Struct):
-    """Typed extension values extracted from ``badgeclass.extensions``."""
+    """Typed extension values extracted from flat badgeclass fields."""
 
     language: str | None = None
-    ects: float | None = None
-    eqf: int | None = None
+    ects: str | None = None
+    eqf: str | None = None
     learning_outcome: str | None = None
     education_program_identifier: list[str] | None = None
 
@@ -191,10 +191,21 @@ class _BadgeclassExtensions(msgspec.Struct):
 
 
 
+def _cast_to_str_list(value: object) -> list[str] | None:
+    """Cast a value to list[str] | None."""
+    if not isinstance(value, list):
+        return None
+    return [str(v) for v in value]
+
+
 def _extract_extension_values(
     badgeclass: _BadgrBadgeclass | None,
 ) -> _BadgeclassExtensions:
-    """Extract extension values from flat badgeclass fields."""
+    """Extract extension values from flat badgeclass fields.
+
+    All scalar extension values are cast to strings so the credential
+    output contains only string representations of the raw JSON values.
+    """
     if badgeclass is None:
         return _BadgeclassExtensions()
 
@@ -204,20 +215,20 @@ def _extract_extension_values(
             if badgeclass.language is not None else None
         ),
         ects=(
-            float(badgeclass.ects)
-            if isinstance(badgeclass.ects, (int, float)) else None
+            str(badgeclass.ects)
+            if badgeclass.ects is not None else None
         ),
         eqf=(
-            int(badgeclass.eqf)
-            if isinstance(badgeclass.eqf, int) else None
+            str(badgeclass.eqf)
+            if badgeclass.eqf is not None else None
         ),
         learning_outcome=(
             badgeclass.learning_outcome
             if isinstance(badgeclass.learning_outcome, str) else None
         ),
         education_program_identifier=(
-            [str(v) for v in badgeclass.education_program_identifier]
-            if isinstance(badgeclass.education_program_identifier, list)
+            _cast_to_str_list(badgeclass.education_program_identifier)
+            if badgeclass.education_program_identifier is not None
             else None
         ),
     )

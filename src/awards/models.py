@@ -61,8 +61,8 @@ class Achievement:
     name: str
     image: dict[str, str] | None = None
     language: str | None = None
-    ects: float | None = None
-    eqf: int | None = None
+    ects: str | None = None
+    eqf: str | None = None
     learning_outcome: str | None = None
     education_program_identifier: list[str] | None = None
     participation: str | None = None
