@@ -99,7 +99,7 @@ def _shutdown() -> None:
     except Exception:
         # Best-effort: gunicorn workers may not run atexit during
         # graceful shutdown; the pool closes on its own eventually.
-        pass
+        pass  # nosec: B110
 
 
 _ = atexit.register(_shutdown)
