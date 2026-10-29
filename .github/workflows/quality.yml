@@ -13,6 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9
+        with:
+          version: 0.9.26
+          enable-cache: false
+
+      - name: Set up Python
+        run: uv python install
+
       - name: Bandit
         run: |
           uv tool install bandit[sarif]
