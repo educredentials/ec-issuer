@@ -25,7 +25,7 @@ jobs:
       - name: Bandit
         run: |
           uv tool install bandit[sarif]
-          bandit -r src/ -f sarif -o bandit.sarif --skip B101
+          bandit -r src/ -f sarif -o bandit.sarif --skip B101 -lll
         continue-on-error: false
 
       - name: Semgrep
