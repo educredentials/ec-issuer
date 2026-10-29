@@ -40,9 +40,9 @@ jobs:
 
       # Upload all SARIF files to GitHub Code Scanning
       - name: Upload Bandit SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with: { sarif_file: "bandit.sarif" }
 
       - name: Upload Semgrep SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with: { sarif_file: "semgrep.sarif" }
