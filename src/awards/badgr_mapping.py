@@ -111,7 +111,7 @@ class _BadgrBadgeclass(msgspec.Struct):
     eqf: int | None = msgspec.field(name="EQF", default=None)
     ects: float | None = msgspec.field(name="ECTS", default=None)
     language: str | None = msgspec.field(name="Language", default=None)
-    learning_outcome: list[dict[str, str]] | None = msgspec.field(
+    learning_outcome: str | None = msgspec.field(
         name="LearningOutcome", default=None
     )
     time_investment: float | None = msgspec.field(
@@ -159,7 +159,7 @@ class _BadgrAwardResponse(msgspec.Struct):
     assessment_supervised: bool | None = msgspec.field(
         name="assessment_supervised", default=None
     )
-    learning_outcome: list[dict[str, str]] | None = msgspec.field(
+    learning_outcome: str | None = msgspec.field(
         name="learning_outcome", default=None
     )
     education_program_identifier: list[str] | None = msgspec.field(
@@ -181,7 +181,7 @@ class _BadgeclassExtensions(msgspec.Struct):
     language: str | None = None
     ects: float | None = None
     eqf: int | None = None
-    learning_outcome: list[dict[str, str]] | None = None
+    learning_outcome: str | None = None
     education_program_identifier: list[str] | None = None
 
 
@@ -213,7 +213,7 @@ def _extract_extension_values(
         ),
         learning_outcome=(
             badgeclass.learning_outcome
-            if isinstance(badgeclass.learning_outcome, list) else None
+            if isinstance(badgeclass.learning_outcome, str) else None
         ),
         education_program_identifier=(
             [str(v) for v in badgeclass.education_program_identifier]

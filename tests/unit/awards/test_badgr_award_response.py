@@ -371,7 +371,7 @@ class TestCredentialContextUrls:
             language=str(_lang) if _lang is not None else None,
             ects=float(_ects) if isinstance(_ects, (int, float)) else None,
             eqf=int(_eqf) if isinstance(_eqf, int) else None,
-            learning_outcome=_lo if isinstance(_lo, list) else None,
+            learning_outcome=_lo if isinstance(_lo, str) else None,
             education_program_identifier=(
                 [str(v) for v in _epi] if isinstance(_epi, list) else None
             ),
@@ -427,7 +427,7 @@ class TestCredentialContextUrls:
             ext_vals=_BadgeclassExtensions(
                 language="nl",
                 ects=5,
-                learning_outcome=[{"description": "Can do X"}],
+                learning_outcome="Can do X",
                 education_program_identifier=["12345"],
             ),
         )

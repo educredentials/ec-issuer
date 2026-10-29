@@ -63,7 +63,7 @@ class Achievement:
     language: str | None = None
     ects: float | None = None
     eqf: int | None = None
-    learning_outcome: list[dict[str, str]] | None = None
+    learning_outcome: str | None = None
     education_program_identifier: list[str] | None = None
     participation: str | None = None
     assessment_type: str | None = None
