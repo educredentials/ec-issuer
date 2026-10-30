@@ -4,23 +4,23 @@
   "description": "Specifies the quality assurance framework underpinning the BadgeClass or micro-credential.",
   "type": "object",
   "properties": {
-    "QualityAssuranceName": {
+    "qualityAssuranceName": {
       "type": "string",
       "minLength": 1,
       "description": "Name of the quality framework."
     },
-    "QualityAssuranceUrl": {
+    "qualityAssuranceUrl": {
       "type": "string",
       "format": "uri",
       "description": "URL to the quality framework documentation."
     },
-    "QualityAssuranceDescription": {
+    "qualityAssuranceDescription": {
       "type": "string",
       "description": "Description of the quality framework."
     }
   },
   "required": [
-    "QualityAssuranceName"
+    "qualityAssuranceName"
   ],
   "additionalProperties": false
 }

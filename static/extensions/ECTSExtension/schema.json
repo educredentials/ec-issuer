@@ -4,7 +4,7 @@
   "description": "Specifies the notional workload of a learning experience in ECTS credits.",
   "type": "object",
   "properties": {
-    "ECTS": {
+    "ects": {
       "type": "number",
       "minimum": 0.5,
       "maximum": 240,
@@ -13,7 +13,7 @@
     }
   },
   "required": [
-    "ECTS"
+    "ects"
   ],
   "additionalProperties": false
 }

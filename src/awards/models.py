@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import cast
 
 
-class AssessmentType(StrEnum):
+class AssessmentTypeEnum(StrEnum):
     """Assessment type per Open Badges AssessmentTypeExtension."""
 
     TESTING = "testing"
@@ -19,7 +19,7 @@ class AssessmentType(StrEnum):
 
     # Allow arbitrary values from the awards service.
     @classmethod
-    def _missing_(cls, value: object) -> "AssessmentType | None":  # pyright: ignore[reportImplicitOverride]
+    def _missing_(cls, value: object) -> "AssessmentTypeEnum | None":  # pyright: ignore[reportImplicitOverride]
         if isinstance(value, str):
             return cls(value)
         return None
@@ -63,13 +63,12 @@ class Achievement:
     language: str | None = None
     ects: str | None = None
     eqf: str | None = None
-    learning_outcome: str | None = None
-    education_program_identifier: list[str] | None = None
-    participation: str | None = None
-    assessment_type: str | None = None
-    assessment_id_verified: bool | None = None
-    assessment_supervised: bool | None = None
-    time_investment: float | None = None
+    learningOutcome: str | None = None
+    educationProgramIdentifier: list[str] | None = None
+    formOfParticipation: str | None = None
+    assessmentType: str | None = None
+    supervisionType: str | None = None
+    timeInvestment: float | None = None
 
 
 @dataclass

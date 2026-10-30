@@ -65,12 +65,10 @@ _EXPECTED_BADGR_AWARD = OB3Award(
             language=None,
             ects=None,
             eqf=None,
-            learning_outcome=None,
-            education_program_identifier=None,
-            participation=None,
-            assessment_type=None,
-            assessment_id_verified=None,
-            assessment_supervised=None,
+            learningOutcome=None,
+            educationProgramIdentifier=None,
+            formOfParticipation=None,
+            assessmentType=None,
         ),
     ),
     credentialSchema=_ob3_default_schema(),
@@ -88,7 +86,9 @@ def http_client() -> RequestsSpy:
 def subject(http_client: HttpClient) -> HttpAwardsClientAdapter:
     """Provide the adapter wired to the spy."""
     return HttpAwardsClientAdapter(
-        awards_service_url="http://awards.example.com", http_client=http_client
+        awards_service_url="http://awards.example.com",
+        base_url="http://awards.example.com",
+        http_client=http_client,
     )
 
 

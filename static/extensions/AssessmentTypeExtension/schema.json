@@ -4,7 +4,7 @@
   "description": "Specifies the type of assessment used for the learning experience.",
   "type": "object",
   "properties": {
-    "AssessmentType": {
+    "assessmentType": {
       "type": "string",
       "enum": [
         "testing",
@@ -18,7 +18,7 @@
     }
   },
   "required": [
-    "AssessmentType"
+    "assessmentType"
   ],
   "additionalProperties": false
 }

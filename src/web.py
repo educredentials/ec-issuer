@@ -41,6 +41,7 @@ class App:
 
         awards_client = HttpAwardsClientAdapter(
             awards_service_url=self.config.awards_service_url,
+            base_url=self.config.ec_issuer_url
         )
 
         offers_client = SsiAgentOffersClientAdapter(

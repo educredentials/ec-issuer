@@ -4,13 +4,13 @@
   "description": "An extension that allows you to add a single string InstitutionIdentifier to an issuer object.",
   "type": "object",
   "properties": {
-    "InstitutionIdentifier": {
+    "institutionIdentifier": {
       "type": "string",
       "description": "Unique identifier for the institution (e.g. BRIN number)."
     }
   },
   "required": [
-    "InstitutionIdentifier"
+    "institutionIdentifier"
   ],
   "additionalProperties": false
 }

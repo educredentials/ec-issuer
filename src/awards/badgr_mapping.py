@@ -125,6 +125,7 @@ class _BadgrBadgeclass(msgspec.Struct):
     assessment_type: str | None = None
     assessment_id_verified: bool | None = None
     assessment_supervised: bool | None = None
+    supervision_type: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrBadgeclass:
@@ -181,15 +182,14 @@ class _BadgeclassExtensions(msgspec.Struct):
     language: str | None = None
     ects: str | None = None
     eqf: str | None = None
-    learning_outcome: str | None = None
-    education_program_identifier: list[str] | None = None
-
-
-
+    learningOutcome: str | None = None
+    educationProgramIdentifier: list[str] | None = None
+    timeInvestment: str | None = None
+    supervisionType: str | None = None
+    assessmentType: str | None = None
+    participation: str | None = None
 
 # Maps snake_case field names to the actual keys in originalJson (camelCase).
-
-
 
 def _cast_to_str_list(value: object) -> list[str] | None:
     """Cast a value to list[str] | None."""
@@ -205,9 +205,33 @@ def _extract_extension_values(
 
     All scalar extension values are cast to strings so the credential
     output contains only string representations of the raw JSON values.
+
     """
     if badgeclass is None:
         return _BadgeclassExtensions()
+
+    # Derive supervisionType from both assessmentSupervised and
+    # badgeclass.assessment_id_verified — maps to the four-combination enum
+    # expected by the SupervisionTypeExtension schema.
+    _assessmentSupervised = (
+        badgeclass.assessment_supervised
+        if badgeclass and badgeclass.assessment_supervised is not None
+        else None
+    )
+    _badgeclass_id_verified = (
+        badgeclass.assessment_id_verified
+        if badgeclass and badgeclass.assessment_id_verified is not None
+        else None
+    )
+
+    if _assessmentSupervised is True and _badgeclass_id_verified is True:
+        _supervisionType: str | None = "supervisedWithIdentityVerification"
+    elif _assessmentSupervised is True:
+        _supervisionType = "supervisedWithNoIdentityVerification"
+    elif _badgeclass_id_verified is True:
+        _supervisionType = "unsupervisedWithIdentityVerification"
+    else:
+        _supervisionType = None
 
     return _BadgeclassExtensions(
         language=(
@@ -222,23 +246,35 @@ def _extract_extension_values(
             str(badgeclass.eqf)
             if badgeclass.eqf is not None else None
         ),
-        learning_outcome=(
+        learningOutcome=(
             badgeclass.learning_outcome
             if isinstance(badgeclass.learning_outcome, str) else None
         ),
-        education_program_identifier=(
+        educationProgramIdentifier=(
             _cast_to_str_list(badgeclass.education_program_identifier)
             if badgeclass.education_program_identifier is not None
             else None
         ),
-    )
+        timeInvestment=(
+            str(badgeclass.time_investment)
+            if badgeclass.time_investment is not None else None
+        ),
+        assessmentType=(
+            str(badgeclass.assessment_type)
+            if badgeclass.assessment_type is not None else None
+        ),
+        participation=(
+            str(badgeclass.participation)
+            if badgeclass.participation is not None else None
+        ),
+        supervisionType=_supervisionType
+)
 
 
 def _credential_context_urls(
     *,
     issuer_base_url: str,
     extensions_url_prefix: str,
-    badgeclass: _BadgrBadgeclass | None,
     ext_vals: _BadgeclassExtensions,
 ) -> list[str]:
     """Return the list of credential context URLs for non-None flat fields.
@@ -256,19 +292,18 @@ def _credential_context_urls(
     """
     base = issuer_base_url.rstrip("/")
     ext_dir = extensions_url_prefix
-    bc = badgeclass if badgeclass else _BadgrBadgeclass(
-        name="", entity_id=None
-    )
     ext_map: list[tuple[str, object]] = [
-        ("ParticipationFormExtension/context.json", bc.participation),
-        ("AssessmentTypeExtension/context.json", bc.assessment_type),
+        ("ParticipationFormExtension/context.json", ext_vals.participation),
+        ("AssessmentTypeExtension/context.json", ext_vals.assessmentType),
         ("LanguageExtension/context.json", ext_vals.language),
         ("ECTSExtension/context.json", ext_vals.ects),
         ("EQFExtension/context.json", ext_vals.eqf),
-        ("LearningOutcomeExtension/context.json", ext_vals.learning_outcome),
+        ("LearningOutcomeExtension/context.json", ext_vals.learningOutcome),
+        ("TimeInvestmentExtension/context.json", ext_vals.timeInvestment),
+        ("SupervisionTypeExtension/context.json", ext_vals.supervisionType),
         (
             "EducationProgramIdentifierExtension/context.json",
-            ext_vals.education_program_identifier,
+            ext_vals.educationProgramIdentifier,
         ),
     ]
 
@@ -283,6 +318,7 @@ def _to_ob3_award(
     dto: _BadgrAwardResponse,
     *,
     issuer_base_url: str | None = None,
+    award_base_url: str | None = None,
     extensions_url_prefix: str = "/static/extensions",
 ) -> OB3Award:
     """Convert a BadgrAwardResponse DTO to an OB3 Award domain model.
@@ -303,53 +339,29 @@ def _to_ob3_award(
     valid_from = _resolve_valid_from(dto)
     achievement_data = _resolve_achievement_data(dto)
     identifiers = _resolve_identifiers(dto)
-    image = _resolve_image(dto, issuer_base_url)
+    image = _resolve_image(dto, award_base_url)
 
     valid_to = dto.expires_at
     badgeclass = dto.badgeclass
+
     ext_vals = _extract_extension_values(badgeclass)
 
     _base_url = issuer_base_url or "http://localhost:8000"
     credential_context = _credential_context_urls(
         issuer_base_url=_base_url,
         extensions_url_prefix=extensions_url_prefix,
-        badgeclass=badgeclass,
         ext_vals=ext_vals,
     )
 
-    # Extension fields from badgeclass flat fields take priority.
-    language = ext_vals.language or dto.language
-    ects = ext_vals.ects or dto.ects
-    eqf = ext_vals.eqf or dto.eqf
-    learning_outcome = ext_vals.learning_outcome or dto.learning_outcome
-    education_program_identifier = (
-        ext_vals.education_program_identifier
-        or dto.education_program_identifier
-    )
-    # Flat field from badgeclass level, fallback to dto root.
-    time_investment = (
-        badgeclass.time_investment if badgeclass else None
-    ) or dto.time_investment
-
-    # Flat extension fields from badgeclass level.
-    participation = (
-        (badgeclass.participation if badgeclass else None)
-        or dto.participation
-    )
-    assessment_type = (
-        (badgeclass.assessment_type if badgeclass else None)
-        or dto.assessment_type
-    )
-    assessment_id_verified = (
-        badgeclass.assessment_id_verified
-        if badgeclass and badgeclass.assessment_id_verified is not None
-        else dto.assessment_id_verified
-    )
-    assessment_supervised = (
-        badgeclass.assessment_supervised
-        if badgeclass and badgeclass.assessment_supervised is not None
-        else dto.assessment_supervised
-    )
+    language = ext_vals.language
+    ects = ext_vals.ects
+    eqf = ext_vals.eqf
+    learningOutcome = ext_vals.learningOutcome
+    educationProgramIdentifier = ext_vals.educationProgramIdentifier
+    time_investment = ext_vals.timeInvestment
+    formOfParticipation = ext_vals.participation
+    assessmentType = ext_vals.assessmentType
+    supervisionType = ext_vals.supervisionType
 
     return OB3Award(
         id=credential_id,
@@ -373,13 +385,12 @@ def _to_ob3_award(
                 language=language,
                 ects=ects,
                 eqf=eqf,
-                learning_outcome=learning_outcome,
-                education_program_identifier=education_program_identifier,
-                participation=participation,
-                assessment_type=assessment_type,
-                assessment_id_verified=assessment_id_verified,
-                assessment_supervised=assessment_supervised,
-                time_investment=time_investment,
+                learningOutcome=learningOutcome,
+                educationProgramIdentifier=educationProgramIdentifier,
+                formOfParticipation=formOfParticipation,
+                assessmentType=assessmentType,
+                supervisionType=supervisionType,
+                timeInvestment=time_investment,
             ),
             identifiers=identifiers,
         ),
@@ -507,6 +518,7 @@ def _resolve_name(dto: _BadgrAwardResponse) -> str:
 def ob3_award_from_badgr_api_response(
     raw: dict[str, object],
     *,
+    award_base_url: str | None = None,
     issuer_base_url: str | None = None,
     extensions_url_prefix: str = "/static/extensions",
 ) -> OB3Award:
@@ -525,6 +537,7 @@ def ob3_award_from_badgr_api_response(
     dto = _BadgrAwardResponse.from_dict(raw)
     return _to_ob3_award(
         dto,
+        award_base_url=award_base_url,
         issuer_base_url=issuer_base_url,
         extensions_url_prefix=extensions_url_prefix,
     )

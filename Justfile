@@ -39,6 +39,10 @@ test_pattern_default := 'tests/'
 test test-pattern=test_pattern_default:
     uv run pytest {{test-pattern}} -v
 
+# Run tests and only show failed or errors
+test-rfe test-pattern=test_pattern_default:
+    uv run pytest {{test-pattern}} -v -rfE
+
 # Generate Python code documentation with pdoc
 docs-code:
     uv sync

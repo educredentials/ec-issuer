@@ -4,14 +4,14 @@
   "description": "An extension that allows an issuer to specify the country or region of the institution.",
   "type": "object",
   "properties": {
-    "CountryCode": {
+    "countryCode": {
       "type": "string",
       "pattern": "^[A-Z]{2}$",
       "description": "2-letter ISO 3166-1 country code."
     }
   },
   "required": [
-    "CountryCode"
+    "countryCode"
   ],
   "additionalProperties": false
 }

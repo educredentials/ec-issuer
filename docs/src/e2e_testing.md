@@ -12,7 +12,7 @@ Write an e2e test for new features and for user-facing bugs that are common or v
 just test-e2e
 ```
 
-This starts all required services via Podman Compose and waits for them to be healthy before running the test suite. Test fixtures never start or stop services themselves — if services are not running the tests fail with a clear connection error.
+This starts all required services via Docker or Podman Compose and waits for them to be healthy before running the test suite. Test fixtures never start or stop services themselves — if services are not running the tests fail with a clear connection error.
 
 ## Organisation
 

@@ -54,7 +54,7 @@ This service orchestrates and integrates with existing issuer services, working 
 
 - Python 3.10+
 - UV
-- Podman (for running tests that require services)
+- Podman or Docker (for running tests that require services)
 
 ### Environment Variables
 

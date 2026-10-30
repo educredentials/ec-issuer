@@ -4,7 +4,7 @@
   "description": "Specifies the form of participation in the learning activity.",
   "type": "object",
   "properties": {
-    "FormOfParticipation": {
+    "formOfParticipation": {
       "type": "string",
       "enum": [
         "online",
@@ -19,7 +19,7 @@
     }
   },
   "required": [
-    "FormOfParticipation"
+    "formOfParticipation"
   ],
   "additionalProperties": false
 }

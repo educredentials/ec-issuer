@@ -4,7 +4,7 @@
   "description": "Specifies the type of supervision and identity verification used during assessment.",
   "type": "object",
   "properties": {
-    "SupervisionType": {
+    "supervisionType": {
       "type": "string",
       "enum": [
         "unsupervisedWithNoIdentityVerification",
@@ -16,7 +16,7 @@
     }
   },
   "required": [
-    "SupervisionType"
+    "supervisionType"
   ],
   "additionalProperties": false
 }

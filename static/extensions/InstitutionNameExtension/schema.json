@@ -4,13 +4,13 @@
   "description": "An extension that allows you to add a single string InstitutionName to an issuer object.",
   "type": "object",
   "properties": {
-    "InstitutionName": {
+    "institutionName": {
       "type": "string",
       "description": "Name of the educational institution."
     }
   },
   "required": [
-    "InstitutionName"
+    "institutionName"
   ],
   "additionalProperties": false
 }

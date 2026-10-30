@@ -4,14 +4,14 @@
   "description": "Specifies the estimated time investment required to earn the badge, expressed in hours.",
   "type": "object",
   "properties": {
-    "TimeInvestment": {
+    "timeInvestment": {
       "type": "number",
       "exclusiveMinimum": 0,
       "description": "Estimated time investment in hours. Must be greater than 0."
     }
   },
   "required": [
-    "TimeInvestment"
+    "timeInvestment"
   ],
   "additionalProperties": false
 }

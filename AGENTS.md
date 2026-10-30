@@ -24,7 +24,7 @@ run common commands with `just`. See `just --list` for a list of available comma
 
 ### Running the app
 
-podman compose runs the services that this application depends on, and can run
+docker compose runs the services that this application depends on, and can run
 the service itself as well.
 
 - `just dependencies` to (re)start all services except the ec-issuer.
@@ -35,7 +35,7 @@ the service itself as well.
 - Use `just` to run tasks.
 - Use `uv` only for dependency management. Never use pip or poetry.
 - Never run `python` directly. When just or uv don't suffice, reconsider what you are solving. When stuck ask user for guidence.
-- Use `podman compose` and `podman` for lower level container management and inspection.
+- Use `docker compose` and `docker` for lower level container management and inspection.
 - Never make bash scripts to run code.
 - Only commit code that has no linting and typing errors. Never commit without checking `just lint` one last time.
 - Only commit code that passes all tests. Never commit without running `just test` one last time and seeing all tests pass.

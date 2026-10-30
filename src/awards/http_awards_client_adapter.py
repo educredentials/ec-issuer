@@ -36,11 +36,13 @@ class HttpAwardsClientAdapter(AwardsClientPort):
     """
 
     _awards_service_base_url: str
+    _issuer_base_url: str
     _http_client: HttpClient
 
     def __init__(
         self,
         awards_service_url: str,
+        base_url: str,
         http_client: HttpClient | None = None,
     ) -> None:
         """Initialize the adapter.
@@ -50,6 +52,7 @@ class HttpAwardsClientAdapter(AwardsClientPort):
             http_client: The HTTP client to use. Defaults to requests.
         """
         self._awards_service_base_url = awards_service_url.rstrip("/")
+        self._issuer_base_url = base_url.rstrip("/")
         if http_client is not None:
             self._http_client = http_client
         else:
@@ -77,12 +80,13 @@ class HttpAwardsClientAdapter(AwardsClientPort):
 
         # Strip the /earner prefix so the converter can fetch relative image paths.
         parsed = urlparse(self._awards_service_base_url)
-        base_url = urlunparse(parsed._replace(path=""))
+        award_base_url = urlunparse(parsed._replace(path=""))
 
         try:
             ob3 = ob3_award_from_badgr_api_response(
                 raw,
-                issuer_base_url=base_url,
+                award_base_url=award_base_url,
+                issuer_base_url=self._issuer_base_url,
                 extensions_url_prefix="/static/extensions",
             )
         except AwardMappingError as e:

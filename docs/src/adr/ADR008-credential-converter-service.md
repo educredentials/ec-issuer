@@ -28,8 +28,7 @@ The **credential-converter** is a Rust-based service that provides exactly this 
 ## Decision Drivers
 
 - **Complexity is unacceptable in-process.** The mapping engine involves JSON Schema resolution, field transformations, nested object reconstruction, and language parameters. This is non-trivial logic that has been iteratively refined in the Rust codebase.
-- **The converter is already in our infrastructure.** The `credential-converter` image runs in our podman compose environment, alongside ssi-agent and ec-issuer.
-- **The converter is maintained by our team.** Impierce maintains the converter, so bug fixes and schema updates stay in sync with our needs.
+- **The converter is maintained by our team.** We can maintain the converter ourselves, so bug fixes and schema updates stay in sync with our needs.
 - **Single source of truth.** Both the TUI and the headless API use the same conversion engine, guaranteeing consistency.
 - **Performance is handled.** The Rust implementation handles the heavy transformation work efficiently.
 

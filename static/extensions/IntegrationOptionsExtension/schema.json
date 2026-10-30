@@ -4,7 +4,7 @@
   "description": "Specifies whether a micro-credential is standalone or stackable towards another credential.",
   "type": "object",
   "properties": {
-    "IntegrationOption": {
+    "integrationOption": {
       "type": "string",
       "enum": [
         "standalone",
@@ -14,7 +14,7 @@
     }
   },
   "required": [
-    "IntegrationOption"
+    "integrationOption"
   ],
   "additionalProperties": false
 }

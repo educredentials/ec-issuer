@@ -4,13 +4,13 @@
   "description": "Specifies the grade achieved by the recipient for this assertion.",
   "type": "object",
   "properties": {
-    "GradeAchieved": {
+    "gradeAchieved": {
       "type": "string",
       "description": "The grade or mark achieved by the recipient."
     }
   },
   "required": [
-    "GradeAchieved"
+    "gradeAchieved"
   ],
   "additionalProperties": false
 }

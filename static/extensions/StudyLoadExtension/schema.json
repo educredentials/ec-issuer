@@ -4,14 +4,14 @@
   "description": "Specifies the nominal study load of the learning experience in hours.",
   "type": "object",
   "properties": {
-    "StudyLoad": {
+    "studyLoad": {
       "type": "number",
       "minimum": 0,
       "description": "Nominal study load expressed in hours (SBU)."
     }
   },
   "required": [
-    "StudyLoad"
+    "studyLoad"
   ],
   "additionalProperties": false
 }
