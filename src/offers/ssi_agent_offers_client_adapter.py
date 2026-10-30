@@ -156,7 +156,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             uri=uri,
         )
 
-    def _ob3_contexts(self, award: OB3Award) -> list[str | dict[str, str]]:
+    def _ob3_contexts(self, award: OB3Award) -> list[str]:
         """Return the hardcoded @context list for an OpenBadgeCredential.
 
         Args:
