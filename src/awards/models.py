@@ -131,4 +131,4 @@ class OB3Award:
     # --- OB3 / VCDM 2.0 extension properties ---
     validUntil: str | None = None
     # Context for SSI-agent signing.
-    credential_context: list[str] | None = None
+    credential_context: list[str | dict[str, str]] | None = None

@@ -6,7 +6,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:InstitutionNameExtension",
+      "obi:validatesType": "extensions:institutionName",
       "obi:validationSchema": "${BASE_URL}/static/extensions/InstitutionNameExtension/schema.json"
     }
   ]

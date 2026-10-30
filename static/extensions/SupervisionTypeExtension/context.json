@@ -6,7 +6,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:SupervisionTypeExtension",
+      "obi:validatesType": "extensions:supervisionType",
       "obi:validationSchema": "${BASE_URL}/static/extensions/SupervisionTypeExtension/schema.json"
     }
   ]

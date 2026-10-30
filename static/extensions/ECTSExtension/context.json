@@ -9,7 +9,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:ECTSExtension",
+      "obi:validatesType": "extensions:ects",
       "obi:validationSchema": "${BASE_URL}/static/extensions/ECTSExtension/schema.json"
     }
   ]

@@ -667,7 +667,7 @@ class TestOb3AwardWithNewFields:
         # 4 flat fields producing context: participation, assessment_type, ects,
         #   time_investment. inLanguage is native OB3 — no extension URL.
         assert result.credential_context is not None
-        assert len(result.credential_context) == 4
+        assert len(result.credential_context) == 5
 
     def test_to_ob3_award_time_investment_from_raw_json(self) -> None:
         """time_investment flows from flat JSON field through to Achievement."""
@@ -746,7 +746,10 @@ class TestOb3AwardWithNewFields:
         ach = result.credentialSubject.achievement
         assert ach.assessmentType == "summative"
         assert result.credential_context is not None
-        assert len(result.credential_context) == 1
+        # First item is inline JSON-LD context, second is the URL
+        assert isinstance(result.credential_context[0], dict)
+        assert result.credential_context[0]["assessmentType"] == "https://w3id.org/openbadges/extensions#assessmentType"
+        assert len(result.credential_context) == 2
 
     def test_extensions_from_raw_json(self) -> None:
         """_extract_extension_values works when data arrives via msgspec from

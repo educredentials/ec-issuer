@@ -9,7 +9,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:EQFExtension",
+      "obi:validatesType": "extensions:eqf",
       "obi:validationSchema": "${BASE_URL}/static/extensions/EQFExtension/schema.json"
     }
   ]

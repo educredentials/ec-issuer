@@ -6,7 +6,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:GradeAchievedExtension",
+      "obi:validatesType": "extensions:gradeAchieved",
       "obi:validationSchema": "${BASE_URL}/static/extensions/GradeAchievedExtension/schema.json"
     }
   ]

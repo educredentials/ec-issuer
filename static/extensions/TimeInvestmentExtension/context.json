@@ -9,7 +9,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:TimeInvestmentExtension",
+      "obi:validatesType": "extensions:timeInvestment",
       "obi:validationSchema": "${BASE_URL}/static/extensions/TimeInvestmentExtension/schema.json"
     }
   ]

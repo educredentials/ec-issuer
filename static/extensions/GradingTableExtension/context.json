@@ -9,7 +9,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:GradingTableExtension",
+      "obi:validatesType": "extensions:gradingTableUrl",
       "obi:validationSchema": "${BASE_URL}/static/extensions/GradingTableExtension/schema.json"
     }
   ]

@@ -11,7 +11,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:QualityAssuranceExtension",
+      "obi:validatesType": "extensions:qualityAssuranceName",
       "obi:validationSchema": "${BASE_URL}/static/extensions/QualityAssuranceExtension/schema.json"
     }
   ]

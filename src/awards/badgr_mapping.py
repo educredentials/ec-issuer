@@ -271,6 +271,68 @@ def _extract_extension_values(
 )
 
 
+# OB3 extension property IRIs (must match term names and validatesType).
+_EXTENSION_TERMS: dict[str, str] = {
+    "inLanguage": "https://w3id.org/openbadges/extensions#language",
+    "ects": "https://w3id.org/openbadges/extensions#ects",
+    "eqf": "https://w3id.org/openbadges/extensions#eqf",
+    "learningOutcome": "https://w3id.org/openbadges/extensions#learningOutcome",
+    "educationProgramIdentifier": "https://w3id.org/openbadges/extensions#educationProgramIdentifier",
+    "formOfParticipation": "https://w3id.org/openbadges/extensions#formOfParticipation",
+    "assessmentType": "https://w3id.org/openbadges/extensions#assessmentType",
+    "supervisionType": "https://w3id.org/openbadges/extensions#supervisionType",
+    "timeInvestment": "https://w3id.org/openbadges/extensions#timeInvestment",
+}
+
+
+def _build_credential_context(
+    urls: list[str],
+    *,
+    in_language: str | None,
+    ects: str | None,
+    eqf: str | None,
+    learningOutcome: str | None,
+    educationProgramIdentifier: list[str] | None,
+    formOfParticipation: str | None,
+    assessmentType: str | None,
+    supervisionType: str | None,
+    time_investment: str | None,
+) -> list[str | dict[str, str]]:
+    """Build credential context with inline JSON-LD term definitions.
+
+    The inline dict is prepended so validators can resolve custom terms
+    even when they cannot reach external context URLs (e.g. internal
+    playground hostnames).
+    """
+    inline_ctx: dict[str, str] = {}
+    _assign = inline_ctx.__setitem__
+    if in_language:
+        _assign("inLanguage", _EXTENSION_TERMS["inLanguage"])
+    if ects:
+        _assign("ects", _EXTENSION_TERMS["ects"])
+    if eqf:
+        _assign("eqf", _EXTENSION_TERMS["eqf"])
+    if learningOutcome:
+        _assign("learningOutcome", _EXTENSION_TERMS["learningOutcome"])
+    if educationProgramIdentifier:
+        _assign(
+            "educationProgramIdentifier",
+            _EXTENSION_TERMS["educationProgramIdentifier"],
+        )
+    if formOfParticipation:
+        _assign("formOfParticipation", _EXTENSION_TERMS["formOfParticipation"])
+    if assessmentType:
+        _assign("assessmentType", _EXTENSION_TERMS["assessmentType"])
+    if supervisionType:
+        _assign("supervisionType", _EXTENSION_TERMS["supervisionType"])
+    if time_investment:
+        _assign("timeInvestment", _EXTENSION_TERMS["timeInvestment"])
+
+    if inline_ctx:
+        return [inline_ctx, *urls]
+    return list(urls)
+
+
 def _credential_context_urls(
     *,
     issuer_base_url: str,
@@ -394,7 +456,20 @@ def _to_ob3_award(
             ),
             identifiers=identifiers,
         ),
-        credential_context=credential_context,
+        # Inline JSON-LD context so validators can resolve terms even when
+        # external context URLs are unreachable (e.g. internal playground URLs).
+        credential_context=_build_credential_context(
+            credential_context,
+            in_language=in_language,
+            ects=ects,
+            eqf=eqf,
+            learningOutcome=learningOutcome,
+            educationProgramIdentifier=educationProgramIdentifier,
+            formOfParticipation=formOfParticipation,
+            assessmentType=assessmentType,
+            supervisionType=supervisionType,
+            time_investment=time_investment,
+        ),
     )
 
 

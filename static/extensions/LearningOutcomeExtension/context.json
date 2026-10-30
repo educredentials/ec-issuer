@@ -10,7 +10,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:LearningOutcomeExtension",
+      "obi:validatesType": "extensions:learningOutcome",
       "obi:validationSchema": "${BASE_URL}/static/extensions/LearningOutcomeExtension/schema.json"
     }
   ]

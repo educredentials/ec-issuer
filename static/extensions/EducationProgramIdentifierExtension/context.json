@@ -6,7 +6,7 @@
   },
   "obi:validation": [
     {
-      "obi:validatesType": "extensions:EducationProgramIdentifierExtension",
+      "obi:validatesType": "extensions:educationProgramIdentifier",
       "obi:validationSchema": "${BASE_URL}/static/extensions/EducationProgramIdentifierExtension/schema.json"
     }
   ]
