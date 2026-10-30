@@ -60,7 +60,7 @@ class Achievement:
     description: str
     name: str
     image: dict[str, str] | None = None
-    language: str | None = None
+    inLanguage: str | None = None
     ects: str | None = None
     eqf: str | None = None
     learningOutcome: str | None = None

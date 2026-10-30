@@ -62,7 +62,7 @@ _EXPECTED_BADGR_AWARD = OB3Award(
             ),
             description=("Demonstrates the ability to work effectively"),
             name="Teamwork Badge",
-            language=None,
+            inLanguage=None,
             ects=None,
             eqf=None,
             learningOutcome=None,

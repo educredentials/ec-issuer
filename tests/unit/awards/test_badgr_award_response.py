@@ -206,7 +206,7 @@ class TestToOb3Award:
                     ),
                     description="Complete your account to start earning badges",
                     name="Edubadge account complete",
-                    language=None,
+                    inLanguage=None,
                     ects=None,
                     eqf=None,
                     learningOutcome=None,
@@ -360,13 +360,13 @@ class TestCredentialContextUrls:
 
     def _make_ext(self, **kwargs: object) -> _BadgeclassExtensions:
         """Build a _BadgeclassExtensions from kwargs."""
-        _language = kwargs.get("language")
+        _inLanguage = kwargs.get("inLanguage")
         _ects = kwargs.get("ects")
         _eqf = kwargs.get("eqf")
         _learningOutcome = kwargs.get("learningOutcome")
         _educationProgramIdentifier = kwargs.get("educationProgramIdentifier")
         return _BadgeclassExtensions(
-            language=str(_language) if _language is not None else None,
+            inLanguage=str(_inLanguage) if _inLanguage is not None else None,
             ects=float(_ects) if isinstance(_ects, (int, float)) else None,
             eqf=int(_eqf) if isinstance(_eqf, int) else None,
             learningOutcome=(
@@ -393,16 +393,12 @@ class TestCredentialContextUrls:
             issuer_base_url="http://localhost:8000",
             extensions_url_prefix="/static/extensions",
             ext_vals=_BadgeclassExtensions(
-                language="nl", participation="enrolment"
+                inLanguage="nl", participation="enrolment"
             ),
         )
-        assert len(urls) == 2
+        assert len(urls) == 1
         assert (
             "http://localhost:8000/static/extensions/ParticipationFormExtension/context.json"
-            in urls
-        )
-        assert (
-            "http://localhost:8000/static/extensions/LanguageExtension/context.json"
             in urls
         )
 
@@ -412,7 +408,7 @@ class TestCredentialContextUrls:
             issuer_base_url="http://localhost:8000",
             extensions_url_prefix="/static/extensions",
             ext_vals=_BadgeclassExtensions(
-                language="nl",
+                inLanguage="nl",
                 ects=5,
                 learningOutcome="Can do X",
                 educationProgramIdentifier=["12345"],
@@ -420,7 +416,7 @@ class TestCredentialContextUrls:
                 assessmentType="formative",
             ),
         )
-        assert len(urls) == 6
+        assert len(urls) == 5
 
     def test_none_fields_excluded(self) -> None:
         """Only non-None fields contribute URLs."""
@@ -428,10 +424,10 @@ class TestCredentialContextUrls:
             issuer_base_url="http://localhost:8000",
             extensions_url_prefix="/static/extensions",
             ext_vals=_BadgeclassExtensions(
-                language="nl", ects=None, participation="enrolment"
+                inLanguage="nl", ects=None, participation="enrolment"
             ),
         )
-        assert len(urls) == 2
+        assert len(urls) == 1
 
     def test_url_uses_env_var_when_set(self) -> None:
         """Uses EC_ISSUER_URL env var when available."""
@@ -439,10 +435,10 @@ class TestCredentialContextUrls:
             urls = _credential_context_urls(
                 issuer_base_url="https://educredentials.nl",
                 extensions_url_prefix="/static/extensions",
-                ext_vals=_BadgeclassExtensions(language="nl"),
+                ext_vals=_BadgeclassExtensions(participation="enrolment"),
             )
         assert len(urls) == 1
-        assert urls[0] == "https://educredentials.nl/static/extensions/LanguageExtension/context.json"
+        assert urls[0] == "https://educredentials.nl/static/extensions/ParticipationFormExtension/context.json"
 
     def test_url_trims_trailing_slash(self) -> None:
         """Strips trailing slash from public URL."""
@@ -461,13 +457,12 @@ class TestCredentialContextUrls:
             issuer_base_url="http://localhost:8000",
             extensions_url_prefix="/static/extensions",
             ext_vals=_BadgeclassExtensions(
-                language="nl", participation="enrolment", assessmentType="formative"
+                inLanguage="nl", participation="enrolment", assessmentType="formative"
             ),
         )
-        assert len(urls) == 3
+        assert len(urls) == 2
         assert "ParticipationFormExtension" in urls[0]
         assert "AssessmentTypeExtension" in urls[1]
-        assert "LanguageExtension" in urls[2]
 
 
 class TestOb3AwardWithNewFields:
@@ -527,8 +522,8 @@ class TestOb3AwardWithNewFields:
         )
         assert award.credential_context == context_urls
 
-    def test_ob3_award_with_Languageuage(self) -> None:
-        """OB3Award can hold language field."""
+    def test_ob3_award_with_valid_in_language(self) -> None:
+        """OB3Award can hold inLanguage field."""
         award = OB3Award(
             id="https://DOMAIN/assertions/1",
             type=["VerifiableCredential", "AchievementCredential"],
@@ -546,11 +541,11 @@ class TestOb3AwardWithNewFields:
                     criteria=Criteria(narrative="Complete the badge"),
                     description="Badge for completing the task",
                     name="Badge",
-                    language="nl",
+                    inLanguage="nl",
                 ),
             ),
         )
-        assert award.credentialSubject.achievement.language == "nl"
+        assert award.credentialSubject.achievement.inLanguage == "nl"
 
     def test_ob3_award_with_ECTS(self) -> None:
         """OB3Award can hold ects field."""
@@ -664,14 +659,15 @@ class TestOb3AwardWithNewFields:
         result = _to_ob3_award(dto)
         ach = result.credentialSubject.achievement
         assert result.validUntil == "2025-01-01T00:00:00Z"
-        assert ach.language == "nl"
+        assert ach.inLanguage == "nl"
         assert ach.ects == "5"
         assert ach.timeInvestment == "42.0"
         assert ach.assessmentType == "summative"
         assert ach.formOfParticipation == "enrolment"
-        # 5 flat fields: participation, assessment_type, language, ects, time_investment
+        # 4 flat fields producing context: participation, assessment_type, ects,
+        #   time_investment. inLanguage is native OB3 — no extension URL.
         assert result.credential_context is not None
-        assert len(result.credential_context) == 5
+        assert len(result.credential_context) == 4
 
     def test_to_ob3_award_time_investment_from_raw_json(self) -> None:
         """time_investment flows from flat JSON field through to Achievement."""
@@ -774,7 +770,7 @@ class TestOb3AwardWithNewFields:
         }
         result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")
         ach = result.credentialSubject.achievement
-        assert ach.language == "nl_NL"
+        assert ach.inLanguage == "nl_NL"
         assert ach.educationProgramIdentifier == ["56823"]
         assert result.validFrom == "2024-01-01T00:00:00Z"
 

@@ -179,7 +179,7 @@ class _BadgrAwardResponse(msgspec.Struct):
 class _BadgeclassExtensions(msgspec.Struct):
     """Typed extension values extracted from flat badgeclass fields."""
 
-    language: str | None = None
+    inLanguage: str | None = None
     ects: str | None = None
     eqf: str | None = None
     learningOutcome: str | None = None
@@ -234,7 +234,7 @@ def _extract_extension_values(
         _supervisionType = None
 
     return _BadgeclassExtensions(
-        language=(
+        inLanguage=(
             str(badgeclass.language)
             if badgeclass.language is not None else None
         ),
@@ -295,7 +295,7 @@ def _credential_context_urls(
     ext_map: list[tuple[str, object]] = [
         ("ParticipationFormExtension/context.json", ext_vals.participation),
         ("AssessmentTypeExtension/context.json", ext_vals.assessmentType),
-        ("LanguageExtension/context.json", ext_vals.language),
+
         ("ECTSExtension/context.json", ext_vals.ects),
         ("EQFExtension/context.json", ext_vals.eqf),
         ("LearningOutcomeExtension/context.json", ext_vals.learningOutcome),
@@ -353,7 +353,7 @@ def _to_ob3_award(
         ext_vals=ext_vals,
     )
 
-    language = ext_vals.language
+    in_language = ext_vals.inLanguage
     ects = ext_vals.ects
     eqf = ext_vals.eqf
     learningOutcome = ext_vals.learningOutcome
@@ -382,7 +382,7 @@ def _to_ob3_award(
                 description=achievement_data["description"],
                 name=badge_name,
                 image=image,
-                language=language,
+                inLanguage=in_language,
                 ects=ects,
                 eqf=eqf,
                 learningOutcome=learningOutcome,
