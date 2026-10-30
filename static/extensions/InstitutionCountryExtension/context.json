@@ -2,7 +2,10 @@
   "@context": {
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "CountryCode": "extensions:InstitutionCountryExtension"
+    "countryCode": {
+      "@id": "extensions:countryCode",
+      "@type": "http://www.w3.org/2001/XMLSchema#string"
+    }
   },
   "obi:validation": [
     {

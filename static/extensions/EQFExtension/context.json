@@ -2,8 +2,8 @@
   "@context": {
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "eqfLevel": {
-      "@id": "extensions:eqfLevel",
+    "eqf": {
+      "@id": "extensions:eqf",
       "@type": "http://www.w3.org/2001/XMLSchema#integer"
     }
   },

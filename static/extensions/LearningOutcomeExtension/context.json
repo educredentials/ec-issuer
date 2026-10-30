@@ -1,9 +1,9 @@
 {
   "@context": {
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "learningOutcomes": {
+    "learningOutcome": {
       "@id": "extensions:learningOutcome",
-      "@container": "@set"
+      "@type": "http://www.w3.org/2001/XMLSchema#string"
     },
     "dc": "http://purl.org/dc/terms/",
     "description": "dc:description"

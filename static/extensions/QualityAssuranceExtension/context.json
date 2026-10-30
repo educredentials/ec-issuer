@@ -2,12 +2,12 @@
   "@context": {
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "QualityAssuranceName": "extensions:QualityAssuranceName",
-    "QualityAssuranceUrl": {
-      "@id": "extensions:QualityAssuranceUrl",
+    "qualityAssuranceName": "extensions:qualityAssuranceName",
+    "qualityAssuranceUrl": {
+      "@id": "extensions:qualityAssuranceUrl",
       "@type": "@id"
     },
-    "QualityAssuranceDescription": "extensions:QualityAssuranceDescription"
+    "qualityAssuranceDescription": "extensions:qualityAssuranceDescription"
   },
   "obi:validation": [
     {

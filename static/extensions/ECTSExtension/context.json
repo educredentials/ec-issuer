@@ -2,8 +2,8 @@
   "@context": {
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "ectsCredit": {
-      "@id": "extensions:ectsCredit",
+    "ects": {
+      "@id": "extensions:ects",
       "@type": "http://www.w3.org/2001/XMLSchema#decimal"
     }
   },

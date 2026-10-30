@@ -2,7 +2,7 @@
   "@context": {
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "SupervisionType": "extensions:SupervisionTypeExtension"
+    "supervisionType": "extensions:supervisionType"
   },
   "obi:validation": [
     {

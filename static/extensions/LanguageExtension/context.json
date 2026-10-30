@@ -2,7 +2,10 @@
   "@context": {
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "Language": "extensions:LanguageExtension"
+    "language": {
+      "@id": "extensions:language",
+      "@type": "http://www.w3.org/2001/XMLSchema#string"
+    }
   },
   "obi:validation": [
     {

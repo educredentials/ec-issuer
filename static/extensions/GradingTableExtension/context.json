@@ -2,7 +2,10 @@
   "@context": {
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
-    "GradingTableURL": "extensions:GradingTableExtension"
+    "gradingTableUrl": {
+      "@id": "extensions:gradingTableUrl",
+      "@type": "@id"
+    }
   },
   "obi:validation": [
     {
