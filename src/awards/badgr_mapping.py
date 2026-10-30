@@ -235,7 +235,7 @@ def _extract_extension_values(
 
     return _BadgeclassExtensions(
         inLanguage=(
-            str(badgeclass.language)
+            badgeclass.language.replace("_", "-")
             if badgeclass.language is not None else None
         ),
         ects=(

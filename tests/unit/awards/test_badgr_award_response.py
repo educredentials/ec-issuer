@@ -770,7 +770,7 @@ class TestOb3AwardWithNewFields:
         }
         result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")
         ach = result.credentialSubject.achievement
-        assert ach.inLanguage == "nl_NL"
+        assert ach.inLanguage == "nl-NL"
         assert ach.educationProgramIdentifier == ["56823"]
         assert result.validFrom == "2024-01-01T00:00:00Z"
 
