@@ -666,7 +666,7 @@ class TestOb3AwardWithNewFields:
         assert result.validUntil == "2025-01-01T00:00:00Z"
         assert ach.language == "nl"
         assert ach.ects == "5"
-        assert ach.timeInvestment == 42.0
+        assert ach.timeInvestment == "42.0"
         assert ach.assessmentType == "summative"
         assert ach.formOfParticipation == "enrolment"
         # 5 flat fields: participation, assessment_type, language, ects, time_investment
@@ -689,7 +689,7 @@ class TestOb3AwardWithNewFields:
             },
         }
         result = ob3_award_from_badgr_api_response(raw, issuer_base_url="https://DOMAIN")
-        assert result.credentialSubject.achievement.timeInvestment == 25.5
+        assert result.credentialSubject.achievement.timeInvestment == "25.5"
         assert result.validFrom == "2024-01-01T00:00:00Z"
 
     def test_to_ob3_award_issuer_type_from_flat_field(self) -> None:
