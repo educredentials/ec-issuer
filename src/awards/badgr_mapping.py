@@ -341,7 +341,7 @@ def _to_ob3_award(
     issuer = _resolve_issuer(dto)
     valid_from = _resolve_valid_from(dto)
     achievement_data = _resolve_achievement_data(dto)
-    identifiers = _resolve_identifiers(dto)
+    identifier = _resolve_identifier(dto)
     image = _resolve_image(dto, award_base_url)
 
     valid_to = dto.expires_at
@@ -395,7 +395,7 @@ def _to_ob3_award(
                 supervisionType=supervisionType,
                 timeInvestment=time_investment,
             ),
-            identifiers=identifiers,
+            identifier=identifier,
         ),
         credential_context=credential_context,
     )
@@ -483,17 +483,17 @@ def _resolve_image(
     return {"id": image_id, "type": "Image"}
 
 
-def _resolve_identifiers(dto: _BadgrAwardResponse) -> list[IdentityObject]:
+def _resolve_identifier(dto: _BadgrAwardResponse) -> list[IdentityObject]:
     """Build an identifier list from recipient data in the DTO.
 
     TODO: hash identity values before storing (salted SHA-256, pending team
     discussion on salt management).
     """
-    identifiers: list[IdentityObject] = []
+    identifier: list[IdentityObject] = []
     if dto.email:
-        identifiers.append(
+        identifier.append(
             IdentityObject(
-                type=["IdentityObject"],
+                type="IdentityObject",
                 identityHash=dto.email,
                 identityType="emailAddress",
                 hashed=False
@@ -501,15 +501,15 @@ def _resolve_identifiers(dto: _BadgrAwardResponse) -> list[IdentityObject]:
         )
     name = _resolve_name(dto)
     if name:
-        identifiers.append(
+        identifier.append(
             IdentityObject(
-                type=["IdentityObject"],
+                type="IdentityObject",
                 identityHash=name,
                 identityType="name",
                 hashed=False,
             )
         )
-    return identifiers
+    return identifier
 
 
 def _resolve_name(dto: _BadgrAwardResponse) -> str:

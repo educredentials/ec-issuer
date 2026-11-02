@@ -78,7 +78,7 @@ class AchievementSubject:
     id: str
     type: list[str]
     achievement: Achievement
-    identifiers: list[IdentityObject] = field(default_factory=list)
+    identifier: list[IdentityObject] = field(default_factory=list)
 
 
 @dataclass
@@ -94,7 +94,7 @@ class Issuer:
 class IdentityObject:
     """An identifier for the recipient of an achievement (OB3 spec)."""
 
-    type: list[str]
+    type: str
     identityHash: str
     identityType: str
     hashed: bool

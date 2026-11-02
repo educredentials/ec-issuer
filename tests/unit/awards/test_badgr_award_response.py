@@ -17,7 +17,7 @@ from src.awards.badgr_mapping import (
     _BadgrFaculty,  # pyright:ignore[reportPrivateUsage]
     _BadgrIssuer,  # pyright:ignore[reportPrivateUsage]
     _credential_context_urls,  # pyright:ignore[reportPrivateUsage]
-    _resolve_identifiers,  # pyright:ignore[reportPrivateUsage]
+    _resolve_identifier,  # pyright:ignore[reportPrivateUsage]
     _to_ob3_award,  # pyright:ignore[reportPrivateUsage]
     ob3_award_from_badgr_api_response,
 )
@@ -215,15 +215,15 @@ class TestToOb3Award:
                     assessmentType=None,
                     timeInvestment=None,
                 ),
-                identifiers=[
+                identifier=[
                     _IdentityObject(
-                        type=["IdentityObject"],
+                        type="IdentityObject",
                         identityHash="jan@example.com",
                         identityType="emailAddress",
                         hashed=False,
                     ),
                     _IdentityObject(
-                        type=["IdentityObject"],
+                        type="IdentityObject",
                         identityHash="Jan Jansen",
                         identityType="name",
                         hashed=False,
@@ -277,14 +277,14 @@ class TestToOb3Award:
             email="jan@example.com",
         )
         result = _to_ob3_award(dto)
-        identifiers = result.credentialSubject.identifiers
-        assert len(identifiers) == 2
-        assert identifiers[0].type == ["IdentityObject"]
-        assert identifiers[0].identityHash == "jan@example.com"
-        assert identifiers[0].identityType == "emailAddress"
-        assert identifiers[0].hashed is False
-        assert identifiers[1].identityHash == "Jan Jansen"
-        assert identifiers[1].identityType == "name"
+        identifier = result.credentialSubject.identifier
+        assert len(identifier) == 2
+        assert identifier[0].type == "IdentityObject"
+        assert identifier[0].identityHash == "jan@example.com"
+        assert identifier[0].identityType == "emailAddress"
+        assert identifier[0].hashed is False
+        assert identifier[1].identityHash == "Jan Jansen"
+        assert identifier[1].identityType == "name"
 
     def test_identifiers_only_email_when_no_name(self) -> None:
         """Only an emailAddress identifier is produced when no name fields exist."""
@@ -297,8 +297,8 @@ class TestToOb3Award:
             email="solo@example.com",
         )
         result = _to_ob3_award(dto)
-        assert len(result.credentialSubject.identifiers) == 1
-        assert result.credentialSubject.identifiers[0].identityHash == (
+        assert len(result.credentialSubject.identifier) == 1
+        assert result.credentialSubject.identifier[0].identityHash == (
             "solo@example.com"
         )
 
@@ -313,8 +313,8 @@ class TestToOb3Award:
             email=None,
         )
         result = _to_ob3_award(dto)
-        assert len(result.credentialSubject.identifiers) == 1
-        assert result.credentialSubject.identifiers[0].identityType == "name"
+        assert len(result.credentialSubject.identifier) == 1
+        assert result.credentialSubject.identifier[0].identityType == "name"
 
     def test_empty_identifiers_when_no_recipient_data(self) -> None:
         """No recipient data produces an empty identifiers list."""
@@ -324,7 +324,7 @@ class TestToOb3Award:
             issued_on="2024-01-01T00:00:00Z",
         )
         result = _to_ob3_award(dto)
-        assert result.credentialSubject.identifiers == []
+        assert result.credentialSubject.identifier == []
 
     def test_name_parts_filtered_for_none(self) -> None:
         """Only non-None name parts are joined."""
@@ -336,7 +336,7 @@ class TestToOb3Award:
             family_name=None,
             email=None,
         )
-        result = _resolve_identifiers(dto)
+        result = _resolve_identifier(dto)
         assert len(result) == 1
         assert result[0].identityHash == "Single"
 
