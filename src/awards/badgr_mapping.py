@@ -203,8 +203,9 @@ def _extract_extension_values(
 ) -> _BadgeclassExtensions:
     """Extract extension values from flat badgeclass fields.
 
-    All scalar extension values are cast to strings so the credential
-    output contains only string representations of the raw JSON values.
+    Scalar extension values are cast to strings and list fields (participation,
+    assessment_type) are cast to list[str] so the credential output contains
+    properly typed values.
 
     """
     if badgeclass is None:
@@ -260,12 +261,14 @@ def _extract_extension_values(
             if badgeclass.time_investment is not None else None
         ),
         assessmentType=(
-            str(badgeclass.assessment_type)
-            if badgeclass.assessment_type is not None else None
+            _cast_to_str_list(badgeclass.assessment_type)
+            if badgeclass.assessment_type is not None
+            else None
         ),
         participation=(
-            str(badgeclass.participation)
-            if badgeclass.participation is not None else None
+            _cast_to_str_list(badgeclass.participation)
+            if badgeclass.participation is not None
+            else None
         ),
         supervisionType=_supervisionType
 )

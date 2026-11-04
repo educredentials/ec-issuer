@@ -393,12 +393,18 @@ class TestCredentialContextUrls:
             issuer_base_url="http://localhost:8000",
             extensions_url_prefix="/static/extensions/v1",
             ext_vals=_BadgeclassExtensions(
-                inLanguage="nl", participation="enrolment"
+                inLanguage="nl",
+                participation=["enrolment", "onsite"],
+                assessmentType=["testing", "portfolio"],
             ),
         )
-        assert len(urls) == 1
+        assert len(urls) == 2
         assert (
             "http://localhost:8000/static/extensions/v1/ParticipationFormExtension/context.json"
+            in urls
+        )
+        assert (
+            "http://localhost:8000/static/extensions/v1/AssessmentTypeExtension/context.json"
             in urls
         )
 
@@ -412,11 +418,13 @@ class TestCredentialContextUrls:
                 ects=5,
                 learningOutcome="Can do X",
                 educationProgramIdentifier=["12345"],
-                participation="enrolment",
-                assessmentType="formative",
+                participation=["enrolment", "onsite"],
+                assessmentType=["testing", "portfolio"],
             ),
         )
         assert len(urls) == 5
+        assert "ParticipationFormExtension" in urls[0]
+        assert "AssessmentTypeExtension" in urls[1]
 
     def test_none_fields_excluded(self) -> None:
         """Only non-None fields contribute URLs."""
@@ -435,7 +443,7 @@ class TestCredentialContextUrls:
             urls = _credential_context_urls(
                 issuer_base_url="https://educredentials.nl",
                 extensions_url_prefix="/static/extensions/v1",
-                ext_vals=_BadgeclassExtensions(participation="enrolment"),
+                ext_vals=_BadgeclassExtensions(participation=["enrolment"]),
             )
         assert len(urls) == 1
         assert urls[0] == "https://educredentials.nl/static/extensions/v1/ParticipationFormExtension/context.json"
@@ -446,7 +454,7 @@ class TestCredentialContextUrls:
             urls = _credential_context_urls(
                 issuer_base_url="https://educredentials.nl",
                 extensions_url_prefix="/static/extensions/v1",
-                ext_vals=_BadgeclassExtensions(participation="enrolment"),
+                ext_vals=_BadgeclassExtensions(participation=["enrolment"]),
             )
         assert len(urls) == 1
         assert urls[0] == "https://educredentials.nl/static/extensions/v1/ParticipationFormExtension/context.json"
@@ -457,7 +465,9 @@ class TestCredentialContextUrls:
             issuer_base_url="http://localhost:8000",
             extensions_url_prefix="/static/extensions/v1",
             ext_vals=_BadgeclassExtensions(
-                inLanguage="nl", participation="enrolment", assessmentType="formative"
+                inLanguage="nl",
+                participation=["enrolment"],
+                assessmentType=["formative"],
             ),
         )
         assert len(urls) == 2
@@ -573,7 +583,8 @@ class TestOb3AwardWithNewFields:
         assert award.credentialSubject.achievement.ects == 5
 
     def test_ob3_award_with_assessment_fields(self) -> None:
-        """OB3Award can hold assessment type, id_verified, and supervised fields."""
+        """OB3Award can hold assessment type, form of participation, id_verified,
+        and supervised fields."""
         award = OB3Award(
             id="https://DOMAIN/assertions/1",
             type=["VerifiableCredential", "AchievementCredential"],
@@ -591,11 +602,19 @@ class TestOb3AwardWithNewFields:
                     criteria=Criteria(narrative="Complete the badge"),
                     description="Badge for completing the task",
                     name="Badge",
-                    assessmentType="formative",
+                    assessmentType=["testing", "portfolio"],
+                    formOfParticipation=["online", "onsite"],
                 ),
             ),
         )
-        assert award.credentialSubject.achievement.assessmentType == "formative"
+        assert award.credentialSubject.achievement.assessmentType == [
+            "testing",
+            "portfolio",
+        ]
+        assert award.credentialSubject.achievement.formOfParticipation == [
+            "online",
+            "onsite",
+        ]
 
     def test_to_ob3_award_with_expires_at(self) -> None:
         """_to_ob3_award maps expires_at to validUntil."""
@@ -649,8 +668,8 @@ class TestOb3AwardWithNewFields:
                     name_english="Issuer",
                     faculty=None,
                 ),
-                participation="enrolment",
-                assessment_type="summative",
+                participation=["enrolment", "onsite"],
+                assessment_type=["summative", "formative"],
                 language="nl",
                 ects="5",
                 time_investment=42.0,
@@ -662,8 +681,8 @@ class TestOb3AwardWithNewFields:
         assert ach.inLanguage == "nl"
         assert ach.ects == "5"
         assert ach.timeInvestment == "42.0"
-        assert ach.assessmentType == "summative"
-        assert ach.formOfParticipation == "enrolment"
+        assert ach.assessmentType == ["summative", "formative"]
+        assert ach.formOfParticipation == ["enrolment", "onsite"]
         # 4 flat fields producing context: participation, assessment_type, ects,
         #   time_investment. inLanguage is native OB3 — no extension URL.
         assert result.credential_context is not None
@@ -739,14 +758,16 @@ class TestOb3AwardWithNewFields:
                     name_english="Issuer",
                     faculty=None,
                 ),
-                assessment_type="summative",
+                participation=["online", "onsite"],
+                assessment_type=["summative", "formative"],
             ),
         )
         result = _to_ob3_award(dto)
         ach = result.credentialSubject.achievement
-        assert ach.assessmentType == "summative"
+        assert ach.assessmentType == ["summative", "formative"]
+        assert ach.formOfParticipation == ["online", "onsite"]
         assert result.credential_context is not None
-        assert len(result.credential_context) == 1
+        assert len(result.credential_context) == 2
 
     def test_extensions_from_raw_json(self) -> None:
         """_extract_extension_values works when data arrives via msgspec from
