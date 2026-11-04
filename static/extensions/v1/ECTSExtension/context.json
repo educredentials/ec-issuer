@@ -1,0 +1,16 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "ects": {
+      "@id": "extensions:ects",
+      "@type": "http://www.w3.org/2001/XMLSchema#decimal"
+    }
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:ects",
+      "obi:validationSchema": "${BASE_URL}/static/extensions/v1/ECTSExtension/schema.json"
+    }
+  ]
+}

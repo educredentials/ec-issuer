@@ -13,10 +13,12 @@ class TestExtensionContextServer:
         """Create a temp extensions dir with a minimal context file."""
         ext_dir = tmp_path / "extensions"
         ext_dir.mkdir()
-        lang_dir = ext_dir / "LanguageExtension"
+        v1_dir = ext_dir / "v1"
+        v1_dir.mkdir()
+        lang_dir = v1_dir / "LanguageExtension"
         lang_dir.mkdir()
         _ = (lang_dir / "context.json").write_text(
-            '{"@context": "${BASE_URL}/static/extensions/test"}',
+            '{"@context": "${BASE_URL}/static/extensions/v1/test"}',
             encoding="utf-8",
         )
         return ext_dir
@@ -29,7 +31,7 @@ class TestExtensionContextServer:
             extensions_dir=str(ext_dir),
         )
         content, status_code, headers = server.serve(
-            "LanguageExtension/context.json"
+            "v1/LanguageExtension/context.json"
         )
         assert status_code == 200
         assert headers["Content-Type"] == "application/ld+json"
@@ -43,10 +45,10 @@ class TestExtensionContextServer:
             extensions_dir=str(ext_dir),
         )
         content, status_code, _ = server.serve(
-            "LanguageExtension/context.json"
+            "v1/LanguageExtension/context.json"
         )
         assert status_code == 200
-        assert "https://edu.example.com/static/extensions/test" in content
+        assert "https://edu.example.com/static/extensions/v1/test" in content
 
     def test_returns_404_for_nonexistent_file(self, tmp_path: Path) -> None:
         """Non-existent extension file returns 404."""
@@ -55,7 +57,7 @@ class TestExtensionContextServer:
             base_url="http://localhost:8000",
             extensions_dir=str(ext_dir),
         )
-        _, status_code, _ = server.serve("MissingExtension/context.json")
+        _, status_code, _ = server.serve("v1/MissingExtension/context.json")
         assert status_code == 404
 
     def test_returns_404_for_non_matching_filename(self, tmp_path: Path) -> None:
@@ -85,7 +87,7 @@ class TestExtensionContextServer:
             base_url="http://localhost:8000",
             extensions_dir=str(ext_dir),
         )
-        _, status_code, _ = server.serve("LanguageExtension/../../../etc/hostname")
+        _, status_code, _ = server.serve("v1/LanguageExtension/../../../etc/hostname")
         assert status_code == 404
 
     def test_rejects_unsupported_extension(self, tmp_path: Path) -> None:
@@ -95,13 +97,14 @@ class TestExtensionContextServer:
             base_url="http://localhost:8000",
             extensions_dir=str(ext_dir),
         )
-        _, status_code, _ = server.serve("LanguageExtension/notes.txt")
+        _, status_code, _ = server.serve("v1/LanguageExtension/notes.txt")
         assert status_code == 404
 
     def test_serves_schema_file(self, tmp_path: Path) -> None:
         """A schema.json file can be served."""
         ext_dir = self._create_tmp_dir(tmp_path)
-        schema_dir = ext_dir / "TestExtension"
+        v1_dir = ext_dir / "v1"
+        schema_dir = v1_dir / "TestExtension"
         schema_dir.mkdir()
         _ = (schema_dir / "schema.json").write_text(
             '{"$schema": "test"}', encoding="utf-8"
@@ -110,6 +113,6 @@ class TestExtensionContextServer:
             base_url="http://localhost:8000",
             extensions_dir=str(ext_dir),
         )
-        _, status_code, headers = server.serve("TestExtension/schema.json")
+        _, status_code, headers = server.serve("v1/TestExtension/schema.json")
         assert status_code == 200
         assert headers["Content-Type"] == "application/ld+json"

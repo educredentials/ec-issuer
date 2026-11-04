@@ -286,8 +286,8 @@ def _credential_context_urls(
 
     Args:
         issuer_base_url: The base URL of the ec-issuer (e.g. ``http://localhost:8000``).
-        extensions_url_prefix: The extensions URL prefix (e.g. ``/static/extensions``).
-        badgeclass: The Badgr badgeclass DTO.
+        extensions_url_prefix: The extensions URL prefix
+        (e.g. ``/static/extensions/v1``).
         ext_vals: Extracted extension values.
 
     Returns:
@@ -322,7 +322,7 @@ def _to_ob3_award(
     *,
     issuer_base_url: str | None = None,
     award_base_url: str | None = None,
-    extensions_url_prefix: str = "/static/extensions",
+    extensions_url_prefix: str = "/static/extensions/v1",
 ) -> OB3Award:
     """Convert a BadgrAwardResponse DTO to an OB3 Award domain model.
 
@@ -331,7 +331,7 @@ def _to_ob3_award(
         issuer_base_url: Optional base URL to resolve relative image paths
             and credential context URLs.
         extensions_url_prefix: URL prefix for extensions (defaults to the route
-            constant ``/static/extensions``).
+            constant ``/static/extensions/v1``).
 
     Returns:
         A fully-structured OB3 Award.
@@ -523,7 +523,7 @@ def ob3_award_from_badgr_api_response(
     *,
     award_base_url: str | None = None,
     issuer_base_url: str | None = None,
-    extensions_url_prefix: str = "/static/extensions",
+    extensions_url_prefix: str = "/static/extensions/v1",
 ) -> OB3Award:
     """Convert a Badgr API response to an OB3 Award domain model.
 
@@ -532,7 +532,7 @@ def ob3_award_from_badgr_api_response(
         issuer_base_url: Optional base URL to resolve relative image paths
             and credential context URLs.
         extensions_url_prefix: URL prefix for extensions (defaults to the
-            route constant ``/static/extensions``).
+            route constant ``/static/extensions/v1``).
 
     Returns:
         A fully-structured OB3 Award.

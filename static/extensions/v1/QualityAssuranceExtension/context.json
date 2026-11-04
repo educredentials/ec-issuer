@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "qualityAssuranceName": "extensions:qualityAssuranceName",
+    "qualityAssuranceUrl": {
+      "@id": "extensions:qualityAssuranceUrl",
+      "@type": "@id"
+    },
+    "qualityAssuranceDescription": "extensions:qualityAssuranceDescription"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:qualityAssuranceName",
+      "obi:validationSchema": "${BASE_URL}/static/extensions/v1/QualityAssuranceExtension/schema.json"
+    }
+  ]
+}

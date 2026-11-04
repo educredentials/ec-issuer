@@ -1,0 +1,16 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "countryCode": {
+      "@id": "extensions:countryCode",
+      "@type": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:countryCode",
+      "obi:validationSchema": "${BASE_URL}/static/extensions/v1/InstitutionCountryExtension/schema.json"
+    }
+  ]
+}

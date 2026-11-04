@@ -383,7 +383,7 @@ class TestCredentialContextUrls:
         """Returns empty list when all flat fields are None."""
         assert _credential_context_urls(
             issuer_base_url="http://localhost:8000",
-            extensions_url_prefix="/static/extensions",
+            extensions_url_prefix="/static/extensions/v1",
             ext_vals=_BadgeclassExtensions(),
         ) == []
 
@@ -391,14 +391,14 @@ class TestCredentialContextUrls:
         """One non-None field produces exactly one context URL."""
         urls = _credential_context_urls(
             issuer_base_url="http://localhost:8000",
-            extensions_url_prefix="/static/extensions",
+            extensions_url_prefix="/static/extensions/v1",
             ext_vals=_BadgeclassExtensions(
                 inLanguage="nl", participation="enrolment"
             ),
         )
         assert len(urls) == 1
         assert (
-            "http://localhost:8000/static/extensions/ParticipationFormExtension/context.json"
+            "http://localhost:8000/static/extensions/v1/ParticipationFormExtension/context.json"
             in urls
         )
 
@@ -406,7 +406,7 @@ class TestCredentialContextUrls:
         """All non-None flat fields each produce a context URL."""
         urls = _credential_context_urls(
             issuer_base_url="http://localhost:8000",
-            extensions_url_prefix="/static/extensions",
+            extensions_url_prefix="/static/extensions/v1",
             ext_vals=_BadgeclassExtensions(
                 inLanguage="nl",
                 ects=5,
@@ -422,7 +422,7 @@ class TestCredentialContextUrls:
         """Only non-None fields contribute URLs."""
         urls = _credential_context_urls(
             issuer_base_url="http://localhost:8000",
-            extensions_url_prefix="/static/extensions",
+            extensions_url_prefix="/static/extensions/v1",
             ext_vals=_BadgeclassExtensions(
                 inLanguage="nl", ects=None, participation="enrolment"
             ),
@@ -434,28 +434,28 @@ class TestCredentialContextUrls:
         with _patch_env("EC_ISSUER_URL", "https://educredentials.nl"):
             urls = _credential_context_urls(
                 issuer_base_url="https://educredentials.nl",
-                extensions_url_prefix="/static/extensions",
+                extensions_url_prefix="/static/extensions/v1",
                 ext_vals=_BadgeclassExtensions(participation="enrolment"),
             )
         assert len(urls) == 1
-        assert urls[0] == "https://educredentials.nl/static/extensions/ParticipationFormExtension/context.json"
+        assert urls[0] == "https://educredentials.nl/static/extensions/v1/ParticipationFormExtension/context.json"
 
     def test_url_trims_trailing_slash(self) -> None:
         """Strips trailing slash from public URL."""
         with _patch_env("EC_ISSUER_URL", "https://educredentials.nl/"):
             urls = _credential_context_urls(
                 issuer_base_url="https://educredentials.nl",
-                extensions_url_prefix="/static/extensions",
+                extensions_url_prefix="/static/extensions/v1",
                 ext_vals=_BadgeclassExtensions(participation="enrolment"),
             )
         assert len(urls) == 1
-        assert urls[0] == "https://educredentials.nl/static/extensions/ParticipationFormExtension/context.json"
+        assert urls[0] == "https://educredentials.nl/static/extensions/v1/ParticipationFormExtension/context.json"
 
     def test_url_order_matches_field_order(self) -> None:
         """Context URLs appear in the defined field order."""
         urls = _credential_context_urls(
             issuer_base_url="http://localhost:8000",
-            extensions_url_prefix="/static/extensions",
+            extensions_url_prefix="/static/extensions/v1",
             ext_vals=_BadgeclassExtensions(
                 inLanguage="nl", participation="enrolment", assessmentType="formative"
             ),
@@ -497,7 +497,7 @@ class TestOb3AwardWithNewFields:
     def test_ob3_award_with_credential_context(self) -> None:
         """OB3Award can hold credential_context list."""
         context_urls = [
-            "https://educredentials.nl/static/extensions/ECTSExtension/context.json",
+            "https://educredentials.nl/static/extensions/v1/ECTSExtension/context.json",
         ]
         award = OB3Award(
             id="https://DOMAIN/assertions/1",
