@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Assessment Type Extension",
+  "description": "Specifies the type of assessment used for the learning experience.",
+  "type": "object",
+  "properties": {
+    "assessmentType": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "testing",
+          "applicationOfSkill",
+          "portfolio",
+          "recognitionOfPriorLearning",
+          "personalizedAssessment",
+          "byChoiceOfParticipant"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Type of assessment or evaluation before the Edubadge was awarded."
+    }
+  },
+  "required": [
+    "assessmentType"
+  ],
+  "additionalProperties": false
+}

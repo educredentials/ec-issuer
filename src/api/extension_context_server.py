@@ -39,14 +39,15 @@ class ExtensionContextServer:
         self._base_url = base_url.rstrip("/")
         self._extensions_dir = extensions_dir
         self._filename_pattern = re.compile(
-            r"^[A-Za-z0-9_-]+/(context|schema)\.json$"
+            r"^([a-zA-Z0-9]+/)?[a-zA-Z0-9_-]+/(context|schema)\.json$"
         )
 
     def serve(self, filename: str) -> tuple[str, int, dict[str, str]]:
         """Serve an extension context or schema file.
 
         Args:
-            filename: The path component after ``/static/extensions/``.
+            The path component after ``/static/extensions/``,
+            e.g. ``v1/EQFExtension/context.json``.
 
         Returns:
             A tuple of (content, status_code, headers).

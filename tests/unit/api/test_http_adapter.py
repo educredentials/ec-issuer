@@ -234,7 +234,7 @@ class TestServeExtensionContext:
     def test_serves_context_json(self, http_client: FlaskClient):
         """GET a context.json file returns 200 with ld+json content type."""
         response = http_client.get(
-            "/static/extensions/LanguageExtension/context.json"
+            "/static/extensions/v1/LanguageExtension/context.json"
         )
         assert response.status_code == 200
         assert response.content_type == "application/ld+json"
@@ -242,7 +242,7 @@ class TestServeExtensionContext:
     def test_serves_schema_json(self, http_client: FlaskClient):
         """GET a schema.json file returns 200 with ld+json content type."""
         response = http_client.get(
-            "/static/extensions/LanguageExtension/schema.json"
+            "/static/extensions/v1/LanguageExtension/schema.json"
         )
         assert response.status_code == 200
         assert response.content_type == "application/ld+json"
@@ -250,7 +250,7 @@ class TestServeExtensionContext:
     def test_replaces_base_url_placeholder_in_context(self, http_client: FlaskClient):
         """The ${BASE_URL} placeholder is replaced with the configured URL."""
         response = http_client.get(
-            "/static/extensions/LanguageExtension/context.json"
+            "/static/extensions/v1/LanguageExtension/context.json"
         )
         assert response.status_code == 200
         body = cast(dict[str, object], response.get_json())
@@ -260,7 +260,7 @@ class TestServeExtensionContext:
         schema_url = cast(
             str, validation[0].get("obi:validationSchema")
         )
-        assert schema_url == "http://localhost:8000/static/extensions/LanguageExtension/schema.json"
+        assert schema_url == "http://localhost:8000/static/extensions/v1/LanguageExtension/schema.json"
 
     def test_returns_404_for_invalid_path(self, http_client: FlaskClient):
         """Invalid paths return 404."""
@@ -270,6 +270,6 @@ class TestServeExtensionContext:
     def test_returns_404_for_nonexistent_extension(self, http_client: FlaskClient):
         """Non-existent extension directories return 404."""
         response = http_client.get(
-            "/static/extensions/NonExistentExtension/context.json"
+            "/static/extensions/v1/NonExistentExtension/context.json"
         )
         assert response.status_code == 404

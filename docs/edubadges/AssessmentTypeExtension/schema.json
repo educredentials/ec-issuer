@@ -5,15 +5,20 @@
   "type": "object",
   "properties": {
     "AssessmentType": {
-      "type": "string",
-      "enum": [
-        "testing",
-        "applicationOfSkill",
-        "portfolio",
-        "recognitionOfPriorLearning",
-        "personalizedAssessment",
-        "byChoiceOfParticipant"
-      ],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "testing",
+          "applicationOfSkill",
+          "portfolio",
+          "recognitionOfPriorLearning",
+          "personalizedAssessment",
+          "byChoiceOfParticipant"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
       "description": "Type of assessment or evaluation before the Edubadge was awarded."
     }
   },

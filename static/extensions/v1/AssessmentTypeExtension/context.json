@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "assessmentType": "extensions:assessmentType"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:assessmentType",
+      "obi:validationSchema": "${BASE_URL}/static/extensions/v1/AssessmentTypeExtension/schema.json"
+    }
+  ]
+}

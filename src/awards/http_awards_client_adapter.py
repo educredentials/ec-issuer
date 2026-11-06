@@ -87,7 +87,7 @@ class HttpAwardsClientAdapter(AwardsClientPort):
                 raw,
                 award_base_url=award_base_url,
                 issuer_base_url=self._issuer_base_url,
-                extensions_url_prefix="/static/extensions",
+                extensions_url_prefix="/static/extensions/v1",
             )
         except AwardMappingError as e:
             raise AwardsClientError(

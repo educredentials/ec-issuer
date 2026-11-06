@@ -100,11 +100,12 @@ class HttpApiAdapter(ApiPort):
 
         @app.route("/static/extensions/<path:filename>")
         def serve_extension_context(filename: str):  # pyright: ignore[reportUnusedFunction] Flask decorators aren't called by design
-            """Serve JSON-LD extension contexts from static/extensions/.
+            """Serve JSON-LD extension contexts from static/extensions/v1/.
 
             SSI agents dereference these @context URLs when validating
             credentials.  Only files under the configured extensions
-            directory are served.
+            directory are served.  The v1/ subdirectory holds versioned
+            extension context and schema files.
             """
             content, status_code, headers = self._extension_context_server.serve(
                 filename
