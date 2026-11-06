@@ -111,6 +111,20 @@ def _ob3_default_schema() -> list[dict[str, str]]:
 
 
 @dataclass
+class CredentialStatus:
+    """Token Status List credential status entry.
+
+    Managed by the vc-service: it assigns the index, hosts the compressed
+    bitstring at the URI, and flips bits on revocation / suspension.
+    """
+
+    id: str
+    idx: int
+    uri: str
+    type: str = "statuslist+jwt"
+
+
+@dataclass
 class OB3Award:
     """Open Badges 3.0 AchievementCredential (unsigned).
 
@@ -118,7 +132,8 @@ class OB3Award:
     They are serialized to JSON as top-level credential keys, not wrapped
     in an ``extensions`` array, and are validated against the SSI-agent
     template schema.  ``credential_context`` carries the ``@context`` URLs
-    needed by the SSI agent for signing.
+    needed by the SSI agent for signing.  ``credentialStatus`` carries the
+    Token Status List status entry managed by the vc-service.
     """
 
     id: str
@@ -130,5 +145,10 @@ class OB3Award:
     credentialSchema: list[dict[str, str]] = field(default_factory=_ob3_default_schema)
     # --- OB3 / VCDM 2.0 extension properties ---
     validUntil: str | None = None
+    # Source entity_id from Badgr (e.g. assertion URL), used by the adapter
+    # to derive credentialStatus idx.
+    entity_id: str | None = None
     # Context for SSI-agent signing.
     credential_context: list[str | dict[str, str]] | None = None
+    # Token Status List entry managed by the vc-service.
+    credentialStatus: CredentialStatus | None = None

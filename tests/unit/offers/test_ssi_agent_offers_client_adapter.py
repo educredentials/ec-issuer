@@ -478,6 +478,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             "https://www.w3.org/ns/credentials/v2",
             "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
             "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+            "https://www.ietf.org/rfc/rfc9360.txt",
             "https://purl.imsglobal.org/spec/openbadge/contexts/context.json",
         ]
         assert credential["@context"] == expected_contexts
@@ -509,3 +510,82 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             "http://data.europa.eu/snb/model/context/edc-ap",
         ]
         assert credential_sent["@context"] == expected_contexts
+
+    def test_create_ob3_injects_credential_status(self, http_client: RequestsSpy):
+        """create_ob3() attaches credentialStatus using entity_id and SSI agent URL."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids={CredentialType.OB3: "ob3_config"},
+            http_client=http_client,
+        )
+        award = OB3Award(
+            id="https://DOMAIN/assertions/12345",
+            type=["VerifiableCredential", "AchievementCredential"],
+            name="Test Badge",
+            issuer=Issuer(
+                id="https://DOMAIN/issuers/1",
+                type=["Profile"],
+                name="Test Issuer",
+            ),
+            validFrom="2024-01-01T00:00:00Z",
+            credentialSubject=AchievementSubject(
+                id="did:example:subject",
+                type=["AchievementSubject"],
+                achievement=Achievement(
+                    id="https://DOMAIN/achievements/1",
+                    type=["Achievement"],
+                    criteria=Criteria(narrative="Do the thing"),
+                    name="Test Badge",
+                    description="A test badge",
+                ),
+            ),
+            entity_id="https://DOMAIN/assertions/12345",
+        )
+        _ = adapter.create_ob3("offer-123", award)
+        credential_call = http_client.calls[0]
+        json_dict = cast(dict[str, object], credential_call.json)
+        credential = cast(dict[str, object], json_dict["credential"])
+        status = credential.get("credentialStatus")
+        assert status is not None
+        assert status["type"] == "statuslist+jwt"
+        assert status["idx"] == 12345
+        assert status["uri"] == "http://agent.example.com/v0/status/12345"
+        assert status["id"] == "https://DOMAIN/assertions/12345#12345"
+
+    def test_create_ob3_skips_credential_status_when_no_entity_id(
+        self, http_client: RequestsSpy
+    ):
+        """create_ob3() omits credentialStatus when entity_id is None."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids={CredentialType.OB3: "ob3_config"},
+            http_client=http_client,
+        )
+        award = OB3Award(
+            id="https://DOMAIN/assertions/12345",
+            type=["VerifiableCredential", "AchievementCredential"],
+            name="Test Badge",
+            issuer=Issuer(
+                id="https://DOMAIN/issuers/1",
+                type=["Profile"],
+                name="Test Issuer",
+            ),
+            validFrom="2024-01-01T00:00:00Z",
+            credentialSubject=AchievementSubject(
+                id="did:example:subject",
+                type=["AchievementSubject"],
+                achievement=Achievement(
+                    id="https://DOMAIN/achievements/1",
+                    type=["Achievement"],
+                    criteria=Criteria(narrative="Do the thing"),
+                    name="Test Badge",
+                    description="A test badge",
+                ),
+            ),
+            entity_id=None,
+        )
+        _ = adapter.create_ob3("offer-123", award)
+        credential_call = http_client.calls[0]
+        json_dict = cast(dict[str, object], credential_call.json)
+        credential = cast(dict[str, object], json_dict["credential"])
+        assert "credentialStatus" not in credential

@@ -233,6 +233,7 @@ class TestToOb3Award:
             credentialSchema=_ob3_default_schema(),
             validUntil=None,
             credential_context=[],
+            entity_id="https://DOMAIN/assertions/I41eovHQReGI_SG5KM6dSQ",
         )
 
     def test_raises_when_entity_id_missing(self) -> None:

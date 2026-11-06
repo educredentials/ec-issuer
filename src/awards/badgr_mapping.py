@@ -470,6 +470,9 @@ def _to_ob3_award(
             supervisionType=supervisionType,
             time_investment=time_investment,
         ),
+        # Token Status List status entry — populated by the vc-service.
+        credentialStatus=None,
+        entity_id=dto.entity_id,
     )
 
 

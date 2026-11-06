@@ -73,6 +73,7 @@ _EXPECTED_BADGR_AWARD = OB3Award(
     ),
     credentialSchema=_ob3_default_schema(),
     credential_context=[],
+    entity_id="https://DOMAIN/assertions/3527",
 )
 
 

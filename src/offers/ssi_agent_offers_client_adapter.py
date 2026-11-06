@@ -1,6 +1,7 @@
 """SSI-Agent Adapter for offer operations."""
 
 from dataclasses import dataclass
+from re import search as re_match
 from typing import override
 from itertools import chain
 
@@ -85,6 +86,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         credential = ob3_award_to_json_dict(award)
         credential["@context"] = self._ob3_contexts(award)
         _ = credential.pop("credential_context", None)
+        self._attach_credential_status(award, credential)
         self._create_credential_for_subject(
             offer_id,
             credential,
@@ -170,7 +172,39 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             "https://www.w3.org/ns/credentials/v2",
             "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
             "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+            "https://www.ietf.org/rfc/rfc9360.txt",
         ], award.credential_context or []))
+
+    def _attach_credential_status(
+        self,
+        award: OB3Award,
+        credential: dict[str, object],
+    ) -> None:
+        """Attach credentialStatus derived from the Badgr entity_id.
+
+        Extracts the numeric idx from the entity_id URL (e.g.
+        ``https://host/assertions/3527`` → idx 3527) and builds a
+        ``credentialStatus`` dict matching the SSI-agent template.
+
+        If the entity_id is missing or the idx cannot be extracted,
+        the credential is passed through unmodified.
+        """
+        entity_id = award.entity_id
+        if not entity_id:
+            return
+
+        match = re_match(r"/assertions/(\d+)$", entity_id)
+        if not match:
+            return
+
+        idx = int(match.group(1))
+        status_base = self._ssi_agent_admin_base_url.rstrip("/")
+        credential["credentialStatus"] = {
+            "id": f"{entity_id}#{idx}",
+            "type": "statuslist+jwt",
+            "idx": idx,
+            "uri": f"{status_base}/v0/status/{idx}",
+        }
 
     def _edc_contexts(self, credential: dict[str, object]) -> list[str]:
         """Return the hardcoded @context list for a EuropeanDigitalCredential.
