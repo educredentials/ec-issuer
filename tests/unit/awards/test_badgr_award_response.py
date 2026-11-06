@@ -768,10 +768,11 @@ class TestOb3AwardWithNewFields:
         assert ach.assessmentType == ["summative", "formative"]
         assert ach.formOfParticipation == ["online", "onsite"]
         assert result.credential_context is not None
-        # First item is inline JSON-LD context, second is the URL
+        # First item is inline JSON-LD context, remaining are extension URLs
         assert isinstance(result.credential_context[0], dict)
         assert result.credential_context[0]["assessmentType"] == "https://w3id.org/openbadges/extensions#assessmentType"
-        assert len(result.credential_context) == 2
+        assert result.credential_context[0]["formOfParticipation"] == "https://w3id.org/openbadges/extensions#formOfParticipation"
+        assert len(result.credential_context) == 3
 
     def test_extensions_from_raw_json(self) -> None:
         """_extract_extension_values works when data arrives via msgspec from
