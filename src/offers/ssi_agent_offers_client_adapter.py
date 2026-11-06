@@ -186,6 +186,9 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         ``https://host/assertions/3527`` → idx 3527) and builds a
         ``credentialStatus`` dict matching the SSI-agent template.
 
+        For non-numeric assertion IDs (e.g. UUIDs), derives a
+        deterministic integer index using ``int.from_bytes``.
+
         If the entity_id is missing or the idx cannot be extracted,
         the credential is passed through unmodified.
         """
@@ -193,11 +196,18 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         if not entity_id:
             return
 
-        match = re_match(r"/assertions/(\d+)$", entity_id)
+        match = re_match(r"/assertions/([^/]+)$", entity_id)
         if not match:
             return
 
-        idx = int(match.group(1))
+        captured = match.group(1)
+        try:
+            idx = int(captured)
+        except ValueError:
+            # Non-numeric assertion ID (e.g. UUID). Derive a
+            # deterministic integer from the ID bytes.
+            idx = int.from_bytes(captured.encode(), "big") % (2**31)
+
         status_base = self._ssi_agent_admin_base_url.rstrip("/")
         credential["credentialStatus"] = {
             "id": f"{entity_id}#{idx}",

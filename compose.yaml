@@ -46,7 +46,7 @@ services:
 
   real-ssi-agent:
     platform: "linux/amd64"
-    image: cr.surf.nl/edubadges-educredentials/vc-service:0.4.0
+    image: cr.surf.nl/edubadges-educredentials/vc-service:0.6.0
     ports:
       - "3033:3033"
     environment:

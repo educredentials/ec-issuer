@@ -589,3 +589,52 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         json_dict = cast(dict[str, object], credential_call.json)
         credential = cast(dict[str, object], json_dict["credential"])
         assert "credentialStatus" not in credential
+
+    def test_create_ob3_attaches_credential_status_with_uuid_entity_id(
+        self, http_client: RequestsSpy
+    ):
+        """create_ob3() derives a deterministic idx for UUID-based entity_ids."""
+        adapter = SsiAgentOffersClientAdapter(
+            ssi_agent_url="http://agent.example.com",
+            credential_template_ids={CredentialType.OB3: "ob3_config"},
+            http_client=http_client,
+        )
+        uuid_entity_id = (
+            "http://localhost:8000/public/assertions/BQEjWRiqRWODc31_tN_clA"
+        )
+        award = OB3Award(
+            id=uuid_entity_id,
+            type=["VerifiableCredential", "AchievementCredential"],
+            name="Test Badge",
+            issuer=Issuer(
+                id="https://DOMAIN/issuers/1",
+                type=["Profile"],
+                name="Test Issuer",
+            ),
+            validFrom="2024-01-01T00:00:00Z",
+            credentialSubject=AchievementSubject(
+                id="did:example:subject",
+                type=["AchievementSubject"],
+                achievement=Achievement(
+                    id="https://DOMAIN/achievements/1",
+                    type=["Achievement"],
+                    criteria=Criteria(narrative="Do the thing"),
+                    name="Test Badge",
+                    description="A test badge",
+                ),
+            ),
+            entity_id=uuid_entity_id,
+        )
+        _ = adapter.create_ob3("offer-123", award)
+        credential_call = http_client.calls[0]
+        json_dict = cast(dict[str, object], credential_call.json)
+        credential = cast(dict[str, object], json_dict["credential"])
+        status = credential.get("credentialStatus")
+        assert status is not None
+        assert status["type"] == "statuslist+jwt"
+        assert isinstance(status["idx"], int)
+        assert status["idx"] >= 0
+        assert status["uri"] == "http://agent.example.com/v0/status/{}".format(
+            status["idx"]
+        )
+        assert status["id"] == f"{uuid_entity_id}#{status['idx']}"
