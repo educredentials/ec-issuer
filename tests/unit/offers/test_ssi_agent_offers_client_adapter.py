@@ -478,7 +478,6 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             "https://www.w3.org/ns/credentials/v2",
             "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
             "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
-            "https://www.ietf.org/rfc/rfc9360.txt",
             "https://purl.imsglobal.org/spec/openbadge/contexts/context.json",
         ]
         assert credential["@context"] == expected_contexts
