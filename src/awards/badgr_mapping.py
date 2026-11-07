@@ -287,6 +287,15 @@ _EXTENSION_TERMS: dict[str, str] = {
     "timeInvestment": "https://w3id.org/openbadges/extensions#timeInvestment",
 }
 
+# JSON-LD term definitions required by the Token Status List.
+_STATUS_LIST_TERMS: dict[str, str] = {
+    "statuslist+jwt": "https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list",
+    "idx": "https://www.iana.org/assignments/jwt#idx",
+    "status": "https://www.iana.org/assignments/jwt#status",
+    "status_list": "https://www.iana.org/assignments/jwt#status_list",
+    "uri": "https://www.iana.org/assignments/jwt#uri",
+}
+
 
 def _build_credential_context(
     urls: list[str],
@@ -305,9 +314,11 @@ def _build_credential_context(
 
     The inline dict is prepended so validators can resolve custom terms
     even when they cannot reach external context URLs (e.g. internal
-    playground hostnames).
+    playground hostnames).  Extension terms and Token Status List terms
+    are merged into a single object.
     """
-    inline_ctx: dict[str, str] = {}
+    # Start with the Status List terms — always present for OB3 + VCDM 2.0.
+    inline_ctx: dict[str, str] = dict(_STATUS_LIST_TERMS)
     _assign = inline_ctx.__setitem__
     if in_language:
         _assign("inLanguage", _EXTENSION_TERMS["inLanguage"])
@@ -331,9 +342,7 @@ def _build_credential_context(
     if time_investment:
         _assign("timeInvestment", _EXTENSION_TERMS["timeInvestment"])
 
-    if inline_ctx:
-        return [inline_ctx, *urls]
-    return list(urls)
+    return [inline_ctx, *urls]
 
 
 def _credential_context_urls(

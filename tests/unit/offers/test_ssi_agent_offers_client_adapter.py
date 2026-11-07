@@ -475,10 +475,10 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         json_dict = cast(dict[str, object], credential_call.json)
         credential = cast(dict[str, object], json_dict["credential"])
         expected_contexts = [
+            _SAMPLE_CREDENTIAL_CONTEXT[0],
             "https://www.w3.org/ns/credentials/v2",
             "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
             "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
-            "https://purl.imsglobal.org/spec/openbadge/contexts/context.json",
         ]
         assert credential["@context"] == expected_contexts
         assert "credential_context" not in credential

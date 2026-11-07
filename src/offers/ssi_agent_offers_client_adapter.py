@@ -86,6 +86,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         credential = ob3_award_to_json_dict(award)
         credential["@context"] = self._ob3_contexts(award)
         _ = credential.pop("credential_context", None)
+        _ = credential.pop("entity_id", None)
         self._attach_credential_status(award, credential)
         self._create_credential_for_subject(
             offer_id,
@@ -159,20 +160,24 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         )
 
     def _ob3_contexts(self, award: OB3Award) -> list[str | dict[str, str]]:
-        """Return the hardcoded @context list for an OpenBadgeCredential.
+        """Return the @context list for an OpenBadgeCredential.
 
         Args:
-            credential: The serialized OB3 credential
+            award: The OB3 award (provides extension term definitions).
 
         Returns:
-            The Open Badges 3.0 context array with
-            ``${SSI_AGENT_URL}`` substituted from the SSI agent base URL.
+            The Open Badges 3.0 context array with inline JSON-LD
+            definitions for extension terms and Token Status List terms,
+            followed by the external context URLs.
         """
-        return list(chain([
-            "https://www.w3.org/ns/credentials/v2",
-            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
-            "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
-        ], award.credential_context or []))
+        return list(chain(
+            award.credential_context or [],
+            [
+                "https://www.w3.org/ns/credentials/v2",
+                "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+                "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+            ],
+        ))
 
     def _attach_credential_status(
         self,

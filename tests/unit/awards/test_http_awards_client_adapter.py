@@ -72,7 +72,15 @@ _EXPECTED_BADGR_AWARD = OB3Award(
         ),
     ),
     credentialSchema=_ob3_default_schema(),
-    credential_context=[],
+    credential_context=[
+        {
+            "statuslist+jwt": "https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list",
+            "idx": "https://www.iana.org/assignments/jwt#idx",
+            "status": "https://www.iana.org/assignments/jwt#status",
+            "status_list": "https://www.iana.org/assignments/jwt#status_list",
+            "uri": "https://www.iana.org/assignments/jwt#uri",
+        },
+    ],
     entity_id="https://DOMAIN/assertions/3527",
 )
 
