@@ -2,7 +2,6 @@
 
 import json
 import logging
-from dataclasses import asdict
 from typing import override
 from urllib.parse import urlparse, urlunparse
 
@@ -93,8 +92,6 @@ class HttpAwardsClientAdapter(AwardsClientPort):
             raise AwardsClientError(
                 f"Invalid award data from awards service: {e}"
             ) from e
-        log.debug("Mapped OB3 award:")
-        log.debug("  %s", json.dumps(asdict(ob3), indent=2))
 
         return ob3
 

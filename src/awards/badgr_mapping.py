@@ -17,10 +17,13 @@ import msgspec
 from src.awards.models import (
     Achievement,
     AchievementSubject,
+    Address,
     Criteria,
     IdentityObject,
+    IdentifierEntry,
     Issuer,
     OB3Award,
+    ParentOrg,
 )
 
 log = logging.getLogger(__name__)
@@ -63,6 +66,8 @@ class _BadgrInstitution(msgspec.Struct):
     image_english: str | None = None
     identifier: str | None = None
     alternative_identifier: str | None = None
+    country_code: str | None = None
+    brin: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> _BadgrInstitution:
@@ -342,7 +347,14 @@ def _build_credential_context(
     if time_investment:
         _assign("timeInvestment", _EXTENSION_TERMS["timeInvestment"])
 
-    return [inline_ctx, *urls]
+    # Base OB3 contexts — always present for OB3 + VCDM 2.0.
+    base_contexts = [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+        "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+    ]
+
+    return [inline_ctx, *urls, *base_contexts]
 
 
 def _credential_context_urls(
@@ -489,24 +501,61 @@ def _to_ob3_award(
 
 
 def _resolve_issuer(dto: _BadgrAwardResponse) -> Issuer:
-    """Resolve the issuer from the DTO."""
+    """Resolve the issuer from the DTO, including parentOrg."""
     badgeclass = dto.badgeclass
+    issuer_id = ""
     issuer_name = ""
-    issuer_type = ["Profile"]
+    issuer_type: list[str] = ["Profile"]
+
     if badgeclass is not None and badgeclass.issuer is not None:
         issuer_id = badgeclass.issuer.entity_id or ""
         issuer_name = badgeclass.issuer.name_english or ""
-        flat_type = badgeclass.issuer.type
-        if flat_type:
-            issuer_type = [flat_type]
-    else:
-        issuer_id = ""
+        if badgeclass.issuer.type:
+            issuer_type = [badgeclass.issuer.type]
     if not issuer_name and badgeclass is not None:
         issuer_name = badgeclass.name or ""
+
+    parent_org: ParentOrg | None = None
+    faculty = (
+        badgeclass.issuer.faculty
+        if badgeclass and badgeclass.issuer
+        else None
+    )
+    if faculty is not None and faculty.institution is not None:
+        inst = faculty.institution
+        inst_name = inst.name_english or inst.name_dutch or ""
+        inst_id = faculty.entity_id or ""
+
+        # Country code from institution (new field from awards service)
+        address: Address | None = None
+        if inst.country_code:
+            address = Address(addressCountryCode=inst.country_code)
+
+        # BRIN, SCHAC, and other identifiers
+        other_idents: list[IdentifierEntry] = []
+        if inst.brin:
+            other_idents.append(IdentifierEntry(
+                identifier=inst.brin,
+                identifierType="ext:BRIN",
+            ))
+        if inst.identifier:
+            other_idents.append(IdentifierEntry(
+                identifier=inst.identifier,
+                identifierType="ext:SCHAC",
+            ))
+
+        parent_org = ParentOrg(
+            id=inst_id,
+            name=inst_name,
+            address=address,
+            otherIdentifier=other_idents,
+        )
+
     return Issuer(
         id=issuer_id,
         type=issuer_type,
         name=issuer_name,
+        parentOrg=parent_org,
     )
 
 

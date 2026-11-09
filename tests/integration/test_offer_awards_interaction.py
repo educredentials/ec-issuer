@@ -18,9 +18,12 @@ from src.awards.awards_client_port import (
 from src.awards.models import (
     Achievement,
     AchievementSubject,
+    Address,
     Criteria,
+    IdentifierEntry,
     Issuer,
     OB3Award,
+    ParentOrg,
 )
 from src.offers.models import Offer
 from src.offers.offer_service import (
@@ -229,8 +232,22 @@ def sample_award() -> OB3Award:
         name="Teamwork Badge",
         issuer=Issuer(
             id="https://example.com/issuers/876543",
-            type=["Profile"],
             name="Example Corp",
+            parentOrg=ParentOrg(
+                id="https://ror.org/12345",
+                name="Example University",
+                address=Address(addressCountryCode="NL"),
+                otherIdentifier=[
+                    IdentifierEntry(
+                        identifier="EUR1",
+                        identifierType="ext:BRIN",
+                    ),
+                    IdentifierEntry(
+                        identifier="example.nl",
+                        identifierType="ext:SCHAC",
+                    ),
+                ],
+            ),
         ),
         validFrom="2010-01-01T00:00:00Z",
         credentialSubject=AchievementSubject(

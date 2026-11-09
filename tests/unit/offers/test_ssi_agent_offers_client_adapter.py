@@ -7,9 +7,12 @@ import pytest
 from src.awards.models import (
     Achievement,
     AchievementSubject,
+    Address,
     Criteria,
+    IdentifierEntry,
     Issuer,
     OB3Award,
+    ParentOrg,
 )
 from src.lib.http_client import HttpClient
 from src.offers.models import CredentialType, Offer
@@ -63,6 +66,9 @@ def valid_offer_response() -> MockResponse:
 
 _SAMPLE_CREDENTIAL_CONTEXT = [
     "https://purl.imsglobal.org/spec/openbadge/contexts/context.json",
+    "https://www.w3.org/ns/credentials/v2",
+    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+    "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
 ]
 
 _SAMPLE_ELM_CREDENTIAL_WITH_CTX: dict[str, object] = {
@@ -93,8 +99,22 @@ def sample_award() -> OB3Award:
         name="Teamwork Badge",
         issuer=Issuer(
             id="https://example.com/issuers/876543",
-            type=["Profile"],
             name="Example Corp",
+            parentOrg=ParentOrg(
+                id="https://ror.org/12345",
+                name="Example University",
+                address=Address(addressCountryCode="NL"),
+                otherIdentifier=[
+                    IdentifierEntry(
+                        identifier="EUR1",
+                        identifierType="ext:BRIN",
+                    ),
+                    IdentifierEntry(
+                        identifier="example.nl",
+                        identifierType="ext:SCHAC",
+                    ),
+                ],
+            ),
         ),
         validFrom="2010-01-01T00:00:00Z",
         credentialSubject=AchievementSubject(
@@ -436,7 +456,7 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         assert "credentialSubject" in credential
 
     def test_create_ob3_uses_ob3_contexts(self, http_client: RequestsSpy):
-        """create_ob3() sets @context with OB3 hardcoded + credential_context."""
+        """create_ob3() sets @context with base OB3 contexts first."""
         adapter = SsiAgentOffersClientAdapter(
             ssi_agent_url="http://agent.example.com",
             credential_template_ids={CredentialType.OB3: "ob3_config"},
@@ -474,13 +494,12 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         assert credential_call.json is not None
         json_dict = cast(dict[str, object], credential_call.json)
         credential = cast(dict[str, object], json_dict["credential"])
-        expected_contexts = [
-            _SAMPLE_CREDENTIAL_CONTEXT[0],
+        assert credential["@context"] == [
             "https://www.w3.org/ns/credentials/v2",
             "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
             "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+            "https://purl.imsglobal.org/spec/openbadge/contexts/context.json",
         ]
-        assert credential["@context"] == expected_contexts
         assert "credential_context" not in credential
 
     def test_create_edc_uses_edc_contexts(self, http_client: RequestsSpy):

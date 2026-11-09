@@ -80,6 +80,9 @@ _EXPECTED_BADGR_AWARD = OB3Award(
             "status_list": "https://www.iana.org/assignments/jwt#status_list",
             "uri": "https://www.iana.org/assignments/jwt#uri",
         },
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+        "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
     ],
     entity_id="https://DOMAIN/assertions/3527",
 )

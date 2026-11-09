@@ -1,8 +1,10 @@
 """SSI-Agent Adapter for offer operations."""
 
+import json
+import logging
 from dataclasses import dataclass
 from re import search as re_match
-from typing import override
+from typing import cast, override
 from itertools import chain
 
 import msgspec
@@ -16,6 +18,23 @@ from .offers_client_port import (
     OffersClientError,
     OffersClientPort,
 )
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+if not log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setLevel(logging.DEBUG)
+    _fmt = "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
+    _handler.setFormatter(logging.Formatter(_fmt))
+    log.addHandler(_handler)
+
+# The SSI agent requires these 3 base OB3 contexts to appear first
+# in the @context array.
+_OB3_BASE_CONTEXTS: list[str] = [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+    "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+]
 
 
 @dataclass
@@ -88,6 +107,10 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         _ = credential.pop("credential_context", None)
         _ = credential.pop("entity_id", None)
         self._attach_status_list(award.entity_id, credential)
+        log.info(
+            "Assembled OB3 credential:\n%s",
+            json.dumps(credential, indent=2),
+        )
         self._post_credential(
             offer_id,
             credential,
@@ -165,17 +188,14 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         credential_type: str,
         credential: dict[str, object],
     ) -> list[str | dict[str, str]]:
-        """Build the @context list for OB3 or EDC credentials.
+        """Build the @context for OB3 or EDC credentials.
 
-        Merges credential-specific extension contexts with hardcoded W3C
-        and OpenBadges/EDC context URLs, providing a single shared method
-        for both credential types.
+        The SSI agent requires ``@context`` to be an array with the 3
+        base OB3 contexts first, then any extension URLs and inline
+        JSON-LD term definitions.
 
-        OB3: credential_context URLs are prepended, then hardcoded
-        Open Badges / W3C contexts follow.
-
-        EDC: hardcoded W3C contexts come first, then credential_context
-        URLs (matching the legacy ``_edc_contexts`` behaviour).
+        EDC keeps the legacy behaviour: hardcoded W3C contexts first,
+        then credential_context URLs.
 
         Args:
             award: The OB3 award for OB3 credentials, or ``None`` for EDC.
@@ -184,24 +204,28 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 extension contexts).
 
         Returns:
-            The full @context array.
+            The @context array: base OB3 contexts first, then URLs and
+            inline term definitions for OB3; a multi-element list for EDC.
         """
         if credential_type == "ob3":
             assert award is not None, "award required for OB3 credentials"
-            ctx = award.credential_context
-        else:
-            ctx = credential.get("credential_context") or []  # type: ignore[reportAssignmentType]
-
-        if credential_type == "ob3":
-            # OB3: extension contexts first, then hardcoded
-            return list(chain(
-                ctx or [],
-                [
-                    "https://www.w3.org/ns/credentials/v2",
-                    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
-                    "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
-                ],
-            ))
+            # The SSI agent requires the 3 base OB3 contexts first.
+            # The award.credential_context contains [inline_ctx, *urls, *base_ctxs]
+            # so we extract the non-base elements and reorder.
+            ctx_elements = award.credential_context or []
+            inline_ctx: dict[str, str] | None = None
+            extension_urls: list[str] = []
+            for elem in ctx_elements:
+                if isinstance(elem, dict):
+                    inline_ctx = elem  # type: ignore[assignment]
+                elif elem in _OB3_BASE_CONTEXTS:
+                    continue  # skip — we add base contexts first below
+                else:
+                    extension_urls.append(elem)
+            # base contexts → extension URLs → inline term definitions
+            return [* _OB3_BASE_CONTEXTS, *extension_urls, * (
+                [inline_ctx] if inline_ctx is not None else []
+            )]
         else:
             # EDC: hardcoded contexts first, then extension (legacy order)
             return list(chain(
@@ -209,7 +233,10 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                     "https://www.w3.org/2018/credentials/v1",
                     "https://www.w3.org/ns/credentials/v2",
                 ],
-                ctx or [],
+                cast(
+                    list[str | dict[str, str]],
+                    credential.get("credential_context"),
+                ) or [],
             ))
 
     def _attach_status_list(

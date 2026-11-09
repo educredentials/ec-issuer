@@ -82,12 +82,41 @@ class AchievementSubject:
 
 
 @dataclass
+class Address:
+    """Address for parentOrg."""
+
+    addressCountryCode: str | None = None
+    type: list[str] = field(default_factory=lambda: ["Address"])
+
+
+@dataclass
+class IdentifierEntry:
+    """Entry in parentOrg.otherIdentifier."""
+
+    identifier: str
+    identifierType: str  # "ext:BRIN", "ext:SCHAC", etc.
+    type: str = "IdentifierEntry"
+
+
+@dataclass
+class ParentOrg:
+    """Parent organization of the issuer."""
+
+    id: str
+    name: str
+    type: list[str] = field(default_factory=lambda: ["Profile"])
+    address: Address | None = None
+    otherIdentifier: list[IdentifierEntry] = field(default_factory=list)
+
+
+@dataclass
 class Issuer:
     """The issuer of an AchievementCredential."""
 
     id: str
-    type: list[str]
     name: str
+    type: list[str] = field(default_factory=lambda: ["Profile"])
+    parentOrg: ParentOrg | None = None
 
 
 @dataclass

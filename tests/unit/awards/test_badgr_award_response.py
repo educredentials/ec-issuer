@@ -15,6 +15,7 @@ from src.awards.badgr_mapping import (
     _BadgrAwardResponse,  # pyright:ignore[reportPrivateUsage]
     _BadgrBadgeclass,  # pyright:ignore[reportPrivateUsage]
     _BadgrFaculty,  # pyright:ignore[reportPrivateUsage]
+    _BadgrInstitution,  # pyright:ignore[reportPrivateUsage]
     _BadgrIssuer,  # pyright:ignore[reportPrivateUsage]
     _credential_context_urls,  # pyright:ignore[reportPrivateUsage]
     _resolve_identifier,  # pyright:ignore[reportPrivateUsage]
@@ -240,6 +241,9 @@ class TestToOb3Award:
                     "status_list": "https://www.iana.org/assignments/jwt#status_list",
                     "uri": "https://www.iana.org/assignments/jwt#uri",
                 },
+                "https://www.w3.org/ns/credentials/v2",
+                "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+                "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
             ],
             entity_id="https://DOMAIN/assertions/I41eovHQReGI_SG5KM6dSQ",
         )
@@ -694,8 +698,9 @@ class TestOb3AwardWithNewFields:
         assert ach.formOfParticipation == ["enrolment", "onsite"]
         # 4 flat fields producing context: participation, assessment_type, ects,
         #   time_investment. inLanguage is native OB3 — no extension URL.
+        # 1 inline dict + 4 extension URLs + 3 base OB3 contexts
         assert result.credential_context is not None
-        assert len(result.credential_context) == 5
+        assert len(result.credential_context) == 8
 
     def test_to_ob3_award_time_investment_from_raw_json(self) -> None:
         """time_investment flows from flat JSON field through to Achievement."""
@@ -780,7 +785,8 @@ class TestOb3AwardWithNewFields:
         assert isinstance(result.credential_context[0], dict)
         assert result.credential_context[0]["assessmentType"] == "https://w3id.org/openbadges/extensions#assessmentType"
         assert result.credential_context[0]["formOfParticipation"] == "https://w3id.org/openbadges/extensions#formOfParticipation"
-        assert len(result.credential_context) == 3
+        # 1 inline dict + 2 extension URLs + 3 base OB3 contexts
+        assert len(result.credential_context) == 6
 
     def test_extensions_from_raw_json(self) -> None:
         """_extract_extension_values works when data arrives via msgspec from
@@ -836,3 +842,188 @@ class TestOb3AwardWithNewFields:
             "Will appreciate the benefits of learning a foreign language."
         )
         assert result.validFrom == "2024-01-01T00:00:00Z"
+
+    # --- parentOrg tests ---
+
+    def test_resolve_issuer_populates_parent_org_from_faculty_institution(
+        self,
+    ) -> None:
+        """_resolve_issuer builds parentOrg from faculty.institution data."""
+        from src.awards.badgr_mapping import _resolve_issuer
+
+        dto = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/1",
+            issued_on="2024-01-01T00:00:00Z",
+            badgeclass=_BadgrBadgeclass(
+                name="Badge",
+                entity_id="https://DOMAIN/badges/1",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/eshcc",
+                    name_english="Erasmus School of History",
+                    faculty=_BadgrFaculty(
+                        entity_id="https://ror.org/57197",
+                        institution=_BadgrInstitution(
+                            name_english="Erasmus University Rotterdam",
+                            country_code="NL",
+                            identifier="eur.nl",
+                            brin="21PE",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        result = _resolve_issuer(dto)
+
+        assert result.id == "https://DOMAIN/issuers/eshcc"
+        assert result.name == "Erasmus School of History"
+        assert result.parentOrg is not None
+        assert result.parentOrg.id == "https://ror.org/57197"
+        assert result.parentOrg.name == "Erasmus University Rotterdam"
+        assert result.parentOrg.address is not None
+        assert result.parentOrg.address.addressCountryCode == "NL"
+        assert len(result.parentOrg.otherIdentifier) == 2
+
+    def test_resolve_issuer_preserves_issuer_type_from_flat_field(
+        self,
+    ) -> None:
+        """_resolve_issuer keeps the flat Type field on the issuer."""
+        from src.awards.badgr_mapping import _resolve_issuer
+
+        dto = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/1",
+            issued_on="2024-01-01T00:00:00Z",
+            badgeclass=_BadgrBadgeclass(
+                name="Badge",
+                entity_id="https://DOMAIN/badges/1",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/1",
+                    name_english="Issuer",
+                    type="Organization",
+                ),
+            ),
+        )
+
+        result = _resolve_issuer(dto)
+        assert result.type == ["Organization"]
+
+    def test_resolve_issuer_with_country_code_and_identifiers(
+        self,
+    ) -> None:
+        """parentOrg contains country code and both BRIN/SCHAC identifiers."""
+        from src.awards.badgr_mapping import _resolve_issuer
+
+        dto = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/1",
+            issued_on="2024-01-01T00:00:00Z",
+            badgeclass=_BadgrBadgeclass(
+                name="Badge",
+                entity_id="https://DOMAIN/badges/1",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/1",
+                    name_english="Issuer",
+                    faculty=_BadgrFaculty(
+                        entity_id="https://ror.org/12345",
+                        institution=_BadgrInstitution(
+                            name_english="Test University",
+                            country_code="DE",
+                            identifier="test.de",
+                            brin="AB12",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        result = _resolve_issuer(dto)
+        assert result.parentOrg is not None
+        assert result.parentOrg.address is not None
+        assert result.parentOrg.address.addressCountryCode == "DE"
+        assert result.parentOrg.otherIdentifier[0].identifier == "AB12"
+        assert result.parentOrg.otherIdentifier[0].identifierType == "ext:BRIN"
+        assert result.parentOrg.otherIdentifier[1].identifier == "test.de"
+        assert result.parentOrg.otherIdentifier[1].identifierType == "ext:SCHAC"
+
+    def test_resolve_issuer_with_only_schac_or_brin(self) -> None:
+        """parentOrg.otherIdentifier includes only present identifiers."""
+        from src.awards.badgr_mapping import _resolve_issuer
+
+        # Only SCHAC
+        dto_schac = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/1",
+            issued_on="2024-01-01T00:00:00Z",
+            badgeclass=_BadgrBadgeclass(
+                name="Badge",
+                entity_id="https://DOMAIN/badges/1",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/1",
+                    name_english="Issuer",
+                    faculty=_BadgrFaculty(
+                        institution=_BadgrInstitution(
+                            identifier="schac.example.org",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        result_schac = _resolve_issuer(dto_schac)
+        assert len(result_schac.parentOrg.otherIdentifier) == 1
+        assert result_schac.parentOrg.otherIdentifier[0].identifierType == "ext:SCHAC"
+
+        # Only BRIN
+        dto_brin = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/1",
+            issued_on="2024-01-01T00:00:00Z",
+            badgeclass=_BadgrBadgeclass(
+                name="Badge",
+                entity_id="https://DOMAIN/badges/1",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/1",
+                    name_english="Issuer",
+                    faculty=_BadgrFaculty(
+                        institution=_BadgrInstitution(
+                            brin="BR1N99",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        result_brin = _resolve_issuer(dto_brin)
+        assert len(result_brin.parentOrg.otherIdentifier) == 1
+        assert result_brin.parentOrg.otherIdentifier[0].identifierType == "ext:BRIN"
+
+    def test_to_ob3_award_with_parent_org(self) -> None:
+        """_to_ob3_award produces a full OB3 award with parentOrg."""
+        dto = _BadgrAwardResponse(
+            entity_id="https://DOMAIN/assertions/I41eovHQReGI_SG5KM6dSQ",
+            issued_on="2021-04-20T16:20:30.521307+02:00",
+            given_name="Jan",
+            family_name="Jansen",
+            email="jan@example.com",
+            badgeclass=_BadgrBadgeclass(
+                name="Edubadge account complete",
+                entity_id="https://DOMAIN/badges/nwsL-dHyQpmvOOKBscsN_A",
+                description="Complete your account",
+                criteria_text="Register and verify email",
+                issuer=_BadgrIssuer(
+                    entity_id="https://DOMAIN/issuers/eshcc",
+                    name_english="Erasmus School of History",
+                    faculty=_BadgrFaculty(
+                        entity_id="https://ror.org/57197",
+                        institution=_BadgrInstitution(
+                            name_english="Erasmus University Rotterdam",
+                            country_code="NL",
+                            identifier="eur.nl",
+                            brin="21PE",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        result = _to_ob3_award(dto)
+        assert result.issuer.parentOrg is not None
+        assert result.issuer.parentOrg.id == "https://ror.org/57197"
+        assert result.issuer.parentOrg.name == "Erasmus University Rotterdam"
+        assert result.issuer.parentOrg.address is not None
+        assert result.issuer.parentOrg.address.addressCountryCode == "NL"
+        assert len(result.issuer.parentOrg.otherIdentifier) == 2
