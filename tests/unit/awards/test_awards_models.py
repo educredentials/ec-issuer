@@ -1,17 +1,14 @@
 """Unit tests for award conversion functions (models module).
 
 Tests the data flow from raw Badgr API JSON through DTOs to OB3Award
-domain models. Covers edge cases: missing fields, None badgeclass, fallback chains.
+domain models. Covers edge cases: missing fields, None badgeclass, fallback
+chains -- all tested through the public interface only.
 """
 
 import pytest
 
 from src.awards.badgr_mapping import (
     AwardMappingError,
-    _BadgrAwardResponse,  # pyright:ignore[reportPrivateUsage]
-    _resolve_badge_name,  # pyright:ignore[reportPrivateUsage]
-    _resolve_credential_id,  # pyright:ignore[reportPrivateUsage]
-    _resolve_valid_from,  # pyright:ignore[reportPrivateUsage]
     ob3_award_from_badgr_api_response,
 )
 from src.awards.models import OB3Award
@@ -56,54 +53,76 @@ _BADGR_RESPONSE_WITH_IMAGE = {
     "family_name": "de Vries",
 }
 
+
 class TestResolveCredentialId:
-    """Tests for the _resolve_credential_id helper."""
+    """Edge-case tests for credential ID resolution via public interface."""
 
     def test_returns_id_when_present(self):
-        """_resolve_credential_id returns dto.entity_id when set."""
-        dto = _BadgrAwardResponse.from_dict(_VALID_BADGR_RESPONSE)
-        assert _resolve_credential_id(dto) == "https://DOMAIN/assertions/42"
+        """Valid response produces an OB3Award with the correct credential id."""
+        award = ob3_award_from_badgr_api_response(_VALID_BADGR_RESPONSE)
+        assert award.id == "https://DOMAIN/assertions/42"
 
     def test_raises_when_id_missing(self):
-        """_resolve_credential_id raises AwardMappingError when entity_id is None."""
-        dto = _BadgrAwardResponse.from_dict({})
+        """A response without ``id`` raises AwardMappingError."""
         with pytest.raises(AwardMappingError, match="missing 'id'"):
-            _ = _resolve_credential_id(dto)
+            _ = ob3_award_from_badgr_api_response({})
 
 
 class TestResolveBadgeName:
-    """Tests for the _resolve_badge_name helper."""
+    """Badge name resolution tested via public interface."""
 
     def test_returns_dto_name_when_present(self):
-        """_resolve_badge_name returns dto.name when set."""
-        dto = _BadgrAwardResponse.from_dict(_VALID_BADGR_RESPONSE)
-        assert _resolve_badge_name(dto) == "Teamwork Badge"
+        """award.name uses dto.name when set."""
+        award = ob3_award_from_badgr_api_response(_VALID_BADGR_RESPONSE)
+        assert award.name == "Teamwork Badge"
 
     def test_fallback_to_badgeclass_name(self):
-        """_resolve_badge_name falls back to badgeclass.name when dto.name is None."""
-        dto = _BadgrAwardResponse.from_dict(
-            {"name": None, "badgeclass": {"name": "Badge B"}}
+        """award.name falls back to badgeclass.name when dto.name is None."""
+        award = ob3_award_from_badgr_api_response(
+            {
+                "id": "https://DOMAIN/assertions/99",
+                "name": None,
+                "badgeclass": {
+                    "id": "https://DOMAIN/badges/1",
+                    "name": "Badge B",
+                    "issuer": {"id": "https://DOMAIN/issuers/1", "name": "Test"},
+                },
+            }
         )
-        assert _resolve_badge_name(dto) == "Badge B"
+        assert award.name == "Badge B"
 
-    def test_returns_empty_string_when_no_name_anywhere(self):
-        """_resolve_badge_name returns '' when no name source is present."""
-        dto = _BadgrAwardResponse.from_dict({"name": None, "badgeclass": None})
-        assert _resolve_badge_name(dto) == ""
+    def test_empty_when_both_names_missing(self):
+        """award.name is '' when dto.name is None and badgeclass is None."""
+        award = ob3_award_from_badgr_api_response(
+            {"id": "https://DOMAIN/assertions/99", "name": None, "badgeclass": None}
+        )
+        assert award.name == ""
 
 
 class TestResolveValidFrom:
-    """Tests for the _resolve_valid_from helper."""
+    """validFrom resolution tested via public interface."""
 
     def test_returns_issued_on_when_present(self):
-        """_resolve_valid_from returns dto.issued_on when set."""
-        dto = _BadgrAwardResponse.from_dict(_VALID_BADGR_RESPONSE)
-        assert _resolve_valid_from(dto) == "2024-06-15T10:00:00Z"
+        """award.validFrom uses dto.issued_on when set."""
+        award = ob3_award_from_badgr_api_response(_VALID_BADGR_RESPONSE)
+        assert award.validFrom == "2024-06-15T10:00:00Z"
 
     def test_returns_empty_string_when_issued_on_missing(self):
-        """_resolve_valid_from returns '' when dto.issued_on is None."""
-        dto = _BadgrAwardResponse.from_dict({"issued_on": None})
-        assert _resolve_valid_from(dto) == ""
+        """award.validFrom is '' when dto.issued_on is None."""
+        award = ob3_award_from_badgr_api_response(
+            {
+                "id": "https://DOMAIN/assertions/99",
+                "issued_on": None,
+                "badgeclass": {
+                    "id": "https://DOMAIN/badges/1",
+                    "name": "Badge",
+                    "description": "Test",
+                    "criteria_text": "Do stuff",
+                    "issuer": {"id": "https://DOMAIN/issuers/1", "name": "Test"},
+                },
+            }
+        )
+        assert award.validFrom == ""
 
 
 class TestOb3AwardFromBadgrApi:
@@ -141,7 +160,7 @@ class TestOb3AwardFromBadgrApi:
         assert award.credentialSubject.achievement.image is None
 
     def test_uses_badgeclass_image(self):
-        """_resolve_image uses badgeclass.image when present."""
+        """award uses badgeclass.image when present."""
         award = ob3_award_from_badgr_api_response(
             {
                 "id": "https://DOMAIN/assertions/44",
@@ -165,5 +184,3 @@ class TestOb3AwardFromBadgrApi:
         assert award.credentialSubject.achievement.image["id"] == (
             "https://DOMAIN/badges/20/image"
         )
-
-

@@ -84,16 +84,16 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             The credential offer URI.
         """
         credential = ob3_award_to_json_dict(award)
-        credential["@context"] = self._ob3_contexts(award)
+        credential["@context"] = self._assemble_context(award, "ob3", credential)
         _ = credential.pop("credential_context", None)
         _ = credential.pop("entity_id", None)
-        self._attach_credential_status(award, credential)
-        self._create_credential_for_subject(
+        self._attach_status_list(award.entity_id, credential)
+        self._post_credential(
             offer_id,
             credential,
             self._credential_template_ids.get(CredentialType.OB3, ""),
         )
-        offer_uri = self._create_offer(offer_id)
+        offer_uri = self._post_offer(offer_id)
         return offer_uri
 
     @override
@@ -109,13 +109,13 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         Returns:
             The credential offer URI.
         """
-        credential["@context"] = self._edc_contexts(credential)
-        self._create_credential_for_subject_edc(
+        credential["@context"] = self._assemble_context(None, "edc", credential)
+        self._post_credential(
             offer_id,
             credential,
             self._credential_template_ids.get(CredentialType.EDC, ""),
         )
-        offer_uri = self._create_offer_edc(offer_id)
+        offer_uri = self._post_offer(offer_id)
         return offer_uri
 
     @override
@@ -159,29 +159,62 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             uri=uri,
         )
 
-    def _ob3_contexts(self, award: OB3Award) -> list[str | dict[str, str]]:
-        """Return the @context list for an OpenBadgeCredential.
+    def _assemble_context(
+        self,
+        award: OB3Award | None,
+        credential_type: str,
+        credential: dict[str, object],
+    ) -> list[str | dict[str, str]]:
+        """Build the @context list for OB3 or EDC credentials.
+
+        Merges credential-specific extension contexts with hardcoded W3C
+        and OpenBadges/EDC context URLs, providing a single shared method
+        for both credential types.
+
+        OB3: credential_context URLs are prepended, then hardcoded
+        Open Badges / W3C contexts follow.
+
+        EDC: hardcoded W3C contexts come first, then credential_context
+        URLs (matching the legacy ``_edc_contexts`` behaviour).
 
         Args:
-            award: The OB3 award (provides extension term definitions).
+            award: The OB3 award for OB3 credentials, or ``None`` for EDC.
+            credential_type: Either ``"ob3"`` or ``"edc"``.
+            credential: The serialized credential dict (used for EDC
+                extension contexts).
 
         Returns:
-            The Open Badges 3.0 context array with inline JSON-LD
-            definitions for extension terms and Token Status List terms,
-            followed by the external context URLs.
+            The full @context array.
         """
-        return list(chain(
-            award.credential_context or [],
-            [
-                "https://www.w3.org/ns/credentials/v2",
-                "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
-                "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
-            ],
-        ))
+        if credential_type == "ob3":
+            assert award is not None, "award required for OB3 credentials"
+            ctx = award.credential_context
+        else:
+            ctx = credential.get("credential_context") or []  # type: ignore[reportAssignmentType]
 
-    def _attach_credential_status(
+        if credential_type == "ob3":
+            # OB3: extension contexts first, then hardcoded
+            return list(chain(
+                ctx or [],
+                [
+                    "https://www.w3.org/ns/credentials/v2",
+                    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+                    "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+                ],
+            ))
+        else:
+            # EDC: hardcoded contexts first, then extension (legacy order)
+            return list(chain(
+                [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "https://www.w3.org/ns/credentials/v2",
+                ],
+                ctx or [],
+            ))
+
+    def _attach_status_list(
         self,
-        award: OB3Award,
+        entity_id: str | None,
         credential: dict[str, object],
     ) -> None:
         """Attach credentialStatus derived from the Badgr entity_id.
@@ -195,8 +228,11 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
 
         If the entity_id is missing or the idx cannot be extracted,
         the credential is passed through unmodified.
+
+        Args:
+            entity_id: The entity_id from the award (may be None).
+            credential: The credential dict to modify in place.
         """
-        entity_id = award.entity_id
         if not entity_id:
             return
 
@@ -220,80 +256,43 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             "uri": f"{status_base}/v0/status/{idx}",
         }
 
-    def _edc_contexts(self, credential: dict[str, object]) -> list[str]:
-        """Return the hardcoded @context list for a EuropeanDigitalCredential.
+    def _post_credential(
+        self,
+        offer_id: str,
+        credential: dict[str, object],
+        template_id: str,
+    ) -> None:
+        """POST credential to SSI agent (/v0/credentials).
 
         Args:
-            credential: The serialized EDC credential
+            offer_id: The offer identifier.
+            credential: The credential payload.
+            template_id: The credential template ID.
+        """
+        response = self._http_client.post(
+            f"{self._ssi_agent_admin_base_url}/v0/credentials",
+            json={
+                "offerId": offer_id,
+                "credential": credential,
+                "templateId": template_id,
+                "expiresAt": "never",
+            },
+        )
+
+        if 400 <= response.status_code < 600:
+            raise OffersClientError(
+                f"Upstream error: {response.status_code} - {response.content.decode()}"
+            )
+
+    def _post_offer(self, offer_id: str) -> str:
+        """POST offer to SSI agent (/v0/offers).
+
+        Args:
+            offer_id: The offer identifier.
 
         Returns:
-            The EDC/W3C 2.0 context array.
+            The raw offer URI from the response body.
         """
-        credential_context: list[str] = credential.get("credential_context") or []  # pyright: ignore[reportAssignmentType]
-        return list(chain([
-            "https://www.w3.org/2018/credentials/v1",
-            "https://www.w3.org/ns/credentials/v2",
-        ], credential_context))
-
-    def _create_credential_for_subject(
-        self,
-        offer_id: str,
-        credential: dict[str, object],
-        template_id: str,
-    ) -> None:
-        response = self._http_client.post(
-            f"{self._ssi_agent_admin_base_url}/v0/credentials",
-            json={
-                "offerId": offer_id,
-                "credential": credential,
-                "templateId": template_id,
-                "expiresAt": "never",
-            },
-        )
-
-        if 400 <= response.status_code < 600:
-            raise OffersClientError(
-                f"Upstream error: {response.status_code} - {response.content.decode()}"
-            )
-
-    def _create_credential_for_subject_edc(
-        self,
-        offer_id: str,
-        credential: dict[str, object],
-        template_id: str,
-    ) -> None:
-        response = self._http_client.post(
-            f"{self._ssi_agent_admin_base_url}/v0/credentials",
-            json={
-                "offerId": offer_id,
-                "credential": credential,
-                "templateId": template_id,
-                "expiresAt": "never",
-            },
-        )
-
-        if 400 <= response.status_code < 600:
-            raise OffersClientError(
-                f"Upstream error: {response.status_code} - {response.content.decode()}"
-            )
-
-    def _create_offer(self, offer_id: str) -> str:
-        response = self._http_client.post(
-            f"{self._ssi_agent_admin_base_url}/v0/offers",
-            json={
-                "offerId": offer_id,
-                "templateIds": list(self._credential_template_ids.values()),
-            },
-        )
-
-        if 400 <= response.status_code < 600:
-            raise OffersClientError(
-                f"Upstream error: {response.status_code} - {response.content.decode()}"
-            )
-
-        return response.text
-
-    def _create_offer_edc(self, offer_id: str) -> str:
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/offers",
             json={
