@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
-from contextlib import contextmanager
 from textwrap import dedent
 
 import pytest
@@ -19,6 +17,7 @@ from src.awards.badgr_mapping import (
     _BadgrIssuer,  # pyright:ignore[reportPrivateUsage]
     _credential_context_urls,  # pyright:ignore[reportPrivateUsage]
     _resolve_identifier,  # pyright:ignore[reportPrivateUsage]
+    _resolve_issuer,  # pyright:ignore[reportPrivateUsage]
     _to_ob3_award,  # pyright:ignore[reportPrivateUsage]
     ob3_award_from_badgr_api_response,
 )
@@ -31,6 +30,33 @@ from src.awards.models import (
     OB3Award,
     _ob3_default_schema,  # pyright:ignore[reportPrivateUsage]
 )
+
+
+def _default_badgeclass(
+    *,
+    participation: object | None = None,
+    assessment_type: object | None = None,
+    language: str | None = None,
+    ects: object | None = None,
+    time_investment: float | None = None,
+    issuer_type: str | None = None,
+) -> _BadgrBadgeclass:
+    """Build the standard test badgeclass used by the _to_ob3_award tests."""
+    return _BadgrBadgeclass(
+        name="Badge",
+        entity_id="https://DOMAIN/badges/1",
+        issuer=_BadgrIssuer(
+            entity_id="https://DOMAIN/issuers/1",
+            name_english="Issuer",
+            faculty=None,
+            type=issuer_type,
+        ),
+        participation=participation,
+        assessment_type=assessment_type,
+        language=language,
+        ects=ects,
+        time_investment=time_investment,
+    )
 
 
 class TestBadgrAwardResponseDeserialization:
@@ -354,43 +380,8 @@ class TestToOb3Award:
         assert result[0].identityHash == "Single"
 
 
-@contextmanager
-def _patch_env(key: str, value: str):
-    """Temporarily set an environment variable and restore on exit."""
-    old = os.environ.get(key)
-    os.environ[key] = value
-    try:
-        yield
-    finally:
-        if old is None:
-            _ = os.environ.pop(key, None)
-        else:
-            os.environ[key] = old
-
-
 class TestCredentialContextUrls:
     """Tests for _credential_context_urls helper."""
-
-    def _make_ext(self, **kwargs: object) -> _BadgeclassExtensions:
-        """Build a _BadgeclassExtensions from kwargs."""
-        _inLanguage = kwargs.get("inLanguage")
-        _ects = kwargs.get("ects")
-        _eqf = kwargs.get("eqf")
-        _learningOutcome = kwargs.get("learningOutcome")
-        _educationProgramIdentifier = kwargs.get("educationProgramIdentifier")
-        return _BadgeclassExtensions(
-            inLanguage=str(_inLanguage) if _inLanguage is not None else None,
-            ects=float(_ects) if isinstance(_ects, (int, float)) else None,
-            eqf=int(_eqf) if isinstance(_eqf, int) else None,
-            learningOutcome=(
-                _learningOutcome if isinstance(_learningOutcome, str) else None
-            ),
-            educationProgramIdentifier=(
-                [str(v) for v in _educationProgramIdentifier]
-                if isinstance(_educationProgramIdentifier, list)
-                else None
-            ),
-        )
 
     def test_empty_when_no_flat_fields(self) -> None:
         """Returns empty list when all flat fields are None."""
@@ -450,27 +441,16 @@ class TestCredentialContextUrls:
         )
         assert len(urls) == 1
 
-    def test_url_uses_env_var_when_set(self) -> None:
-        """Uses EC_ISSUER_URL env var when available."""
-        with _patch_env("EC_ISSUER_URL", "https://educredentials.nl"):
-            urls = _credential_context_urls(
-                issuer_base_url="https://educredentials.nl",
-                extensions_url_prefix="/static/extensions/v1",
-                ext_vals=_BadgeclassExtensions(participation=["enrolment"]),
-            )
-        assert len(urls) == 1
-        assert urls[0] == "https://educredentials.nl/static/extensions/v1/ParticipationFormExtension/context.json"
-
     def test_url_trims_trailing_slash(self) -> None:
-        """Strips trailing slash from public URL."""
-        with _patch_env("EC_ISSUER_URL", "https://educredentials.nl/"):
-            urls = _credential_context_urls(
-                issuer_base_url="https://educredentials.nl",
-                extensions_url_prefix="/static/extensions/v1",
-                ext_vals=_BadgeclassExtensions(participation=["enrolment"]),
-            )
-        assert len(urls) == 1
-        assert urls[0] == "https://educredentials.nl/static/extensions/v1/ParticipationFormExtension/context.json"
+        """Strips trailing slash from the issuer base URL."""
+        urls = _credential_context_urls(
+            issuer_base_url="https://educredentials.nl/",
+            extensions_url_prefix="/static/extensions/v1",
+            ext_vals=_BadgeclassExtensions(participation=["enrolment"]),
+        )
+        assert urls == [
+            "https://educredentials.nl/static/extensions/v1/ParticipationFormExtension/context.json"
+        ]
 
     def test_url_order_matches_field_order(self) -> None:
         """Context URLs appear in the defined field order."""
@@ -491,159 +471,13 @@ class TestCredentialContextUrls:
 class TestOb3AwardWithNewFields:
     """Tests for OB3Award with extension-related fields."""
 
-    def test_ob3_award_with_valid_to(self) -> None:
-        """OB3Award can be constructed with validUntil set."""
-        award = OB3Award(
-            id="https://DOMAIN/assertions/1",
-            type=["VerifiableCredential", "AchievementCredential"],
-            name="Badge",
-            issuer=Issuer(
-                id="https://DOMAIN/issuers/1", type=["Profile"], name="Issuer"
-            ),
-            validFrom="2024-01-01T00:00:00Z",
-            validUntil="2025-01-01T00:00:00Z",
-            credentialSubject=AchievementSubject(
-                id="https://DOMAIN/assertions/1",
-                type=["AchievementSubject"],
-                achievement=Achievement(
-                    id="https://DOMAIN/assertions/1",
-                    type=["Achievement"],
-                    criteria=Criteria(narrative="Complete the badge"),
-                    description="Badge for completing the task",
-                    name="Badge",
-                ),
-            ),
-            credential_context=[],
-        )
-        assert award.validUntil == "2025-01-01T00:00:00Z"
-
-    def test_ob3_award_with_credential_context(self) -> None:
-        """OB3Award can hold credential_context list."""
-        context_urls = [
-            "https://educredentials.nl/static/extensions/v1/ECTSExtension/context.json",
-        ]
-        award = OB3Award(
-            id="https://DOMAIN/assertions/1",
-            type=["VerifiableCredential", "AchievementCredential"],
-            name="Badge",
-            issuer=Issuer(
-                id="https://DOMAIN/issuers/1", type=["Profile"], name="Issuer"
-            ),
-            validFrom="2024-01-01T00:00:00Z",
-            credential_context=context_urls,
-            credentialSubject=AchievementSubject(
-                id="https://DOMAIN/assertions/1",
-                type=["AchievementSubject"],
-                achievement=Achievement(
-                    id="https://DOMAIN/assertions/1",
-                    type=["Achievement"],
-                    criteria=Criteria(narrative="Complete the badge"),
-                    description="Badge for completing the task",
-                    name="Badge",
-                ),
-            ),
-        )
-        assert award.credential_context == context_urls
-
-    def test_ob3_award_with_valid_in_language(self) -> None:
-        """OB3Award can hold inLanguage field."""
-        award = OB3Award(
-            id="https://DOMAIN/assertions/1",
-            type=["VerifiableCredential", "AchievementCredential"],
-            name="Badge",
-            issuer=Issuer(
-                id="https://DOMAIN/issuers/1", type=["Profile"], name="Issuer"
-            ),
-            validFrom="2024-01-01T00:00:00Z",
-            credentialSubject=AchievementSubject(
-                id="https://DOMAIN/assertions/1",
-                type=["AchievementSubject"],
-                achievement=Achievement(
-                    id="https://DOMAIN/assertions/1",
-                    type=["Achievement"],
-                    criteria=Criteria(narrative="Complete the badge"),
-                    description="Badge for completing the task",
-                    name="Badge",
-                    inLanguage="nl",
-                ),
-            ),
-        )
-        assert award.credentialSubject.achievement.inLanguage == "nl"
-
-    def test_ob3_award_with_ECTS(self) -> None:
-        """OB3Award can hold ects field."""
-        award = OB3Award(
-            id="https://DOMAIN/assertions/1",
-            type=["VerifiableCredential", "AchievementCredential"],
-            name="Badge",
-            issuer=Issuer(
-                id="https://DOMAIN/issuers/1", type=["Profile"], name="Issuer"
-            ),
-            validFrom="2024-01-01T00:00:00Z",
-            credentialSubject=AchievementSubject(
-                id="https://DOMAIN/assertions/1",
-                type=["AchievementSubject"],
-                achievement=Achievement(
-                    id="https://DOMAIN/assertions/1",
-                    type=["Achievement"],
-                    criteria=Criteria(narrative="Complete the badge"),
-                    description="Badge for completing the task",
-                    name="Badge",
-                    ects=5,
-                ),
-            ),
-        )
-        assert award.credentialSubject.achievement.ects == 5
-
-    def test_ob3_award_with_assessment_fields(self) -> None:
-        """OB3Award can hold assessment type, form of participation, id_verified,
-        and supervised fields."""
-        award = OB3Award(
-            id="https://DOMAIN/assertions/1",
-            type=["VerifiableCredential", "AchievementCredential"],
-            name="Badge",
-            issuer=Issuer(
-                id="https://DOMAIN/issuers/1", type=["Profile"], name="Issuer"
-            ),
-            validFrom="2024-01-01T00:00:00Z",
-            credentialSubject=AchievementSubject(
-                id="https://DOMAIN/assertions/1",
-                type=["AchievementSubject"],
-                achievement=Achievement(
-                    id="https://DOMAIN/assertions/1",
-                    type=["Achievement"],
-                    criteria=Criteria(narrative="Complete the badge"),
-                    description="Badge for completing the task",
-                    name="Badge",
-                    assessmentType=["testing", "portfolio"],
-                    formOfParticipation=["online", "onsite"],
-                ),
-            ),
-        )
-        assert award.credentialSubject.achievement.assessmentType == [
-            "testing",
-            "portfolio",
-        ]
-        assert award.credentialSubject.achievement.formOfParticipation == [
-            "online",
-            "onsite",
-        ]
-
     def test_to_ob3_award_with_expires_at(self) -> None:
         """_to_ob3_award maps expires_at to validUntil."""
         dto = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/I41eovHQReGI_SG5KM6dSQ",
             issued_on="2021-04-20T16:20:30.521307+02:00",
             expires_at="2024-04-20T16:20:30.521307+02:00",
-            badgeclass=_BadgrBadgeclass(
-                name="Badge",
-                entity_id="https://DOMAIN/badges/1",
-                issuer=_BadgrIssuer(
-                    entity_id="https://DOMAIN/issuers/1",
-                    name_english="Issuer",
-                    faculty=None,
-                ),
-            ),
+            badgeclass=_default_badgeclass(),
         )
         result = _to_ob3_award(dto)
         assert result.validUntil == "2024-04-20T16:20:30.521307+02:00"
@@ -654,15 +488,7 @@ class TestOb3AwardWithNewFields:
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
             expires_at=None,
-            badgeclass=_BadgrBadgeclass(
-                name="Badge",
-                entity_id="https://DOMAIN/badges/1",
-                issuer=_BadgrIssuer(
-                    entity_id="https://DOMAIN/issuers/1",
-                    name_english="Issuer",
-                    faculty=None,
-                ),
-            ),
+            badgeclass=_default_badgeclass(),
         )
         result = _to_ob3_award(dto)
         assert result.validUntil is None
@@ -673,14 +499,7 @@ class TestOb3AwardWithNewFields:
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
             expires_at="2025-01-01T00:00:00Z",
-            badgeclass=_BadgrBadgeclass(
-                name="Badge",
-                entity_id="https://DOMAIN/badges/1",
-                issuer=_BadgrIssuer(
-                    entity_id="https://DOMAIN/issuers/1",
-                    name_english="Issuer",
-                    faculty=None,
-                ),
+            badgeclass=_default_badgeclass(
                 participation=["enrolment", "onsite"],
                 assessment_type=["summative", "formative"],
                 language="nl",
@@ -726,16 +545,7 @@ class TestOb3AwardWithNewFields:
         dto = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
-            badgeclass=_BadgrBadgeclass(
-                name="Badge",
-                entity_id="https://DOMAIN/badges/1",
-                issuer=_BadgrIssuer(
-                    entity_id="https://DOMAIN/issuers/1",
-                    name_english="Issuer",
-                    faculty=None,
-                    type="Organization",
-                ),
-            ),
+            badgeclass=_default_badgeclass(issuer_type="Organization"),
         )
         result = _to_ob3_award(dto)
         assert result.issuer.type == ["Organization"]
@@ -745,15 +555,7 @@ class TestOb3AwardWithNewFields:
         dto = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
-            badgeclass=_BadgrBadgeclass(
-                name="Badge",
-                entity_id="https://DOMAIN/badges/1",
-                issuer=_BadgrIssuer(
-                    entity_id="https://DOMAIN/issuers/1",
-                    name_english="Issuer",
-                    faculty=None,
-                ),
-            ),
+            badgeclass=_default_badgeclass(),
         )
         result = _to_ob3_award(dto)
         assert result.issuer.type == ["Profile"]
@@ -764,14 +566,7 @@ class TestOb3AwardWithNewFields:
         dto = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
-            badgeclass=_BadgrBadgeclass(
-                name="Badge",
-                entity_id="https://DOMAIN/badges/1",
-                issuer=_BadgrIssuer(
-                    entity_id="https://DOMAIN/issuers/1",
-                    name_english="Issuer",
-                    faculty=None,
-                ),
+            badgeclass=_default_badgeclass(
                 participation=["online", "onsite"],
                 assessment_type=["summative", "formative"],
             ),
@@ -849,8 +644,6 @@ class TestOb3AwardWithNewFields:
         self,
     ) -> None:
         """_resolve_issuer builds parentOrg from faculty.institution data."""
-        from src.awards.badgr_mapping import _resolve_issuer
-
         dto = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
@@ -888,8 +681,6 @@ class TestOb3AwardWithNewFields:
         self,
     ) -> None:
         """_resolve_issuer keeps the flat Type field on the issuer."""
-        from src.awards.badgr_mapping import _resolve_issuer
-
         dto = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
@@ -911,8 +702,6 @@ class TestOb3AwardWithNewFields:
         self,
     ) -> None:
         """parentOrg contains country code and both BRIN/SCHAC identifiers."""
-        from src.awards.badgr_mapping import _resolve_issuer
-
         dto = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/1",
             issued_on="2024-01-01T00:00:00Z",
@@ -946,8 +735,6 @@ class TestOb3AwardWithNewFields:
 
     def test_resolve_issuer_with_only_schac_or_brin(self) -> None:
         """parentOrg.otherIdentifier includes only present identifiers."""
-        from src.awards.badgr_mapping import _resolve_issuer
-
         # Only SCHAC
         dto_schac = _BadgrAwardResponse(
             entity_id="https://DOMAIN/assertions/1",

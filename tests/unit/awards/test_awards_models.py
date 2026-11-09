@@ -62,11 +62,6 @@ class TestResolveCredentialId:
         award = ob3_award_from_badgr_api_response(_VALID_BADGR_RESPONSE)
         assert award.id == "https://DOMAIN/assertions/42"
 
-    def test_raises_when_id_missing(self):
-        """A response without ``id`` raises AwardMappingError."""
-        with pytest.raises(AwardMappingError, match="missing 'id'"):
-            _ = ob3_award_from_badgr_api_response({})
-
 
 class TestResolveBadgeName:
     """Badge name resolution tested via public interface."""

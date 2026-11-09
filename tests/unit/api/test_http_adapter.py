@@ -2,6 +2,7 @@
 
 from typing import cast, override
 
+import pytest
 from flask.testing import FlaskClient
 
 from src.offers.models import Offer
@@ -17,6 +18,26 @@ from ..support.test_doubles import (
     OfferServiceSpy,
     UnhealthyOfferServiceStub,
 )
+
+
+class _RaisingOfferServiceSpy(OfferServiceSpy):
+    """OfferServiceSpy whose create_offer always raises the given error."""
+
+    def __init__(self, error: Exception) -> None:
+        """Initialize with the error to raise on create_offer."""
+        super().__init__()
+        self._error = error
+
+    @override
+    def create_offer(
+        self,
+        award_id: str,
+        bearer_token: str,
+        *,
+        credential_type: str = "ob3",
+    ) -> Offer:
+        """Raise the configured error."""
+        raise self._error
 
 
 class TestHttpAdapter:
@@ -56,21 +77,22 @@ class TestHttpAdapter:
             "ob3",
         ) in offer_service_spy.calls
 
-    def test_offers_missing_authorization_header_returns_401(
-        self, http_client: FlaskClient
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            pytest.param(None, id="missing-authorization-header"),
+            pytest.param({"Authorization": "Bearer "}, id="empty-bearer-token"),
+        ],
+    )
+    def test_offers_unauthorized_returns_401(
+        self,
+        http_client: FlaskClient,
+        headers: dict[str, str] | None,
     ):
-        """POST /api/v1/offers without Authorization header returns 401."""
+        """POST /api/v1/offers without a valid bearer token returns 401."""
         response = http_client.post(
             "/api/v1/offers",
-            json={"award_id": "achievement-1"},
-        )
-        assert response.status_code == 401
-
-    def test_offers_empty_bearer_token_returns_401(self, http_client: FlaskClient):
-        """POST /api/v1/offers with empty bearer token returns 401."""
-        response = http_client.post(
-            "/api/v1/offers",
-            headers={"Authorization": "Bearer "},
+            headers=headers,
             json={"award_id": "achievement-1"},
         )
         assert response.status_code == 401
@@ -102,91 +124,47 @@ class TestHttpAdapter:
         assert call[0] == "create_offer"
         assert call[3] == "edc"
 
-    def test_offers_unsupported_credential_type_returns_400(self):
-        """POST /api/v1/offers with unrecognized credential_type returns 400.
-
-        The service layer rejects unsupported values and the Flask error
-        handler maps UnknownCredentialTypeError to a 400 response.
-        """
-
-        class _UnsupportedCredentialTypeService(OfferServiceSpy):
-            @override
-            def create_offer(
-                self,
-                award_id: str,
-                bearer_token: str,
-                *,
-                credential_type: str = "ob3",
-            ) -> Offer:
-                raise UnknownCredentialTypeError(
-                    "Unsupported credential_type: "
-                    + f"{credential_type!r}. "
-                    + "Must be 'ob3' or 'edc'."
-                )
-
-        service = _UnsupportedCredentialTypeService()
-        http_client = setup_http_client(service)
-        response = http_client.post(
-            "/api/v1/offers",
-            headers={"Authorization": "Bearer t0k3n"},
-            json={"award_id": "achievement-1", "credential_type": "foobar"},
-        )
-        assert response.status_code == 400
-        body = cast(dict[str, str], response.get_json(force=True))
-        assert "error" in body
-        assert "Unsupported credential_type" in body["error"]
-
-    def test_offers_missing_award_returns_404(self):
-        """POST /api/v1/offers returns 404 when the award is not found."""
-
-        class _NotFoundService(OfferServiceSpy):
-            @override
-            def create_offer(
-                self,
-                award_id: str,
-                bearer_token: str,
-                *,
-                credential_type: str = "ob3",
-            ) -> Offer:
-                raise NotFoundError(f"Award {award_id} not found")
-
-        service = _NotFoundService()
-        http_client = setup_http_client(service)
-        response = http_client.post(
-            "/api/v1/offers",
-            headers={"Authorization": "Bearer t0k3n"},
-            json={"award_id": "missing-award"},
-        )
-        assert response.status_code == 404
-        body = cast(dict[str, str], response.get_json(force=True))
-        assert "error" in body
-        assert "not found" in body["error"].lower()
-
-    def test_offers_offer_service_error_returns_502(self):
-        """POST /api/v1/offers returns 502 when OfferServiceError is raised."""
-
-        class _ServiceErrorService(OfferServiceSpy):
-            @override
-            def create_offer(
-                self,
-                award_id: str,
-                bearer_token: str,
-                *,
-                credential_type: str = "ob3",
-            ) -> Offer:
-                raise OfferServiceError("Upstream unavailable")
-
-        service = _ServiceErrorService()
-        http_client = setup_http_client(service)
-        response = http_client.post(
+    @pytest.mark.parametrize(
+        ("error", "status", "error_fragment"),
+        [
+            pytest.param(
+                UnknownCredentialTypeError(
+                    "Unsupported credential_type: 'foobar'. Must be 'ob3' or 'edc'."
+                ),
+                400,
+                "Unsupported credential_type",
+                id="unknown-credential-type-400",
+            ),
+            pytest.param(
+                NotFoundError("Award missing-award not found"),
+                404,
+                "not found",
+                id="missing-award-404",
+            ),
+            pytest.param(
+                OfferServiceError("Upstream unavailable"),
+                502,
+                "Upstream unavailable",
+                id="service-error-502",
+            ),
+        ],
+    )
+    def test_offers_service_errors_map_to_status(
+        self,
+        error: Exception,
+        status: int,
+        error_fragment: str,
+    ):
+        """Offer service exceptions map to their HTTP status and message."""
+        client = setup_http_client(_RaisingOfferServiceSpy(error))
+        response = client.post(
             "/api/v1/offers",
             headers={"Authorization": "Bearer t0k3n"},
             json={"award_id": "achievement-1"},
         )
-        assert response.status_code == 502
+        assert response.status_code == status
         body = cast(dict[str, str], response.get_json(force=True))
-        assert "error" in body
-        assert "Upstream unavailable" in body["error"]
+        assert error_fragment in body["error"]
 
     def test_offers_malformed_body_returns_400(self, http_client: FlaskClient):
         """POST /api/v1/offers returns 400 for malformed JSON body."""
@@ -231,18 +209,13 @@ class TestHttpAdapter:
 class TestServeExtensionContext:
     """Tests for the /static/extensions/<path:filename> route."""
 
-    def test_serves_context_json(self, http_client: FlaskClient):
-        """GET a context.json file returns 200 with ld+json content type."""
+    @pytest.mark.parametrize("filename", ["context.json", "schema.json"])
+    def test_serves_extension_json(
+        self, http_client: FlaskClient, filename: str
+    ):
+        """GET an extension JSON file returns 200 with ld+json content type."""
         response = http_client.get(
-            "/static/extensions/v1/LanguageExtension/context.json"
-        )
-        assert response.status_code == 200
-        assert response.content_type == "application/ld+json"
-
-    def test_serves_schema_json(self, http_client: FlaskClient):
-        """GET a schema.json file returns 200 with ld+json content type."""
-        response = http_client.get(
-            "/static/extensions/v1/LanguageExtension/schema.json"
+            f"/static/extensions/v1/LanguageExtension/{filename}"
         )
         assert response.status_code == 200
         assert response.content_type == "application/ld+json"

@@ -139,50 +139,25 @@ class TestHttpCredentialConverterAdapterSuccess:
 class TestHttpCredentialConverterAdapterErrors:
     """Tests for error responses from the converter."""
 
-    def test_400_raises_client_error(
+    @pytest.mark.parametrize(
+        ("status", "match"),
+        [
+            (400, "Converter returned 400"),
+            (502, "Converter returned 502"),
+            (401, "Converter returned unexpected status 401"),
+        ],
+    )
+    def test_error_status_raises_client_error(
         self,
         http_spy: RequestsSpy,
         subject: HttpCredentialConverterAdapter,
+        status: int,
+        match: str,
     ) -> None:
-        """convert() raises CredentialConverterClientError on 400."""
-        http_spy.set_response(
-            MockResponse(status_code=400, _content=b'"Bad request"')
-        )
+        """convert() raises CredentialConverterClientError on error statuses."""
+        http_spy.set_response(MockResponse(status_code=status, _content=b'""'))
 
-        with pytest.raises(
-            CredentialConverterClientError, match="Converter returned 400"
-        ):
-            _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
-
-    def test_500_raises_client_error(
-        self,
-        http_spy: RequestsSpy,
-        subject: HttpCredentialConverterAdapter,
-    ) -> None:
-        """convert() raises CredentialConverterClientError on 5xx."""
-        http_spy.set_response(
-            MockResponse(status_code=502, _content=b'"Bad Gateway"')
-        )
-
-        with pytest.raises(
-            CredentialConverterClientError, match="Converter returned 502"
-        ):
-            _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
-
-    def test_unexpected_status_raises_client_error(
-        self,
-        http_spy: RequestsSpy,
-        subject: HttpCredentialConverterAdapter,
-    ) -> None:
-        """convert() raises on non-2xx/non-4xx/non-5xx."""
-        http_spy.set_response(
-            MockResponse(status_code=401, _content=b'"Unauthorized"')
-        )
-
-        with pytest.raises(
-            CredentialConverterClientError,
-            match="Converter returned unexpected status 401",
-        ):
+        with pytest.raises(CredentialConverterClientError, match=match):
             _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
 
     def test_error_field_raises_client_error(
@@ -264,58 +239,28 @@ class TestHttpCredentialConverterAdapterMalformed:
         ):
             _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
 
-    def test_invalid_base64_raises_client_error(
+    @pytest.mark.parametrize(
+        "content",
+        [
+            "!!!invalid!!!",
+            base64.b64encode(b"this is not json").decode(),
+            base64.b64encode(b"null").decode(),
+        ],
+    )
+    def test_decode_failure_raises_client_error(
         self,
         http_spy: RequestsSpy,
         subject: HttpCredentialConverterAdapter,
+        content: str,
     ) -> None:
-        """convert() raises when the content is not valid base64."""
+        """convert() raises when base64 content is not decodable to a JSON object."""
         http_spy.set_response(
             MockResponse(
                 status_code=200,
-                _content=json.dumps({"content": "!!!invalid!!!"}).encode(),
+                _content=json.dumps({"content": content}).encode(),
             )
         )
 
-        with pytest.raises(
-            CredentialConverterClientError, match="Failed to decode"
-        ):
-            _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
-
-    def test_invalid_credential_json_raises(
-        self,
-        http_spy: RequestsSpy,
-        subject: HttpCredentialConverterAdapter,
-    ) -> None:
-        """convert() raises when decoded content is not valid JSON."""
-        bad_json_bytes = b"this is not json"
-        encoded = base64.b64encode(bad_json_bytes).decode()
-        http_spy.set_response(
-            MockResponse(
-                status_code=200,
-                _content=json.dumps({"content": encoded}).encode(),
-            )
-        )
-
-        with pytest.raises(
-            CredentialConverterClientError, match="Failed to decode"
-        ):
-            _ = subject.convert(asdict(_SAMPLE_OB3_AWARD))
-
-
-    def test_non_object_credential_raises(
-        self,
-        http_spy: RequestsSpy,
-        subject: HttpCredentialConverterAdapter,
-    ) -> None:
-        """convert() raises when the decoded credential is not a JSON object."""
-        encoded = base64.b64encode(b'null').decode()
-        http_spy.set_response(
-            MockResponse(
-                status_code=200,
-                _content=json.dumps({"content": encoded}).encode(),
-            )
-        )
         with pytest.raises(
             CredentialConverterClientError, match="Failed to decode"
         ):
@@ -325,19 +270,17 @@ class TestHttpCredentialConverterAdapterMalformed:
 class TestHttpCredentialConverterAdapterInit:
     """Tests for adapter initialization."""
 
-    def test_strips_trailing_slash(self) -> None:
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("http://converter:8080/", "http://converter:8080"),
+            ("http://converter:8080", "http://converter:8080"),
+        ],
+    )
+    def test_strips_trailing_slash(self, url: str, expected: str) -> None:
         """__init__() strips trailing slash from the base URL."""
-        adapter = HttpCredentialConverterAdapter(
-            converter_base_url="http://converter:8080/"
-        )
-        assert adapter._base_url == "http://converter:8080"  # pyright: ignore[reportPrivateUsage]
-
-    def test_preserves_no_trailing_slash(self) -> None:
-        """__init__() preserves URL without trailing slash."""
-        adapter = HttpCredentialConverterAdapter(
-            converter_base_url="http://converter:8080"
-        )
-        assert adapter._base_url == "http://converter:8080"  # pyright: ignore[reportPrivateUsage]
+        adapter = HttpCredentialConverterAdapter(converter_base_url=url)
+        assert adapter._base_url == expected  # pyright: ignore[reportPrivateUsage]
 
     def test_uses_default_http_client(self) -> None:
         """__init__() creates RequestsHttpClient when none is provided."""

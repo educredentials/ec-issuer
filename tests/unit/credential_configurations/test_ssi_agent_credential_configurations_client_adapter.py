@@ -62,26 +62,17 @@ _VALID_TEMPLATES_JSON = msgspec.json.encode(
     ]
 )
 
-
-# Legacy metadata response — used for old well-known endpoint tests
-_VALID_METADATA_JSON = msgspec.json.encode(
-    {
-        "credential_issuer": "http://issuer.example.com",
-        "credential_endpoint": "http://issuer.example.com/credential",
-        "credential_templates_supported": {
-            "credential_template_id": {
-                "type": ["VerifiableCredential"],
-                "format": "jwt_vc_json",
-                "display": {
-                    "name": "Open Badge Credential",
-                    "logo": {
-                        "alt_text": "Blue Logo",
-                        "uri": "https://example.com/images/logo.png",
-                    },
-                },
-            }
-        },
-    }
+# The template the list() endpoint response decodes to.
+_TEMPLATES_RESPONSE_TEMPLATE = CredentialTemplate(
+    type=["VerifiableCredential"],
+    id="credential_template_id",
+    display=Display(
+        name="Open Badge Credential",
+        logo=Logo(
+            alt_text="Blue Logo",
+            uri="https://example.com/images/logo.png",
+        ),
+    ),
 )
 
 # Response from the POST create endpoint — a bare CredentialTemplate
@@ -108,7 +99,7 @@ def create_response() -> MockResponse:
     return MockResponse(status_code=200, _content=_CREATE_RESPONSE_JSON)
 
 
-def _expected_payload(_template_id: str) -> dict[str, object]:
+def _expected_payload() -> dict[str, object]:
     return {
         "type": ["VerifiableCredential"],
         "display": {
@@ -134,7 +125,7 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         expected_request = RecordedRequest(
             method="post",
             url="http://agent.example.com/v0/create-new-template",
-            json=_expected_payload(""),
+            json=_expected_payload(),
         )
         assert http_client.calls[0] == expected_request
 
@@ -173,20 +164,9 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         subject: SsiAgentCredentialTemplateClientAdapter,
         valid_metadata_response: MockResponse,
     ):
-        expected_template = CredentialTemplate(
-            type=["VerifiableCredential"],
-            id="credential_template_id",
-            display=Display(
-                name="Open Badge Credential",
-                logo=Logo(
-                    alt_text="Blue Logo",
-                    uri="https://example.com/images/logo.png",
-                ),
-            ),
-        )
         http_client.set_response(valid_metadata_response)
         result = subject.get("credential_template_id")
-        assert result == expected_template
+        assert result == _TEMPLATES_RESPONSE_TEMPLATE
 
     def test_list_sends_get_to_templates_endpoint(
         self,
@@ -211,18 +191,7 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         )
         results = subject.list()
         assert len(results) == 1
-        expected_template = CredentialTemplate(
-            type=["VerifiableCredential"],
-            id="credential_template_id",
-            display=Display(
-                name="Open Badge Credential",
-                logo=Logo(
-                    alt_text="Blue Logo",
-                    uri="https://example.com/images/logo.png",
-                ),
-            ),
-        )
-        assert results[0] == expected_template
+        assert results[0] == _TEMPLATES_RESPONSE_TEMPLATE
 
     def test_list_raises_client_error_on_upstream_error(
         self,
@@ -289,7 +258,7 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         assert http_client.calls[0] == RecordedRequest(
             method="post",
             url="http://agent.example.com/v0/create-new-template",
-            json=_expected_payload(""),
+            json=_expected_payload(),
         )
 
     def test_update_returns_merged_template(
@@ -308,7 +277,7 @@ class TestSsiAgentCredentialTemplateClientAdapter:
         expected_request = RecordedRequest(
             method="post",
             url="http://agent.example.com/v0/create-new-template",
-            json=_expected_payload(credential_template.id),
+            json=_expected_payload(),
         )
 
         result = subject.update(credential_template)
