@@ -11,7 +11,7 @@ read -r MAJOR MINOR PATCH <<< "${CURRENT//\./ }"
 NEXT="${MAJOR}.$((MINOR + 1)).0"
 
 echo "Bumping version: ${CURRENT} → ${NEXT}"
-sed -i "s/^version = \"${CURRENT}\"/version = \"${NEXT}\"/" pyproject.toml
+sed -i '' "s/^version = \"${CURRENT}\"/version = \"${NEXT}\"/" pyproject.toml
 
 echo "Running uv lock..."
 uv lock
