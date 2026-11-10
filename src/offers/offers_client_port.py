@@ -1,6 +1,7 @@
 """Domain model and port for the offers repository."""
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from src.awards.models import OB3Award
 
@@ -15,11 +16,19 @@ class OffersClientError(Exception):
     """Error raised when API service returns a non-404 error"""
 
 
+@dataclass
+class OfferCreated:
+    """Response from creating an offer on the SSI agent."""
+
+    uri: str
+    credential_ids: list[str] | None = None
+
+
 class OffersClientPort(ABC):
     """Port: repository interface for persisting and retrieving offers."""
 
     @abstractmethod
-    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> OfferCreated:
         """Create an OB3 credential offer on the SSI agent.
 
         Args:
@@ -27,14 +36,14 @@ class OffersClientPort(ABC):
             award: The OB3 AchievementCredential to issue.
 
         Returns:
-            The offer URI.
+            The offer URI and credential IDs.
         """
         ...
 
     @abstractmethod
     def create_edc(
         self, offer_id: str, credential: dict[str, object]
-    ) -> str:
+    ) -> OfferCreated:
         """Create an EDC credential offer on the SSI agent.
 
         Args:
@@ -42,7 +51,7 @@ class OffersClientPort(ABC):
             credential: The ELM/EDC credential as a dict.
 
         Returns:
-            The offer URI.
+            The offer URI and credential IDs.
         """
         ...
 

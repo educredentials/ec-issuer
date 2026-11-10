@@ -59,3 +59,4 @@ class Offer:
     offer_id: str
     award_id: str
     uri: str | None
+    credential_ids: list[str] | None = None

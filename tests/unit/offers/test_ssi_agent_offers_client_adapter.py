@@ -16,7 +16,7 @@ from src.awards.models import (
 )
 from src.lib.http_client import HttpClient
 from src.offers.models import CredentialType, Offer
-from src.offers.offers_client_port import OfferNotFound, OffersClientError
+from src.offers.offers_client_port import OfferCreated, OfferNotFound, OffersClientError
 from src.offers.ssi_agent_offers_client_adapter import SsiAgentOffersClientAdapter
 
 from ..support.requests_doubles import MockResponse, RecordedRequest, RequestsSpy
@@ -185,7 +185,9 @@ class TestSsiAgentOffersClientAdapter:
         """get() returns an Offer with the URI from the agent response."""
         http_client.set_response(valid_offer_response)
         result = subject.get("offer-123")
-        assert result == Offer(offer_id="offer-123", award_id="", uri=_OFFER_URI)
+        assert result == Offer(
+            offer_id="offer-123", award_id="", uri=_OFFER_URI, credential_ids=[]
+        )
 
     def test_get_raises_not_found_on_404(
         self,
@@ -256,14 +258,21 @@ class TestSsiAgentOffersClientAdapter:
         subject: SsiAgentOffersClientAdapter,
         sample_award: OB3Award,
     ):
-        """create_ob3() returns the URI from the offer creation response."""
+        """create_ob3() returns OfferCreated with URI and credential_ids."""
         # First call (credential): default 200; second call (offer): returns the URI
+        # Third call (GET offer for credential_ids): returns the offer response
         http_client.set_response(MockResponse(status_code=200, _content=b""))
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
         )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_VALID_OFFER_RESPONSE_JSON)
+        )
         result = subject.create_ob3("offer-123", sample_award)
-        assert result == _OFFER_URI
+        assert result == OfferCreated(
+            uri=_OFFER_URI,
+            credential_ids=[],
+        )
 
     def test_create_ob3_raises_client_error_when_credential_creation_fails(
         self,
@@ -364,14 +373,21 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         http_client: RequestsSpy,
         edc_adapter: SsiAgentOffersClientAdapter,
     ):
-        """create_edc() returns the URI from the offer creation response."""
+        """create_edc() returns OfferCreated with URI and credential_ids."""
         # First call (credential): default 200; second call (offer): returns the URI
+        # Third call (GET offer for credential_ids): returns the offer response
         http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
         )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_VALID_OFFER_RESPONSE_JSON)
+        )
         result = edc_adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
-        assert result == _OFFER_URI
+        assert result == OfferCreated(
+            uri=_OFFER_URI,
+            credential_ids=[],
+        )
 
     def test_create_edc_uses_second_template_id(
         self,

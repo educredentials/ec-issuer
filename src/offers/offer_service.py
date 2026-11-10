@@ -140,10 +140,10 @@ class OfferService:
                 ob3_award = self._awards_client.get_ob3(award_id, bearer_token)
                 raw_ob3 = awards_models.ob3_award_to_json_dict(ob3_award)
                 edc_credential = self._credential_converter.convert(raw_ob3)
-                uri = self._offers_client.create_edc(offer_id, edc_credential)
+                offer_created = self._offers_client.create_edc(offer_id, edc_credential)
             else:
                 award = self._awards_client.get_ob3(award_id, bearer_token)
-                uri = self._offers_client.create_ob3(offer_id, award)
+                offer_created = self._offers_client.create_ob3(offer_id, award)
         except AwardNotFound as e:
             raise NotFoundError(f"Award {award_id} not found") from e
         except AwardForbidden as e:
@@ -154,7 +154,12 @@ class OfferService:
             raise OfferServiceError(str(e)) from e
 
         try:
-            offer = Offer(offer_id=offer_id, award_id=award_id, uri=uri)
+            offer = Offer(
+                offer_id=offer_id,
+                award_id=award_id,
+                uri=offer_created.uri,
+                credential_ids=offer_created.credential_ids,
+            )
             self._offers_repository.store(offer)
         except Exception:
             self._offers_client.rollback(offer_id)
@@ -191,6 +196,7 @@ class OfferService:
             offer_id=offer_id,
             award_id=stored_offer.award_id,
             uri=upstream_offer.uri,
+            credential_ids=stored_offer.credential_ids,
         )
 
     def health_check(self) -> bool:

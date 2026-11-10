@@ -32,7 +32,7 @@ from src.offers.offer_service import (
     OfferServiceError,
     PermissionDeniedError,
 )
-from src.offers.offers_client_port import OffersClientPort
+from src.offers.offers_client_port import OfferCreated, OffersClientPort
 from src.offers.offers_repository_port import OffersRepositoryPort
 
 
@@ -74,7 +74,7 @@ class _OffersClientSpy(OffersClientPort):
         self.calls: list[tuple[str, dict[str, object]]] = []
 
     @override
-    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> OfferCreated:
         """Record the call and return a stub URI.
 
         Args:
@@ -82,13 +82,18 @@ class _OffersClientSpy(OffersClientPort):
             award: The award passed to the client.
 
         Returns:
-            A stub offer URI.
+            A stub offer URI and empty credential IDs.
         """
         self.calls.append(("create_ob3", {"offer_id": offer_id, "award": award}))
-        return f"openid-credential-offer://?credential_offer_uri=http://example.com/offers/{offer_id}"
+        return OfferCreated(
+            uri=f"openid-credential-offer://?credential_offer_uri=http://example.com/offers/{offer_id}",
+            credential_ids=[],
+        )
 
     @override
-    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
+    def create_edc(
+        self, offer_id: str, credential: dict[str, object]
+    ) -> OfferCreated:
         """Record the call and return a stub URI.
 
         Args:
@@ -96,12 +101,15 @@ class _OffersClientSpy(OffersClientPort):
             credential: The credential dict passed to the client.
 
         Returns:
-            A stub offer URI.
+            A stub offer URI and empty credential IDs.
         """
         self.calls.append(
             ("create_edc", {"offer_id": offer_id, "credential": credential})
         )
-        return f"openid-credential-offer://?credential_offer_uri=http://example.com/offers/{offer_id}"
+        return OfferCreated(
+            uri=f"openid-credential-offer://?credential_offer_uri=http://example.com/offers/{offer_id}",
+            credential_ids=[],
+        )
 
     @override
     def get(self, offer_id: str) -> Offer:

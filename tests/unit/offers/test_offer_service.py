@@ -97,6 +97,7 @@ class TestOfferServiceCreateOffer:
             offer_id=offer.offer_id,
             award_id="award-999",
             uri=f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer.offer_id}",
+            credential_ids=[],
         )
         assert offers_repository.calls == [("store", {"offer": expected_offer})]
 

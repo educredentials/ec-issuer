@@ -28,7 +28,8 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
             """
             CREATE TABLE IF NOT EXISTS offers (
                 offer_id TEXT PRIMARY KEY,
-                award_id TEXT NOT NULL
+                award_id TEXT NOT NULL,
+                credential_ids TEXT[] NULL
             )
             """
             # TODO add indexes for offer_id and award_id
@@ -43,14 +44,16 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
         """
         self.execute(
             """
-            INSERT INTO offers (offer_id, award_id)
-            VALUES (%s, %s)
+            INSERT INTO offers (offer_id, award_id, credential_ids)
+            VALUES (%s, %s, %s)
             ON CONFLICT (offer_id) DO UPDATE
-            SET award_id = EXCLUDED.award_id
+            SET award_id = EXCLUDED.award_id,
+                credential_ids = EXCLUDED.credential_ids
             """,
             (
                 offer.offer_id,
                 offer.award_id,
+                offer.credential_ids,
             ),
         )
 
@@ -72,7 +75,7 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
                 conn.cursor(row_factory=class_row(Offer))
                 .execute(
                     """
-                SELECT offer_id, award_id, null AS uri
+                SELECT offer_id, award_id, null AS uri, credential_ids
                 FROM offers
                 WHERE offer_id = %(id)s
                 """,

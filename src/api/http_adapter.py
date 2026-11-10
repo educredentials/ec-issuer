@@ -143,7 +143,13 @@ class HttpApiAdapter(ApiPort):
             except OfferServiceError as exc:
                 return jsonify({"error": str(exc)}), 502
 
-            return jsonify({"offer_id": offer.offer_id, "uri": offer.uri}), 201
+            return jsonify(
+                {
+                    "offer_id": offer.offer_id,
+                    "uri": offer.uri,
+                    "credential_ids": offer.credential_ids or [],
+                }
+            ), 201
 
         return app
 

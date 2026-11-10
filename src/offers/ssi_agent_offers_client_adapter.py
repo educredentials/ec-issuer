@@ -14,6 +14,7 @@ from src.lib.http_client import HttpClient, RequestsHttpClient
 
 from .models import CredentialType, Offer
 from .offers_client_port import (
+    OfferCreated,
     OfferNotFound,
     OffersClientError,
     OffersClientPort,
@@ -92,7 +93,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             self._http_client = RequestsHttpClient()
 
     @override
-    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> OfferCreated:
         """Create an OB3 credential offer in the SSI agent.
 
         Args:
@@ -116,13 +117,13 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             credential,
             self._credential_template_ids.get(CredentialType.OB3, ""),
         )
-        offer_uri = self._post_offer(offer_id)
-        return offer_uri
+        offer_created = self._post_offer(offer_id)
+        return offer_created
 
     @override
     def create_edc(
         self, offer_id: str, credential: dict[str, object]
-    ) -> str:
+    ) -> OfferCreated:
         """Create an EDC credential offer in the SSI agent.
 
         Args:
@@ -138,8 +139,8 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             credential,
             self._credential_template_ids.get(CredentialType.EDC, ""),
         )
-        offer_uri = self._post_offer(offer_id)
-        return offer_uri
+        offer_created = self._post_offer(offer_id)
+        return offer_created
 
     @override
     def get(self, offer_id: str) -> Offer:
@@ -180,6 +181,7 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             offer_id=offer_id,
             award_id="",
             uri=uri,
+            credential_ids=response_data.credential_ids,
         )
 
     def _assemble_context(
@@ -311,14 +313,14 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 f"Upstream error: {response.status_code} - {response.content.decode()}"
             )
 
-    def _post_offer(self, offer_id: str) -> str:
+    def _post_offer(self, offer_id: str) -> OfferCreated:
         """POST offer to SSI agent (/v0/offers).
 
         Args:
             offer_id: The offer identifier.
 
         Returns:
-            The raw offer URI from the response body.
+            The offer URI and credential IDs.
         """
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/offers",
@@ -333,7 +335,27 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 f"Upstream error: {response.status_code} - {response.content.decode()}"
             )
 
-        return response.text
+        uri: str = response.text
+        # Fetch credential_ids from the offer response
+        credential_ids: list[str] | None = None
+        try:
+            offer_response = self._http_client.get(
+                f"{self._ssi_agent_admin_base_url}/v0/offers/{offer_id}"
+            )
+            if offer_response.status_code == 200:
+                offer_data: _SsiAgentOfferResponse = msgspec.json.decode(
+                    offer_response.content, type=_SsiAgentOfferResponse
+                )
+                credential_ids = offer_data.credential_ids
+        except Exception:
+            # If we can't fetch credential_ids, continue without them
+            # They can be fetched later via get()
+            pass
+
+        return OfferCreated(
+            uri=uri,
+            credential_ids=credential_ids,
+        )
 
     @override
     def rollback(self, offer_id: str) -> None:

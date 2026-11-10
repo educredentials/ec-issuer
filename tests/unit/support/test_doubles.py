@@ -21,7 +21,7 @@ from src.offers.offer_service import (
     OfferService,
     PermissionDeniedError,
 )
-from src.offers.offers_client_port import OfferNotFound, OffersClientPort
+from src.offers.offers_client_port import OfferCreated, OfferNotFound, OffersClientPort
 from src.offers.offers_repository_port import OffersRepositoryPort
 
 # A fixed OB3 Award returned by AwardServiceStub and _AwardsClientStub.
@@ -73,7 +73,7 @@ class OffersClientStub(OffersClientPort):
     """Stub: OffersClientPort that returns fixed offers."""
 
     @override
-    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> OfferCreated:
         """Return a stub OB3 offer URI.
 
         Args:
@@ -81,12 +81,17 @@ class OffersClientStub(OffersClientPort):
             award: Ignored.
 
         Returns:
-            A stub offer URI.
+            A stub offer URI and empty credential IDs.
         """
-        return f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}"
+        return OfferCreated(
+            uri=f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}",
+            credential_ids=[],
+        )
 
     @override
-    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
+    def create_edc(
+        self, offer_id: str, credential: dict[str, object]
+    ) -> OfferCreated:
         """Return a stub EDC offer URI.
 
         Args:
@@ -94,9 +99,12 @@ class OffersClientStub(OffersClientPort):
             credential: Ignored.
 
         Returns:
-            A stub offer URI.
+            A stub offer URI and empty credential IDs.
         """
-        return f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}"
+        return OfferCreated(
+            uri=f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer_id}",
+            credential_ids=[],
+        )
 
     @override
     def get(self, offer_id: str) -> Offer:
@@ -166,7 +174,7 @@ class OffersClientSpy(OffersClientPort):
         return self._calls
 
     @override
-    def create_ob3(self, offer_id: str, award: OB3Award) -> str:
+    def create_ob3(self, offer_id: str, award: OB3Award) -> OfferCreated:
         """Record the call and return a stub URI.
 
         Args:
@@ -174,13 +182,18 @@ class OffersClientSpy(OffersClientPort):
             award: The OB3 award passed to create.
 
         Returns:
-            A stub offer URI.
+            A stub offer URI and empty credential IDs.
         """
         self._calls.append(("create_ob3", {"offer_id": offer_id, "award": award}))
-        return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
+        return OfferCreated(
+            uri=f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}",
+            credential_ids=[],
+        )
 
     @override
-    def create_edc(self, offer_id: str, credential: dict[str, object]) -> str:
+    def create_edc(
+        self, offer_id: str, credential: dict[str, object]
+    ) -> OfferCreated:
         """Record the call and return a stub URI.
 
         Args:
@@ -188,12 +201,15 @@ class OffersClientSpy(OffersClientPort):
             credential: The credential dict passed to create.
 
         Returns:
-            A stub offer URI.
+            A stub offer URI and empty credential IDs.
         """
         self._calls.append(
             ("create_edc", {"offer_id": offer_id, "credential": credential})
         )
-        return f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}"
+        return OfferCreated(
+            uri=f"openid-credential-offer://?credential_offer_uri=https://issuer-agent.example.com/credential_offer/{offer_id}",
+            credential_ids=[],
+        )
 
     @override
     def get(self, offer_id: str) -> Offer:
