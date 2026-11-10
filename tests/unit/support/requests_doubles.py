@@ -152,6 +152,19 @@ class RequestsSpy:
         self._calls.append(RecordedRequest(method="delete", url=url, json=json))
         return self._next_response_or_default(url=url)
 
+    def patch(self, url: str, json: JSON) -> MockResponse:
+        """Record a PATCH request and return a mock response.
+
+        Args:
+            url: The URL to request.
+            json: The JSON body to send.
+
+        Returns:
+            A mock Response object.
+        """
+        self._calls.append(RecordedRequest(method="patch", url=url, json=json))
+        return self._next_response_or_default(url=url)
+
     def set_response(self, response: MockResponse) -> None:
         """Enqueue a response to be returned by the next request.
 

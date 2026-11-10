@@ -9,6 +9,7 @@ import msgspec
 from src.credential_configurations.credential_configurations_client_port import (
     CredentialTemplateClientPort,
 )
+from src.revocation.revocation_client_port import RevocationClientPort
 from src.credential_configurations.models import (
     CredentialTemplate,
 )
@@ -20,6 +21,7 @@ Usage: ec-issuer <command> [args]
 
 Commands:
     credential-configuration  - Manage credential configurations
+    revoke <id>               - Revoke an issued credential by ID
 """
 
 CREDENTIAL_CONFIG_USAGE = """\
@@ -38,14 +40,21 @@ class SysadminCliAdapter(SysadminPort):
     """CLI adapter for sysadmin operations."""
 
     _client: CredentialTemplateClientPort
+    _revocation_client: RevocationClientPort
 
-    def __init__(self, client: CredentialTemplateClientPort) -> None:
+    def __init__(
+        self,
+        client: CredentialTemplateClientPort,
+        revocation_client: RevocationClientPort,
+    ) -> None:
         """Initialize the adapter.
 
         Args:
             client: A CredentialTemplateClientPort implementation.
+            revocation_client: A RevocationClientPort implementation.
         """
         self._client = client
+        self._revocation_client = revocation_client
 
     @override
     def run(self, command: list[str]) -> None:
@@ -73,6 +82,11 @@ class SysadminCliAdapter(SysadminPort):
                 self._handle_update(config_id)
             case ["credential-configuration", *_]:
                 print(CREDENTIAL_CONFIG_USAGE, file=sys.stderr)
+                sys.exit(1)
+            case ["revoke", credential_id]:
+                self._handle_revoke(credential_id)
+            case ["revoke", *_]:
+                print(USAGE, file=sys.stderr)
                 sys.exit(1)
             case _:
                 print(USAGE, file=sys.stderr)
@@ -121,6 +135,15 @@ class SysadminCliAdapter(SysadminPort):
         try:
             self._client.delete(config_id)
             print(f'Configuration "{config_id}" deleted')
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    def _handle_revoke(self, credential_id: str) -> None:
+        """Handle the revoke command."""
+        try:
+            self._revocation_client.revoke(credential_id)
+            print(f'Credential "{credential_id}" revoked')
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)

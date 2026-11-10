@@ -5,6 +5,7 @@ from src.config.config import EnvConfigRepo
 from src.credential_configurations import (
     ssi_agent_credential_configurations_client_adapter as ssi_adapter,
 )
+from src.revocation import SsiAgentRevocationClientAdapter
 from src.sysadmin.sysadmin_cli_adapter import SysadminCliAdapter
 
 
@@ -20,8 +21,13 @@ class App:
         client = ssi_adapter.SsiAgentCredentialTemplateClientAdapter(
             ssi_agent_url=config.ssi_agent_url
         )
+        revocation_client = SsiAgentRevocationClientAdapter(
+            ssi_agent_url=config.ssi_agent_url,
+        )
 
-        self._sysadmin_port = SysadminCliAdapter(client=client)
+        self._sysadmin_port = SysadminCliAdapter(
+            client=client, revocation_client=revocation_client
+        )
 
     def run(self, args: list[str]) -> None:
         """Run the application.

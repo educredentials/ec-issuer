@@ -97,6 +97,18 @@ class HttpClient(Protocol):
         """
         ...
 
+    def patch(self, url: str, json: JSON) -> HttpResponse:
+        """Send a PATCH request.
+
+        Args:
+            url: The URL to request.
+            json: The JSON body to send.
+
+        Returns:
+            The response object.
+        """
+        ...
+
 
 class RequestsHttpClient:
     """Adapter that makes the requests module compatible with HttpClient protocol.
@@ -123,6 +135,9 @@ class RequestsHttpClient:
 
     def delete(self, url: str, json: JSON | None = None) -> HttpResponse:
         return self._request("DELETE", url, json=json)
+
+    def patch(self, url: str, json: JSON) -> HttpResponse:
+        return self._request("PATCH", url, json=json)
 
     def _request(
         self,
