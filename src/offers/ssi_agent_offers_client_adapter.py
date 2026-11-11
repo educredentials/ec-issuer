@@ -112,13 +112,12 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             "Assembled OB3 credential:\n%s",
             json.dumps(credential, indent=2),
         )
-        self._post_credential(
+        credential_ids = self._post_credential(
             offer_id,
             credential,
             self._credential_template_ids.get(CredentialType.OB3, ""),
         )
-        offer_created = self._post_offer(offer_id)
-        return offer_created
+        return self._post_offer(offer_id, credential_ids)
 
     @override
     def create_edc(
@@ -131,16 +130,15 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             credential: The ELM/EDC credential as a dict.
 
         Returns:
-            The credential offer URI.
+            The credential offer URI and credential IDs.
         """
         credential["@context"] = self._assemble_context(None, "edc", credential)
-        self._post_credential(
+        credential_ids = self._post_credential(
             offer_id,
             credential,
             self._credential_template_ids.get(CredentialType.EDC, ""),
         )
-        offer_created = self._post_offer(offer_id)
-        return offer_created
+        return self._post_offer(offer_id, credential_ids)
 
     @override
     def get(self, offer_id: str) -> Offer:
@@ -290,13 +288,19 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
         offer_id: str,
         credential: dict[str, object],
         template_id: str,
-    ) -> None:
+    ) -> str:
         """POST credential to SSI agent (/v0/credentials).
+
+        Extracts the credential ID from the Location header, response body,
+        or response text as fallback.
 
         Args:
             offer_id: The offer identifier.
             credential: The credential payload.
             template_id: The credential template ID.
+
+        Returns:
+            The credential ID.
         """
         response = self._http_client.post(
             f"{self._ssi_agent_admin_base_url}/v0/credentials",
@@ -313,11 +317,30 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
                 f"Upstream error: {response.status_code} - {response.content.decode()}"
             )
 
-    def _post_offer(self, offer_id: str) -> OfferCreated:
+        # Try 1: Location header — parse credential ID from path
+        location: str | None = response.headers.get("Location")
+        if location:
+            parts = location.rsplit("/", 1)
+            if len(parts) == 2:
+                return parts[1]
+
+        # Try 2: JSON body — credential ID as top-level string or in "id" field
+        try:
+            body = msgspec.json.decode(response.content, type=dict)
+            if "id" in body:
+                return str(body["id"])
+        except (msgspec.DecodeError, KeyError, TypeError):
+            pass
+
+        # Try 3: Raw text as the credential ID
+        return response.text.strip().strip('"')
+
+    def _post_offer(self, offer_id: str, credential_id: str) -> OfferCreated:
         """POST offer to SSI agent (/v0/offers).
 
         Args:
             offer_id: The offer identifier.
+            credential_id: The credential ID returned from the credential POST.
 
         Returns:
             The offer URI and credential IDs.
@@ -336,25 +359,9 @@ class SsiAgentOffersClientAdapter(OffersClientPort):
             )
 
         uri: str = response.text
-        # Fetch credential_ids from the offer response
-        credential_ids: list[str] | None = None
-        try:
-            offer_response = self._http_client.get(
-                f"{self._ssi_agent_admin_base_url}/v0/offers/{offer_id}"
-            )
-            if offer_response.status_code == 200:
-                offer_data: _SsiAgentOfferResponse = msgspec.json.decode(
-                    offer_response.content, type=_SsiAgentOfferResponse
-                )
-                credential_ids = offer_data.credential_ids
-        except Exception:
-            # If we can't fetch credential_ids, continue without them
-            # They can be fetched later via get()
-            pass
-
         return OfferCreated(
             uri=uri,
-            credential_ids=credential_ids,
+            credential_ids=[credential_id],
         )
 
     @override

@@ -228,6 +228,16 @@ class TestSsiAgentOffersClientAdapter:
         sample_award: OB3Award,
     ):
         """create_ob3() first POSTs to /v0/credentials then to /v0/offers."""
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = subject.create_ob3("offer-123", sample_award)
         assert http_client.calls[0].method == "post"
         assert http_client.calls[0].url == "http://agent.example.com/v0/credentials"
@@ -243,6 +253,16 @@ class TestSsiAgentOffersClientAdapter:
         """create_ob3() serializes the award with null values removed."""
         import json
 
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = subject.create_ob3("offer-123", sample_award)
         credential = http_client.calls[0].json  # type: ignore[union-attr]
         assert isinstance(credential, dict)
@@ -259,19 +279,22 @@ class TestSsiAgentOffersClientAdapter:
         sample_award: OB3Award,
     ):
         """create_ob3() returns OfferCreated with URI and credential_ids."""
-        # First call (credential): default 200; second call (offer): returns the URI
-        # Third call (GET offer for credential_ids): returns the offer response
-        http_client.set_response(MockResponse(status_code=200, _content=b""))
+        # First call (credential): returns Location header with credential ID
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        # Second call (offer): returns the URI
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
-        )
-        http_client.set_response(
-            MockResponse(status_code=200, _content=_VALID_OFFER_RESPONSE_JSON)
         )
         result = subject.create_ob3("offer-123", sample_award)
         assert result == OfferCreated(
             uri=_OFFER_URI,
-            credential_ids=[],
+            credential_ids=["cred-1"],
         )
 
     def test_create_ob3_raises_client_error_when_credential_creation_fails(
@@ -315,6 +338,16 @@ class TestSsiAgentOffersClientAdapter:
                 CredentialType.EDC: "european_credential",
             },
             http_client=http_client,
+        )
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
         )
         _ = adapter.create_ob3("offer-123", sample_award)
         # Check that templateId in credential creation uses OB3 ID
@@ -362,6 +395,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_adapter: SsiAgentOffersClientAdapter,
     ):
         """create_edc() first POSTs to /v0/credentials then to /v0/offers."""
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = edc_adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
         assert http_client.calls[0].method == "post"
         assert http_client.calls[0].url == "http://agent.example.com/v0/credentials"
@@ -374,19 +417,22 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_adapter: SsiAgentOffersClientAdapter,
     ):
         """create_edc() returns OfferCreated with URI and credential_ids."""
-        # First call (credential): default 200; second call (offer): returns the URI
-        # Third call (GET offer for credential_ids): returns the offer response
-        http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
+        # First call (credential): returns Location header with credential ID
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-456"},
+            )
+        )
+        # Second call (offer): returns the URI
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
-        )
-        http_client.set_response(
-            MockResponse(status_code=200, _content=_VALID_OFFER_RESPONSE_JSON)
         )
         result = edc_adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
         assert result == OfferCreated(
             uri=_OFFER_URI,
-            credential_ids=[],
+            credential_ids=["cred-456"],
         )
 
     def test_create_edc_uses_second_template_id(
@@ -395,6 +441,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_adapter: SsiAgentOffersClientAdapter,
     ):
         """create_edc() uses the second credential template ID."""
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = edc_adapter.create_edc("offer-123", self._SAMPLE_ELM_CREDENTIAL)
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
@@ -424,7 +480,13 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
     ):
         """create_edc() raises OffersClientError when the offer POST fails."""
         # First call (credential) succeeds, second call (offer) fails
-        http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
         http_client.set_response(
             MockResponse(status_code=500, _content=b'"Server Error"')
         )
@@ -437,7 +499,13 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         edc_adapter: SsiAgentOffersClientAdapter,
     ):
         """create_edc() posts the raw VCDM credential dict as-is."""
-        http_client.set_response(MockResponse(status_code=200, _content=b'"ok"'))
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
         http_client.set_response(
             MockResponse(status_code=200, _content=_OFFER_URI.encode())
         )
@@ -459,6 +527,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
         sample_award: OB3Award,
     ):
         """create_ob3() sets @context with base OB3 contexts first."""
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = subject.create_ob3("offer-123", sample_award)
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
@@ -483,6 +561,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             "https://www.w3.org/ns/credentials/v2",
             "http://data.europa.eu/snb/model/context/edc-ap",
         ]
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = edc_adapter.create_edc("offer-123", credential)
         credential_call = http_client.calls[0]
         assert credential_call.json is not None
@@ -502,6 +590,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
     ):
         """create_ob3() attaches credentialStatus using entity_id and SSI agent URL."""
         award = _status_award("https://DOMAIN/assertions/12345")
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = subject.create_ob3("offer-123", award)
         credential_call = http_client.calls[0]
         json_dict = cast(dict[str, object], credential_call.json)
@@ -520,6 +618,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
     ):
         """create_ob3() omits credentialStatus when entity_id is None."""
         award = _status_award(None)
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = subject.create_ob3("offer-123", award)
         credential_call = http_client.calls[0]
         json_dict = cast(dict[str, object], credential_call.json)
@@ -536,6 +644,16 @@ class TestSsiAgentOffersClientAdapterCreateEDC:
             "http://localhost:8000/public/assertions/BQEjWRiqRWODc31_tN_clA"
         )
         award = _status_award(uuid_entity_id)
+        http_client.set_response(
+            MockResponse(
+                status_code=201,
+                _content=b"",
+                headers={"Location": "/v0/credentials/cred-1"},
+            )
+        )
+        http_client.set_response(
+            MockResponse(status_code=200, _content=_OFFER_URI.encode())
+        )
         _ = subject.create_ob3("offer-123", award)
         credential_call = http_client.calls[0]
         json_dict = cast(dict[str, object], credential_call.json)

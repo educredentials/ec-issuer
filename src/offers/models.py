@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 
 from enum import StrEnum
 
@@ -59,4 +60,5 @@ class Offer:
     offer_id: str
     award_id: str
     uri: str | None
-    credential_ids: list[str] | None = None
+    credential_ids: list[str] = field(default_factory=list)
+    created_at: datetime | None = None

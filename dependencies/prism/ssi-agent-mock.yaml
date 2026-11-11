@@ -223,13 +223,19 @@ paths:
                   type: string
                   example: "3025-10-24 11:34:00Z"
       responses:
-        "200":
-          description: Credentials endpoint
+        "201":
+          description: Credential created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URI of the newly created credential
           content:
             application/json:
               schema:
                 type: object
-                example: {}
+                example:
+                  id: cred-mock-123
 
   /v0/offers:
     post:
@@ -248,8 +254,8 @@ paths:
                     type: string
                   example: ["openbadge_credential"]
       responses:
-        "200":
-          description: Create offer
+        "201":
+          description: Offer created successfully
           content:
             text/plain:
               schema:

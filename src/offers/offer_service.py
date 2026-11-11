@@ -1,6 +1,7 @@
 """Offer service for creating and retrieving credential offers."""
 
 import uuid
+from datetime import datetime, timezone
 
 from src.awards import models as awards_models
 
@@ -159,6 +160,7 @@ class OfferService:
                 award_id=award_id,
                 uri=offer_created.uri,
                 credential_ids=offer_created.credential_ids,
+                created_at=datetime.now(timezone.utc),
             )
             self._offers_repository.store(offer)
         except Exception:
@@ -197,6 +199,7 @@ class OfferService:
             award_id=stored_offer.award_id,
             uri=upstream_offer.uri,
             credential_ids=stored_offer.credential_ids,
+            created_at=stored_offer.created_at,
         )
 
     def health_check(self) -> bool:

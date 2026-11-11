@@ -91,15 +91,14 @@ class TestOfferServiceCreateOffer:
 
         offer = service.create_offer(award_id="award-999", bearer_token="test-token")
 
-        # We test against a fixed offer, testing against the return value could
-        # give false positives
-        expected_offer = Offer(
-            offer_id=offer.offer_id,
-            award_id="award-999",
-            uri=f"openid-credential-offer://?credential_offer_uri=http://localhost:8001/offers/{offer.offer_id}",
-            credential_ids=[],
-        )
-        assert offers_repository.calls == [("store", {"offer": expected_offer})]
+        assert len(offers_repository.calls) == 1
+        _, kwargs = offers_repository.calls[0]
+        stored_offer = kwargs["offer"]
+        assert stored_offer.offer_id == offer.offer_id
+        assert stored_offer.award_id == "award-999"
+        assert stored_offer.uri == offer.uri
+        assert stored_offer.credential_ids == []
+        assert stored_offer.created_at is not None
 
     def test_creates_offer_with_client(self):
         """create_offer creates offer on API with client, passing the fetched award."""

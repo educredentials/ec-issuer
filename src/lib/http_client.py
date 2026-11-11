@@ -18,6 +18,7 @@ class HttpResponse(Protocol):
 
     status_code: int
     url: str
+    headers: dict[str, str]  # requests.Response.headers is CaseInsensitiveDict
 
     @property
     def json(self) -> JSON:
@@ -127,7 +128,8 @@ class RequestsHttpClient:
     ) -> HttpResponse:
         return self._request("GET", url, headers=headers)
 
-    def post(self, url: str, json: JSON) -> HttpResponse:
+    def post(self, url: str, json: JSON) -> HttpResponse:  # type: ignore[return-value]
+        """Send a POST request."""
         return self._request("POST", url, json=json)
 
     def put(self, url: str, json: JSON) -> HttpResponse:
@@ -146,7 +148,7 @@ class RequestsHttpClient:
         json: JSON | None = None,
         headers: dict[str, str] | None = None,
     ) -> HttpResponse:
-        return requests.request(
+        return requests.request(  # pyright: ignore[reportReturnType]
             method=method,
             url=url,
             timeout=self._default_timeout,

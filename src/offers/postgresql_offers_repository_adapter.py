@@ -1,5 +1,6 @@
 """PostgreSQL adapter for the offers repository."""
 
+from datetime import datetime, timezone
 from typing import override
 
 from psycopg.rows import class_row
@@ -29,7 +30,8 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
             CREATE TABLE IF NOT EXISTS offers (
                 offer_id TEXT PRIMARY KEY,
                 award_id TEXT NOT NULL,
-                credential_ids TEXT[] NULL
+                credential_ids TEXT[] NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT now()
             )
             """
             # TODO add indexes for offer_id and award_id
@@ -42,18 +44,24 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
         Args:
             offer: The offer to store.
         """
+        created_at: datetime | None = offer.created_at
+        if created_at is None:
+            created_at = datetime.now(timezone.utc)
+
         self.execute(
             """
-            INSERT INTO offers (offer_id, award_id, credential_ids)
-            VALUES (%s, %s, %s)
+            INSERT INTO offers (offer_id, award_id, credential_ids, created_at)
+            VALUES (%s, %s, %s, %s)
             ON CONFLICT (offer_id) DO UPDATE
             SET award_id = EXCLUDED.award_id,
-                credential_ids = EXCLUDED.credential_ids
+                credential_ids = EXCLUDED.credential_ids,
+                created_at = EXCLUDED.created_at
             """,
             (
                 offer.offer_id,
                 offer.award_id,
                 offer.credential_ids,
+                created_at,
             ),
         )
 
@@ -75,7 +83,7 @@ class PostgreSQLOffersRepositoryAdapter(PostgreSQLRepositoryBase, OffersReposito
                 conn.cursor(row_factory=class_row(Offer))
                 .execute(
                     """
-                SELECT offer_id, award_id, null AS uri, credential_ids
+                SELECT offer_id, award_id, null AS uri, credential_ids, created_at
                 FROM offers
                 WHERE offer_id = %(id)s
                 """,

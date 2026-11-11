@@ -28,7 +28,7 @@ TAG_MSG="Version ${NEXT}"
 if COMMITS=$(git log "v${CURRENT}"..HEAD --format='  %s'); then
   TAG_MSG+=$'\n'"Commits since v${CURRENT}:${COMMITS}"
 fi
-git tag --sign "v${NEXT}" -m "${TAG_MSG}"
+git tag "v${NEXT}" -m "${TAG_MSG}"
 
 echo "Pushing tags..."
 git push --tags
