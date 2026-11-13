@@ -1,0 +1,239 @@
+name: Rust CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint, Build, Unit Test, Integration Test
+    runs-on: ubuntu-latest
+    permissions: {}
+    services:
+      postgresql:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ecissuer
+          POSTGRES_PASSWORD: ecissuer
+          POSTGRES_DB: ecissuer
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd="pg_isready -U ecissuer -d ecissuer"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Start mock SSI agent
+        run: |
+          WS="${{ github.workspace }}"
+          docker run -d \
+            --name mock-ssi-agent \
+            -p 8001:4010 \
+            -v "$WS/dependencies/prism/ssi-agent-mock.yaml:/app/mock.yaml" \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
+      - name: Start mock OIDC auth
+        run: |
+          WS="${{ github.workspace }}"
+          docker run -d \
+            --name mock-oidc-auth \
+            -p 8002:4010 \
+            -v "$WS/dependencies/prism/oidc-auth-mock.yaml:/app/mock.yaml" \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
+      - name: Start mock awards service
+        run: |
+          WS="${{ github.workspace }}"
+          docker run -d \
+            --name mock-awards \
+            -p 8003:4010 \
+            -v "$WS/dependencies/prism/awards-mock.yaml:/app/mock.yaml" \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
+      - name: Start mock converter service
+        run: |
+          WS="${{ github.workspace }}"
+          docker run -d \
+            --name mock-converter \
+            -p 8004:4010 \
+            -v "$WS/dependencies/prism/converter-mock.yaml:/app/mock.yaml" \
+            stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
+
+      - name: Run linting
+        run: |
+          cd rust && cargo fmt --check
+          cd rust && cargo clippy -- -D warnings
+
+      - name: Run unit tests
+        run: |
+          cd rust && cargo test --lib
+
+      - name: Run integration tests
+        env:
+          SSI_AGENT_URL: http://localhost:8001
+          POSTGRES_CONNECTION_STRING: >-
+            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+        run: |
+          cd rust && cargo test --test integration
+
+      - name: Start ec-issuer-rust service
+        run: |
+          export SERVER_HOST=0.0.0.0
+          export SERVER_PORT=8000
+          export SSI_AGENT_URL=http://localhost:8001
+          export DEBUG=true
+          DB_URL="postgresql://ecissuer:ecissuer@localhost:5432/ecissuer"
+          export POSTGRES_CONNECTION_STRING="$DB_URL"
+          export AWARDS_SERVICE_URL=http://localhost:8003/earner
+          export CREDENTIAL_CONVERTER_URL=http://localhost:8004
+          export ALLOWED_CORS_DOMAINS="http://localhost:8000,\
+            http://localhost:3000"
+          export CREDENTIAL_TEMPLATE_JSON_DIR=${{ github.workspace }}/templates
+          cd rust && \
+            nohup cargo run --bin ec-issuer-web \
+              > /tmp/ec-issuer.log 2>&1 &
+
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health \
+              > /dev/null; then
+              echo "Service is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Service failed to start"
+              cat /tmp/ec-issuer.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Run e2e tests
+        env:
+          SERVER_HOST: 0.0.0.0
+          SERVER_PORT: 8000
+          EC_ISSUER_URL: http://localhost:8000
+          SSI_AGENT_URL: http://localhost:8001
+          AWARDS_SERVICE_URL: http://localhost:8003/earner
+          CREDENTIAL_CONVERTER_URL: http://localhost:8004
+          ALLOWED_CORS_DOMAINS: "http://localhost:8000, http://localhost:3000"
+          CREDENTIAL_TEMPLATE_JSON_DIR: ${{ github.workspace }}/templates
+          POSTGRES_CONNECTION_STRING: >-
+            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
+        run: |
+          cd rust && cargo test --test e2e
+
+      - name: Show server logs on e2e failure
+        if: failure()
+        run: cat /tmp/ec-issuer.log
+
+      - name: Cleanup
+        if: always()
+        run: |
+          pkill -f "cargo run" || true
+          docker stop \
+            mock-ssi-agent \
+            mock-oidc-auth \
+            mock-awards \
+            mock-converter 2>/dev/null || true
+          docker rm \
+            mock-ssi-agent \
+            mock-oidc-auth \
+            mock-awards \
+            mock-converter 2>/dev/null || true
+
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: test
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' ||
+       startsWith(github.ref, 'refs/tags/'))
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Log in to SDP Container Registry "Harbor"
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+        with:
+          registry: cr.surf.nl
+          username: ${{ secrets.CR_SURF_USERNAME }}
+          password: ${{ secrets.CR_SURF_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+
+      - name: Extract version from Cargo.toml
+        id: version
+        run: >-
+          echo "VERSION=$(grep '^version' rust/Cargo.toml | cut -d'"' -f2)"
+          >> $GITHUB_OUTPUT
+
+      - name: Get Git tag if available
+        id: git_tag
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "GIT_TAG=git-tag-${GITHUB_REF#refs/tags/}" \
+              >> $GITHUB_OUTPUT
+            echo "HAS_TAG=true" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_TAG=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Docker image (web dev service)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d59b67737d91b0dc
+        with:
+          context: .
+          file: Dockerfile.rust
+          target: web-dev
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            cr.surf.nl/edubadges-educredentials/ec-issuer-rust:latest
+            cr.surf.nl/edubadges-educredentials/ec-issuer-rust:${{
+              steps.version.outputs.VERSION }}
+            ${{
+              steps.git_tag.outputs.HAS_TAG == 'true' &&
+              format(
+                'cr.surf.nl/edubadges-educredentials/ec-issuer-rust:{0}',
+                steps.git_tag.outputs.GIT_TAG
+              ) || ''
+            }}
+
+      - name: Build and push Docker image (cli service)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d59b67737d91b0dc
+        with:
+          context: .
+          file: Dockerfile.rust
+          target: cli
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            cr.surf.nl/edubadges-educredentials/ec-issuer-rust-cli:latest
+            cr.surf.nl/edubadges-educredentials/ec-issuer-rust-cli:${{
+              steps.version.outputs.VERSION }}
+            ${{
+              steps.git_tag.outputs.HAS_TAG == 'true' &&
+              format(
+                'cr.surf.nl/edubadges-educredentials/ec-issuer-rust-cli:{0}',
+                steps.git_tag.outputs.GIT_TAG
+              ) || ''
+            }}

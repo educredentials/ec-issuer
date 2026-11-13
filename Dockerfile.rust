@@ -1,0 +1,42 @@
+# Multi-stage build for Rust service
+# Stage 1: Build
+FROM rust:1.100.0-slim AS builder
+
+WORKDIR /app
+
+# Install sqlx-cli dependencies
+RUN apt-get update && apt-get install -y libssl-dev pkg-config && \
+    cargo install sqlx-cli
+
+# Copy Cargo.toml and Cargo.lock
+COPY rust/Cargo.toml rust/Cargo.lock ./
+
+# Create stub src directory to cache dependencies
+RUN mkdir -p src && echo "fn main() {}" > src/main.rs && \
+    cargo build --release && \
+    rm -rf src
+
+# Copy full source
+COPY rust/ .
+
+# Build release binary
+RUN cargo build --release
+
+# Stage 2: Runtime
+FROM gcr.io/distroless/cc-debian12
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /app/target/release/ec-issuer-web /app/ec-issuer-web
+COPY --from=builder /app/target/release/ec-issuer-cli /app/ec-issuer-cli
+
+# Copy templates and static files
+COPY templates/ templates/
+COPY static/ static/
+
+# Expose port
+EXPOSE 8000
+
+# Run the web service
+CMD ["/app/ec-issuer-web"]

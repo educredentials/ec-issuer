@@ -1,9 +1,6 @@
 # Justfile for EC Issuer - Modern Make alternative
 # Install: https://github.com/casey/just#readme
 
-# Annoying "tip" that flask prints, but we cannot and should not implement
-export FLASK_SKIP_DOTENV := "true"
-
 # Load environment variables from .env into the environment (for `just develop`)
 set dotenv-load
 
@@ -14,49 +11,35 @@ default:
 # Detect container runtime (podman or docker)
 runtime := `(command -v docker >/dev/null 2>&1 && echo docker || echo podman)`
 
-# Start development server
+# Start development server (Rust)
 develop:
     {{runtime}} compose up --wait --wait-timeout 10 --detach postgresql mock-ssi-agent mock-oidc-auth mock-awards
-    uv run ec-issuer-web
+    cargo run --bin ec-issuer-web
 
 # (re)start all dependency services - everything except the ec-issuer
 dependencies:
     {{runtime}} compose down
     {{runtime}} compose up --wait --wait-timeout 10 --detach postgresql mock-ssi-agent mock-oidc-auth mock-awards
 
-e2eservices:
-    {{runtime}} compose down
-    {{runtime}} compose up --wait --wait-timeout 10 --detach ec-issuer postgresql mock-ssi-agent mock-oidc-auth mock-awards
-
 # Run all quality checks (linting + type checking)
 lint:
-    uv run ruff check .
-    uv run basedpyright .
-
-test_pattern_default := 'tests/'
+    cargo fmt --check
+    cargo clippy -- -D warnings
 
 # Run tests
+test_pattern_default := 'tests/'
+
 test test-pattern=test_pattern_default:
-    uv run pytest {{test-pattern}} -v
+    cargo test -- --test-threads=1
 
 # Run tests and only show failed or errors
 test-rfe test-pattern=test_pattern_default:
-    uv run pytest {{test-pattern}} -v -rfE
+    cargo test -- --test-threads=1 -rfE
 
-# Generate Python code documentation with pdoc
-docs-code:
-    uv sync
-    uv run pdoc -o docs/book/pydoc src/
-
-# Generate OpenAPI documentation with Redoc
-docs-api:
-    mkdir -p docs/book/openapi
-    cp docs/api/openapi.yaml docs/book/openapi/openapi.yaml
-    cp docs/api/index.html docs/book/openapi/index.html
-
-# Run zensical to preview the docs. See https://zensical.org/docs/get-started/
-docs:
-    uv run zensical serve
+# Run e2e services
+e2eservices:
+    {{runtime}} compose down
+    {{runtime}} compose up --wait --wait-timeout 10 --detach ec-issuer-rust postgresql mock-ssi-agent mock-oidc-auth mock-awards
 
 bump_value_default := 'minor'
 
@@ -64,9 +47,9 @@ bump_value_default := 'minor'
 release bump-value=bump_value_default:
     #!/usr/bin/env bash
     set -euo pipefail
-    previous_version=$(uv version --short)
-    this_version=$(uv version --bump {{bump-value}} --short)
-    git add pyproject.toml uv.lock
+    previous_version=$(grep '^version' Cargo.toml | cut -d'"' -f2)
+    this_version=$(bash scripts/bump-version-cargo.sh {{bump-value}} | tail -1)
+    git add Cargo.toml
     changelog=$(git log --pretty=format:'%s' "v${previous_version}".."HEAD")
     git commit -m "Bump version to ${this_version}"
     git tag -a "v${this_version}" -m "${changelog}"
