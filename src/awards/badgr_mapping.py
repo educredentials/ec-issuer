@@ -191,8 +191,8 @@ class _BadgeclassExtensions(msgspec.Struct):
     educationProgramIdentifier: list[str] | None = None
     timeInvestment: str | None = None
     supervisionType: str | None = None
-    assessmentType: str | None = None
-    participation: str | None = None
+    assessmentType: list[str] | None = None
+    participation: list[str] | None = None
 
 # Maps snake_case field names to the actual keys in originalJson (camelCase).
 
@@ -310,8 +310,8 @@ def _build_credential_context(
     eqf: str | None,
     learningOutcome: str | None,
     educationProgramIdentifier: list[str] | None,
-    formOfParticipation: str | None,
-    assessmentType: str | None,
+    formOfParticipation: list[str] | None,
+    assessmentType: list[str] | None,
     supervisionType: str | None,
     time_investment: str | None,
 ) -> list[str | dict[str, str]]:
