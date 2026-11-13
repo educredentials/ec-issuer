@@ -5,13 +5,17 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
+# Cross-platform sed -i (GNU vs BSD/macOS)
+sed_i="-i"
+[[ "$(uname -s)" == Darwin ]] && sed_i="-i ''"
+
 # Current version
 CURRENT=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
 read -r MAJOR MINOR PATCH <<< "${CURRENT//\./ }"
 NEXT="${MAJOR}.$((MINOR + 1)).0"
 
 echo "Bumping version: ${CURRENT} → ${NEXT}"
-sed -i '' "s/^version = \"${CURRENT}\"/version = \"${NEXT}\"/" pyproject.toml
+sed ${sed_i} "s/^version = \"${CURRENT}\"/version = \"${NEXT}\"/" pyproject.toml
 
 echo "Running uv lock..."
 uv lock
