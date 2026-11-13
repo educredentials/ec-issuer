@@ -125,9 +125,9 @@ class _BadgrBadgeclass(msgspec.Struct):
     education_program_identifier: object | None = msgspec.field(
         name="EducationProgramIdentifier", default=None
     )
-    # Assessment/participation flat fields.
-    participation: str | None = None
-    assessment_type: str | None = None
+    # Assessment/participation flat fields — now multi-value arrays.
+    participation: list[str] | None = None
+    assessment_type: list[str] | None = None
     assessment_id_verified: bool | None = None
     assessment_supervised: bool | None = None
     supervision_type: str | None = None
@@ -155,8 +155,10 @@ class _BadgrAwardResponse(msgspec.Struct):
     language: str | None = msgspec.field(name="language", default=None)
     ects: object | None = msgspec.field(name="ects", default=None)
     eqf: object | None = msgspec.field(name="eqf", default=None)
-    participation: str | None = msgspec.field(name="participation", default=None)
-    assessment_type: str | None = msgspec.field(
+    participation: list[str] | None = msgspec.field(
+        name="participation", default=None
+    )
+    assessment_type: list[str] | None = msgspec.field(
         name="assessment_type", default=None
     )
     assessment_id_verified: bool | None = msgspec.field(
