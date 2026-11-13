@@ -1,6 +1,6 @@
 [project]
 name = "ec-issuer"
-version = "0.28.0"
+version = "0.29.0"
 description = "Educredentials Issuer"
 authors = [
     { name = "Bèr Kessels", email = "ber@berk.es" },
