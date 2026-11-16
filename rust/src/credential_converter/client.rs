@@ -163,3 +163,281 @@ pub fn new_credential_converter_client_arc(
 ) -> CredentialConverterClient<crate::helpers::reqwest_client::ReqwestHttpClientArc> {
     CredentialConverterClient::new(client.clone(), base_url)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+    use crate::helpers::http_client::{HttpClientError, HttpResponse};
+
+    struct MockClient {
+        post_status: Option<u16>,
+        post_body: Option<Vec<u8>>,
+        post_err: Option<String>,
+    }
+
+    impl MockClient {
+        fn with_post_ok(status: u16, body: &[u8]) -> Self {
+            Self {
+                post_status: Some(status),
+                post_body: Some(body.to_vec()),
+                post_err: None,
+            }
+        }
+
+        fn with_post_err(msg: &str) -> Self {
+            Self {
+                post_status: None,
+                post_body: None,
+                post_err: Some(msg.to_string()),
+            }
+        }
+    }
+
+    impl HttpClient for MockClient {
+        fn get(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+        fn post(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+            if let Some(ref err) = self.post_err {
+                return Err(HttpClientError::Connection(err.clone()));
+            }
+            match (self.post_status, self.post_body.as_ref()) {
+                (Some(s), Some(b)) => Ok(HttpResponse {
+                    status_code: s,
+                    url: "http://mock/api".to_string(),
+                    headers: HashMap::new(),
+                    content: b.clone(),
+                }),
+                _ => Err(HttpClientError::Connection("not configured".to_string())),
+            }
+        }
+        fn delete(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+        fn patch(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+    }
+
+    // ─── _encode_input tests ────────────────────────────────────────
+
+    #[test]
+    fn test_encode_input_returns_non_empty() {
+        let cred = serde_json::json!({"type": "VerifiableCredential"});
+        let mock = MockClient::with_post_ok(200, b"{}");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let encoded = client._encode_input(&cred);
+        assert!(!encoded.is_empty());
+        // Verify it's valid base64 by decoding
+        let decoded = STANDARD.decode(&encoded).unwrap();
+        assert_eq!(String::from_utf8_lossy(&decoded), cred.to_string());
+    }
+
+    #[test]
+    fn test_encode_input_is_valid_base64() {
+        let cred = serde_json::json!({"key": "value"});
+        let mock = MockClient::with_post_ok(200, b"{}");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let encoded = client._encode_input(&cred);
+        let decoded = STANDARD.decode(&encoded).unwrap();
+        let decoded_json: serde_json::Value = serde_json::from_slice(&decoded).unwrap();
+        assert_eq!(decoded_json, cred);
+    }
+
+    // ─── _build_request tests ───────────────────────────────────────
+
+    #[test]
+    fn test_build_request_produces_valid_json() {
+        let mock = MockClient::with_post_ok(200, b"{}");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake-content");
+        let parsed: serde_json::Value = serde_json::from_str(&payload).unwrap();
+        assert_eq!(parsed["From"]["Name"], serde_json::json!("OB"));
+        assert_eq!(parsed["From"]["Version"], serde_json::json!("3.0"));
+        assert_eq!(parsed["To"]["Name"], serde_json::json!("elm"));
+        assert_eq!(parsed["To"]["Version"], serde_json::json!("3.2"));
+        assert_eq!(parsed["Parameters"]["PreferredLanguages"], serde_json::json!(["en"]));
+        assert_eq!(parsed["Content"], serde_json::json!("fake-content"));
+    }
+
+    // ─── _http_post tests ───────────────────────────────────────────
+
+    #[test]
+    fn test_http_post_200_succeeds() {
+        // Pre-computed base64 of {"type":["VerifiableCredential"],"name":"Test"}
+        let good_cred = serde_json::json!({"type":["VerifiableCredential"],"name":"Test"});
+        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, good_cred.to_string().as_bytes());
+        let response_body = serde_json::json!({"content": encoded});
+        let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake-content");
+        let result = client._http_post(&payload);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_http_post_400_returns_error_with_status() {
+        let mock = MockClient::with_post_ok(400, b"Bad request body");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake-content");
+        match client._http_post(&payload) {
+            Err(CredentialConverterClientError(msg)) => {
+                assert!(msg.starts_with("Converter returned 400: "));
+            }
+            Ok(_) => panic!("expected error on 400"),
+        }
+    }
+
+    #[test]
+    fn test_http_post_500_returns_error_with_status() {
+        let mock = MockClient::with_post_ok(500, b"Internal server error");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake-content");
+        match client._http_post(&payload) {
+            Err(CredentialConverterClientError(msg)) => {
+                assert!(msg.starts_with("Converter returned 500: "));
+            }
+            Ok(_) => panic!("expected error on 500"),
+        }
+    }
+
+    #[test]
+    fn test_http_post_404_falls_to_fallback_error() {
+        // 404 is not 400, not 500..=599, and !is_error(404) is false
+        // so it should hit the fallback error arm
+        let mock = MockClient::with_post_ok(404, b"Not found");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake-content");
+        match client._http_post(&payload) {
+            Err(CredentialConverterClientError(msg)) => {
+                assert!(msg.contains("404"));
+                assert!(msg.contains("unexpected"));
+            }
+            Ok(_) => panic!("expected error on 404"),
+        }
+    }
+
+    #[test]
+    fn test_http_post_connection_error() {
+        let mock = MockClient::with_post_err("connection refused");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake-content");
+        match client._http_post(&payload) {
+            Err(CredentialConverterClientError(_)) => {}
+            Ok(_) => panic!("expected error"),
+        }
+    }
+
+    // ─── _decode_response tests ─────────────────────────────────────
+
+    #[test]
+    fn test_decode_response_valid_json() {
+        let good_cred = serde_json::json!({"type":["VerifiableCredential"],"name":"Test"});
+        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, good_cred.to_string().as_bytes());
+        let response_body = serde_json::json!({"content": encoded});
+        let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake");
+        let response = client._http_post(&payload).unwrap();
+        let result = client._decode_response(&response);
+        assert!(result.is_ok());
+        let decoded = result.unwrap();
+        assert_eq!(decoded["type"], serde_json::json!(["VerifiableCredential"]));
+        assert_eq!(decoded["name"], serde_json::json!("Test"));
+    }
+
+    #[test]
+    fn test_decode_response_error_field() {
+        let error_body = serde_json::json!({"error": "bad_request", "message": "invalid input"});
+        let mock = MockClient::with_post_ok(200, &error_body.to_string().into_bytes());
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake");
+        let response = client._http_post(&payload).unwrap();
+        match client._decode_response(&response) {
+            Err(CredentialConverterClientError(msg)) => {
+                assert!(msg.contains("Converter error"));
+                assert!(msg.contains("bad_request"));
+            }
+            Ok(_) => panic!("expected error"),
+        }
+    }
+
+    #[test]
+    fn test_decode_response_missing_content() {
+        let no_content = serde_json::json!({"other": "data"});
+        let mock = MockClient::with_post_ok(200, &no_content.to_string().into_bytes());
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake");
+        let response = client._http_post(&payload).unwrap();
+        match client._decode_response(&response) {
+            Err(CredentialConverterClientError(msg)) => assert!(msg.contains("missing")),
+            Ok(_) => panic!("expected error"),
+        }
+    }
+
+    #[test]
+    fn test_decode_response_non_string_content() {
+        let not_string = serde_json::json!({"content": 123});
+        let mock = MockClient::with_post_ok(200, &not_string.to_string().into_bytes());
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let payload = client._build_request("fake");
+        let response = client._http_post(&payload).unwrap();
+        match client._decode_response(&response) {
+            Err(CredentialConverterClientError(msg)) => assert!(msg.contains("not a string")),
+            Ok(_) => panic!("expected error"),
+        }
+    }
+
+    // ─── Full pipeline tests ────────────────────────────────────────
+
+    #[test]
+    fn test_convert_returns_valid_json() {
+        let valid_cred = serde_json::json!({"type": "VerifiableCredential", "name": "Test"});
+        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, valid_cred.to_string().as_bytes());
+        let response_body = serde_json::json!({"content": encoded});
+        let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let input = serde_json::json!({"from": "ob3"});
+        let result = client.convert(&input);
+        assert!(result.is_ok());
+        let decoded = result.unwrap();
+        assert_eq!(decoded["type"], serde_json::json!("VerifiableCredential"));
+    }
+
+    #[test]
+    fn test_convert_fails_on_bad_400() {
+        let mock = MockClient::with_post_ok(400, b"Bad request");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let input = serde_json::json!({"from": "ob3"});
+        match client.convert(&input) {
+            Err(CredentialConverterClientError(msg)) => assert!(msg.contains("400")),
+            Ok(_) => panic!("expected error"),
+        }
+    }
+
+    #[test]
+    fn test_convert_fails_on_bad_500() {
+        let mock = MockClient::with_post_ok(500, b"Internal server error");
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let input = serde_json::json!({"from": "ob3"});
+        match client.convert(&input) {
+            Err(CredentialConverterClientError(msg)) => assert!(msg.contains("500")),
+            Ok(_) => panic!("expected error"),
+        }
+    }
+
+    #[test]
+    fn test_do_convert_returns_correct_value() {
+        let valid_cred = serde_json::json!({"result": "converted"});
+        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, valid_cred.to_string().as_bytes());
+        let response_body = serde_json::json!({"content": encoded});
+        let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
+        let client = CredentialConverterClient::new(mock, "http://mock");
+        let result = client._do_convert(&serde_json::json!({}));
+        assert!(result.is_ok());
+        let decoded = result.unwrap();
+        assert_eq!(decoded["result"], serde_json::json!("converted"));
+    }
+}

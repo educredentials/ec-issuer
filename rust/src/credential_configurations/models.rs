@@ -79,3 +79,26 @@ pub struct CredentialTemplate {
 fn is_empty(val: &serde_json::Value) -> bool {
     matches!(val, serde_json::Value::Object(map) if map.is_empty())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_empty_object() {
+        let val = serde_json::json!({});
+        assert!(is_empty(&val));
+    }
+
+    #[test]
+    fn test_is_empty_non_object() {
+        let val = serde_json::json!("not an object");
+        assert!(!is_empty(&val));
+    }
+
+    #[test]
+    fn test_is_empty_object_with_keys() {
+        let val = serde_json::json!({"key": "value"});
+        assert!(!is_empty(&val));
+    }
+}

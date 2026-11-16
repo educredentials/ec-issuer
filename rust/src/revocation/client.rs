@@ -130,3 +130,164 @@ impl<C: HttpClient> RevocationClient<C> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+    use crate::helpers::http_client::{HttpClientError, HttpResponse};
+
+    struct TestClient {
+        delete_status: Option<u16>,
+        delete_body: Option<Vec<u8>>,
+        patch_status: Option<u16>,
+        patch_body: Option<Vec<u8>>,
+    }
+
+    impl TestClient {
+        fn with_delete_ok(status: u16, body: &[u8]) -> Self {
+            Self {
+                delete_status: Some(status),
+                delete_body: Some(body.to_vec()),
+                patch_status: None,
+                patch_body: None,
+            }
+        }
+
+        fn with_delete_err() -> Self {
+            Self {
+                delete_status: None,
+                delete_body: None,
+                patch_status: None,
+                patch_body: None,
+            }
+        }
+
+        fn with_patch_ok(status: u16, body: &[u8]) -> Self {
+            Self {
+                delete_status: None,
+                delete_body: None,
+                patch_status: Some(status),
+                patch_body: Some(body.to_vec()),
+            }
+        }
+
+        fn with_patch_err() -> Self {
+            Self {
+                delete_status: None,
+                delete_body: None,
+                patch_status: None,
+                patch_body: None,
+            }
+        }
+    }
+
+    impl HttpClient for TestClient {
+        fn get(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+        fn post(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+        fn delete(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
+            match (self.delete_status, self.delete_body.as_ref()) {
+                (Some(s), Some(b)) => Ok(HttpResponse {
+                    status_code: s,
+                    url: "http://mock".to_string(),
+                    headers: HashMap::new(),
+                    content: b.clone(),
+                }),
+                _ => Err(HttpClientError::Connection("not configured".to_string())),
+            }
+        }
+        fn patch(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
+            match (self.patch_status, self.patch_body.as_ref()) {
+                (Some(s), Some(b)) => Ok(HttpResponse {
+                    status_code: s,
+                    url: "http://mock".to_string(),
+                    headers: HashMap::new(),
+                    content: b.clone(),
+                }),
+                _ => Err(HttpClientError::Connection("not configured".to_string())),
+            }
+        }
+    }
+
+    #[test]
+    fn test_revoke_returns_ok_on_success() {
+        let mock = TestClient::with_delete_ok(200, b"{}");
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.revoke("status-id", "token");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_revoke_returns_error_on_failure() {
+        let mock = TestClient::with_delete_ok(400, b"Bad request");
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.revoke("status-id", "token");
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            HttpClientError::Http { status: 400, .. } => {}
+            other => panic!("expected HttpClientError::Http 400, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_revoke_returns_error_on_connection() {
+        let mock = TestClient::with_delete_err();
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.revoke("status-id", "token");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_revoke_via_ssi_agent_returns_ok_on_success() {
+        let mock = TestClient::with_patch_ok(200, b"{}");
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.revoke_via_ssi_agent("cred-1");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_revoke_via_ssi_agent_returns_error_on_failure() {
+        let mock = TestClient::with_patch_ok(400, b"Bad request");
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.revoke_via_ssi_agent("cred-1");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_suspend_returns_ok_on_success() {
+        let mock = TestClient::with_delete_ok(200, b"{}");
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.suspend("status-id", "token");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_suspend_returns_error_on_failure() {
+        let mock = TestClient::with_delete_ok(400, b"Bad request");
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.suspend("status-id", "token");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_suspend_returns_error_on_connection() {
+        let mock = TestClient::with_delete_err();
+        let client = RevocationClient::new(mock, "http://mock");
+        let result = client.suspend("status-id", "token");
+        assert!(result.is_err());
+    }
+}

@@ -330,4 +330,35 @@ mod tests {
         assert!(schema[0].contains_key("id"));
         assert!(schema[0].contains_key("type"));
     }
+
+    // ─── Default value functions ──────────────────────────────────────
+
+    #[test]
+    fn test_default_address_type() {
+        let types = default_address_type();
+        assert_eq!(types, vec!["Address".to_string()]);
+    }
+
+    #[test]
+    fn test_default_profile_type() {
+        let types = default_profile_type();
+        assert_eq!(types, vec!["Profile".to_string()]);
+    }
+
+    #[test]
+    fn test_default_identifier_type() {
+        assert_eq!(default_identifier_type(), "IdentifierEntry");
+    }
+
+    #[test]
+    fn test_should_skip_type_matching() {
+        let s = "IdentifierEntry".to_string();
+        assert!(should_skip_type(&s));
+    }
+
+    #[test]
+    fn test_should_skip_type_non_matching() {
+        let s = "OtherType".to_string();
+        assert!(!should_skip_type(&s));
+    }
 }

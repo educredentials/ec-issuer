@@ -163,3 +163,109 @@ pub fn new_http_awards_client_arc(
 ) -> HttpAwardsClient<crate::helpers::reqwest_client::ReqwestHttpClientArc> {
     HttpAwardsClient::new(awards_service_url, issuer_base_url, client.clone())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+    use crate::helpers::http_client::{HttpClientError, HttpResponse};
+
+    struct MockClient {
+        get_status: Option<u16>,
+        get_body: Option<Vec<u8>>,
+        get_err: Option<String>,
+    }
+
+    impl MockClient {
+        fn with_get_ok(status: u16, body: &[u8]) -> Self {
+            Self {
+                get_status: Some(status),
+                get_body: Some(body.to_vec()),
+                get_err: None,
+            }
+        }
+
+        fn with_get_err(msg: &str) -> Self {
+            Self {
+                get_status: None,
+                get_body: None,
+                get_err: Some(msg.to_string()),
+            }
+        }
+    }
+
+    impl HttpClient for MockClient {
+        fn get(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
+            if let Some(ref err) = self.get_err {
+                return Err(HttpClientError::Connection(err.clone()));
+            }
+            match (self.get_status, self.get_body.as_ref()) {
+                (Some(s), Some(b)) => Ok(HttpResponse {
+                    status_code: s,
+                    url: "http://mock".to_string(),
+                    headers: HashMap::new(),
+                    content: b.clone(),
+                }),
+                _ => Err(HttpClientError::Connection("not configured".to_string())),
+            }
+        }
+        fn post(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+        fn delete(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+        fn patch(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+    }
+
+    #[test]
+    fn test_fetch_and_decode_returns_non_empty() {
+        let body = r#"{"key": "value"}"#;
+        let mock = MockClient::with_get_ok(200, body.as_bytes());
+        let client = HttpAwardsClient::new("http://mock", "http://issuer", mock);
+        let result = client._fetch_and_decode("award-1", "token");
+        assert!(result.is_ok());
+        let map = result.unwrap();
+        assert_eq!(map.len(), 1);
+        assert!(map.contains_key("key"));
+    }
+
+    #[test]
+    fn test_fetch_and_decode_404() {
+        let mock = MockClient::with_get_ok(404, b"Not found");
+        let client = HttpAwardsClient::new("http://mock", "http://issuer", mock);
+        let result = client._fetch_and_decode("award-1", "token");
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            AwardError::NotFound(_) => {}
+            other => panic!("expected NotFound, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_fetch_and_decode_403() {
+        let mock = MockClient::with_get_ok(403, b"Forbidden");
+        let client = HttpAwardsClient::new("http://mock", "http://issuer", mock);
+        let result = client._fetch_and_decode("award-1", "token");
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            AwardError::Forbidden(_) => {}
+            other => panic!("expected Forbidden, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_fetch_and_decode_connection_error() {
+        let mock = MockClient::with_get_err("connection refused");
+        let client = HttpAwardsClient::new("http://mock", "http://issuer", mock);
+        let result = client._fetch_and_decode("award-1", "token");
+        assert!(result.is_err());
+    }
+}

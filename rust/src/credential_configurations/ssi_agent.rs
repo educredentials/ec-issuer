@@ -115,3 +115,170 @@ impl<C: HttpClient> SsiAgentCredentialConfigurationsClient<C> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+    use crate::helpers::http_client::{HttpClientError, HttpResponse};
+
+    struct MockClient {
+        get_status: Option<u16>,
+        get_body: Option<Vec<u8>>,
+        get_err: Option<String>,
+        post_status: Option<u16>,
+        post_body: Option<Vec<u8>>,
+        post_err: Option<String>,
+    }
+
+    impl MockClient {
+        fn with_get_ok(status: u16, body: &[u8]) -> Self {
+            Self {
+                get_status: Some(status),
+                get_body: Some(body.to_vec()),
+                get_err: None,
+                post_status: None,
+                post_body: None,
+                post_err: None,
+            }
+        }
+
+        fn with_post_ok(status: u16, body: &[u8]) -> Self {
+            Self {
+                get_status: None,
+                get_body: None,
+                get_err: None,
+                post_status: Some(status),
+                post_body: Some(body.to_vec()),
+                post_err: None,
+            }
+        }
+
+        fn with_get_err(msg: &str) -> Self {
+            Self {
+                get_status: None,
+                get_body: None,
+                get_err: Some(msg.to_string()),
+                post_status: None,
+                post_body: None,
+                post_err: None,
+            }
+        }
+
+        fn with_post_err(msg: &str) -> Self {
+            Self {
+                get_status: None,
+                get_body: None,
+                get_err: None,
+                post_status: None,
+                post_body: None,
+                post_err: Some(msg.to_string()),
+            }
+        }
+    }
+
+    impl HttpClient for MockClient {
+        fn get(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
+            if let Some(ref err) = self.get_err {
+                return Err(HttpClientError::Connection(err.clone()));
+            }
+            match (self.get_status, self.get_body.as_ref()) {
+                (Some(s), Some(b)) => Ok(HttpResponse {
+                    status_code: s,
+                    url: "http://mock".to_string(),
+                    headers: HashMap::new(),
+                    content: b.clone(),
+                }),
+                _ => Err(HttpClientError::Connection("not configured".to_string())),
+            }
+        }
+
+        fn post(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
+            if let Some(ref err) = self.post_err {
+                return Err(HttpClientError::Connection(err.clone()));
+            }
+            match (self.post_status, self.post_body.as_ref()) {
+                (Some(s), Some(b)) => Ok(HttpResponse {
+                    status_code: s,
+                    url: "http://mock".to_string(),
+                    headers: HashMap::new(),
+                    content: b.clone(),
+                }),
+                _ => Err(HttpClientError::Connection("not configured".to_string())),
+            }
+        }
+
+        fn delete(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+
+        fn patch(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
+            Err(HttpClientError::Connection("not configured".to_string()))
+        }
+    }
+
+    #[test]
+    fn test_create_returns_ok() {
+        let mock = MockClient::with_post_ok(200, b"{}");
+        let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
+        let config = serde_json::json!({"id": "cfg-1", "type": ["VerifiedCertificate"], "name": "Test"});
+        let result = client.create(&config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_create_returns_error_on_network_fail() {
+        let mock = MockClient::with_post_err("connection refused");
+        let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
+        let config = serde_json::json!({"id": "cfg-1"});
+        let result = client.create(&config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_list_returns_ok() {
+        let body = b"[{\"id\":\"cfg-1\"}]";
+        let mock = MockClient::with_get_ok(200, body);
+        let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
+        let result = client.list();
+        assert!(result.is_ok());
+        let configs = result.unwrap();
+        assert_eq!(configs.len(), 1);
+    }
+
+    #[test]
+    fn test_get_returns_ok() {
+        let body = b"{\"id\":\"cfg-1\",\"type\":[\"VerifiedCertificate\"],\"name\":\"Test\"}";
+        let mock = MockClient::with_get_ok(200, body);
+        let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
+        let result = client.get("cfg-1");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_returns_error_on_network_fail() {
+        let mock = MockClient::with_get_err("connection refused");
+        let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
+        let result = client.get("cfg-1");
+        assert!(result.is_err());
+    }
+}

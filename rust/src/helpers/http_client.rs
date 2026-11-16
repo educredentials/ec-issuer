@@ -167,3 +167,128 @@ pub mod helpers {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::helpers::*;
+    use super::HttpResponse;
+    use std::collections::HashMap;
+
+    // ─── HttpResponse::text() ────────────────────────────────────────
+
+    #[test]
+    fn test_response_text_empty() {
+        let resp = HttpResponse {
+            status_code: 200,
+            url: "http://test".to_string(),
+            headers: HashMap::new(),
+            content: vec![],
+        };
+        assert_eq!(resp.text(), "");
+    }
+
+    #[test]
+    fn test_response_text_utf8() {
+        let body = b"Hello, world!";
+        let resp = HttpResponse {
+            status_code: 200,
+            url: "http://test".to_string(),
+            headers: HashMap::new(),
+            content: body.to_vec(),
+        };
+        assert_eq!(resp.text(), "Hello, world!");
+    }
+
+    // ─── build_url ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_build_url() {
+        assert_eq!(build_url("http://localhost:8001", "/v0/offers"),
+                   "http://localhost:8001/v0/offers");
+    }
+
+    #[test]
+    fn test_build_url_single_segment() {
+        assert_eq!(build_url("http://api.test", "/health"),
+                   "http://api.test/health");
+    }
+
+    // ─── add_bearer_token ───────────────────────────────────────────
+
+    #[test]
+    fn test_add_bearer_token() {
+        let mut headers = HashMap::new();
+        add_bearer_token(&mut headers, "my-token-123");
+        assert_eq!(headers.get("Authorization"),
+                   Some(&"Bearer my-token-123".to_string()));
+    }
+
+    // ─── add_content_type_json ──────────────────────────────────────
+
+    #[test]
+    fn test_add_content_type_json() {
+        let mut headers = HashMap::new();
+        add_content_type_json(&mut headers);
+        assert_eq!(headers.get("Content-Type"),
+                   Some(&"application/json".to_string()));
+    }
+
+    // ─── is_success boundary tests ─────────────────────────────────
+
+    #[test]
+    fn test_is_success_199_fails() {
+        assert!(!is_success(199));
+    }
+
+    #[test]
+    fn test_is_success_200_succeeds() {
+        assert!(is_success(200));
+    }
+
+    #[test]
+    fn test_is_success_299_succeeds() {
+        assert!(is_success(299));
+    }
+
+    #[test]
+    fn test_is_success_300_fails() {
+        assert!(!is_success(300));
+    }
+
+    // ─── is_error boundary tests ───────────────────────────────────
+
+    #[test]
+    fn test_is_error_399_fails() {
+        assert!(!is_error(399));
+    }
+
+    #[test]
+    fn test_is_error_400_succeeds() {
+        assert!(is_error(400));
+    }
+
+    #[test]
+    fn test_is_error_599_succeeds() {
+        assert!(is_error(599));
+    }
+
+    #[test]
+    fn test_is_error_600_fails() {
+        assert!(!is_error(600));
+    }
+
+    // ─── build_error_body ──────────────────────────────────────────
+
+    #[test]
+    fn test_build_error_body() {
+        let resp = HttpResponse {
+            status_code: 503,
+            url: "http://test".to_string(),
+            headers: HashMap::new(),
+            content: b"Service unavailable".to_vec(),
+        };
+        let body = build_error_body(503, &resp);
+        assert!(body.contains("503"));
+        assert!(body.contains("Service unavailable"));
+    }
+}

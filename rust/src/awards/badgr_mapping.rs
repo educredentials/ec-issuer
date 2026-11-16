@@ -1304,4 +1304,91 @@ mod tests {
         );
         assert_eq!(parent.other_identifier.len(), 2);
     }
+
+    // ─── _resolve_image tests ──────────────────────────────────────
+
+    #[test]
+    fn test_resolve_image_no_badgeclass() {
+        let raw = serde_json::json!({"entity_id": "1", "issued_on": "2024-01-01T00:00:00Z"});
+        let dto = BadgrAwardResponse::from_json(&raw).unwrap();
+        let result = _resolve_image(&dto, None);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_resolve_image_no_image_field() {
+        let raw = serde_json::json!({
+            "entity_id": "1", "issued_on": "2024-01-01T00:00:00Z",
+            "badgeclass": {"name": "Test"}
+        });
+        let dto = BadgrAwardResponse::from_json(&raw).unwrap();
+        let result = _resolve_image(&dto, None);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_resolve_image_http_url() {
+        let raw = serde_json::json!({
+            "entity_id": "1", "issued_on": "2024-01-01T00:00:00Z",
+            "badgeclass": {"name": "Test", "image": "http://example.com/img.png"}
+        });
+        let dto = BadgrAwardResponse::from_json(&raw).unwrap();
+        let result = _resolve_image(&dto, None);
+        assert!(result.is_some());
+        let map = result.unwrap();
+        assert_eq!(map.get("id"), Some(&"http://example.com/img.png".to_string()));
+        assert_eq!(map.get("type"), Some(&"Image".to_string()));
+    }
+
+    #[test]
+    fn test_resolve_image_https_url() {
+        let raw = serde_json::json!({
+            "entity_id": "1", "issued_on": "2024-01-01T00:00:00Z",
+            "badgeclass": {"name": "Test", "image": "https://example.com/img.png"}
+        });
+        let dto = BadgrAwardResponse::from_json(&raw).unwrap();
+        let result = _resolve_image(&dto, None);
+        assert!(result.is_some());
+        let map = result.unwrap();
+        assert_eq!(map.get("id"), Some(&"https://example.com/img.png".to_string()));
+    }
+
+    #[test]
+    fn test_resolve_image_relative_no_base() {
+        let raw = serde_json::json!({
+            "entity_id": "1", "issued_on": "2024-01-01T00:00:00Z",
+            "badgeclass": {"name": "Test", "image": "/uploads/badge.png"}
+        });
+        let dto = BadgrAwardResponse::from_json(&raw).unwrap();
+        let result = _resolve_image(&dto, None);
+        assert!(result.is_some());
+        let map = result.unwrap();
+        assert_eq!(map.get("id"), Some(&"/uploads/badge.png".to_string()));
+    }
+
+    #[test]
+    fn test_resolve_image_relative_with_base() {
+        let raw = serde_json::json!({
+            "entity_id": "1", "issued_on": "2024-01-01T00:00:00Z",
+            "badgeclass": {"name": "Test", "image": "/uploads/badge.png"}
+        });
+        let dto = BadgrAwardResponse::from_json(&raw).unwrap();
+        let result = _resolve_image(&dto, Some("http://localhost:8000"));
+        assert!(result.is_some());
+        let map = result.unwrap();
+        assert_eq!(map.get("id"), Some(&"http://localhost:8000/uploads/badge.png".to_string()));
+    }
+
+    #[test]
+    fn test_resolve_image_http_url_stays_absolute() {
+        let raw = serde_json::json!({
+            "entity_id": "1", "issued_on": "2024-01-01T00:00:00Z",
+            "badgeclass": {"name": "Test", "image": "http://example.com/img.png"}
+        });
+        let dto = BadgrAwardResponse::from_json(&raw).unwrap();
+        let result = _resolve_image(&dto, Some("http://localhost:8000"));
+        assert!(result.is_some());
+        let map = result.unwrap();
+        assert_eq!(map.get("id"), Some(&"http://example.com/img.png".to_string()));
+    }
 }

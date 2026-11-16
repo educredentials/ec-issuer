@@ -41,3 +41,20 @@ impl AccessControlPort for TokenAccessControlAdapter {
         !bearer_token.is_empty()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_may_import_empty_token() {
+        let adapter = TokenAccessControlAdapter;
+        assert!(!adapter.may_import("", "res", "type", "perm"));
+    }
+
+    #[test]
+    fn test_may_import_non_empty_token() {
+        let adapter = TokenAccessControlAdapter;
+        assert!(adapter.may_import("some-token", "res", "type", "perm"));
+    }
+}
