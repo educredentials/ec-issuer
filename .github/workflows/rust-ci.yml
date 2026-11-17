@@ -74,23 +74,25 @@ jobs:
             stoplight/prism:4 mock -h 0.0.0.0 /app/mock.yaml
 
       - name: Run linting
+        working-directory: rust
         run: |
-          cd rust && cargo fmt --check
-          cd rust && cargo clippy -- -D warnings
+          cargo fmt --check
+          cargo clippy -- -D warnings
 
       - name: Run unit tests
-        run: |
-          cd rust && cargo test --lib
+        working-directory: rust
+        run: cargo test --lib
 
       - name: Run integration tests
+        working-directory: rust
         env:
           SSI_AGENT_URL: http://localhost:8001
           POSTGRES_CONNECTION_STRING: >-
             postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
-        run: |
-          cd rust && cargo test --test integration
+        run: cargo test --test integration
 
       - name: Start ec-issuer-rust service
+        working-directory: rust
         run: |
           export SERVER_HOST=0.0.0.0
           export SERVER_PORT=8000
@@ -103,8 +105,7 @@ jobs:
           export ALLOWED_CORS_DOMAINS="http://localhost:8000,\
             http://localhost:3000"
           export CREDENTIAL_TEMPLATE_JSON_DIR=${{ github.workspace }}/templates
-          cd rust && \
-            nohup cargo run --bin ec-issuer-web \
+          nohup cargo run --bin ec-issuer-web \
               > /tmp/ec-issuer.log 2>&1 &
 
           for i in $(seq 1 30); do
@@ -122,6 +123,7 @@ jobs:
           done
 
       - name: Run e2e tests
+        working-directory: rust
         env:
           SERVER_HOST: 0.0.0.0
           SERVER_PORT: 8000
@@ -133,8 +135,7 @@ jobs:
           CREDENTIAL_TEMPLATE_JSON_DIR: ${{ github.workspace }}/templates
           POSTGRES_CONNECTION_STRING: >-
             postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
-        run: |
-          cd rust && cargo test --test e2e
+        run: cargo test --test e2e
 
       - name: Show server logs on e2e failure
         if: failure()
