@@ -1,6 +1,7 @@
 /// Domain models for awards (OB3 `AchievementCredential`).
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 /// Assessment type per Open Badges `AssessmentTypeExtension`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -18,21 +19,21 @@ pub enum AssessmentTypeEnum {
     ByChoiceOfParticipant,
 }
 
-impl AssessmentTypeEnum {
+impl FromStr for AssessmentTypeEnum {
+    type Err = ();
+
     /// Attempt to parse an arbitrary string as an `AssessmentTypeEnum`.
     ///
-    /// Returns `None` when the string does not match any known value.
-    #[must_use]
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Option<Self> {
+    /// Returns `Err(())` when the string does not match any known value.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "testing" => Some(Self::Testing),
-            "applicationOfSkill" => Some(Self::ApplicationOfSkill),
-            "portfolio" => Some(Self::Portfolio),
-            "recognitionOfPriorLearning" => Some(Self::RecognitionOfPriorLearning),
-            "personalizedAssessment" => Some(Self::PersonalizedAssessment),
-            "byChoiceOfParticipant" => Some(Self::ByChoiceOfParticipant),
-            _ => None,
+            "testing" => Ok(Self::Testing),
+            "applicationOfSkill" => Ok(Self::ApplicationOfSkill),
+            "portfolio" => Ok(Self::Portfolio),
+            "recognitionOfPriorLearning" => Ok(Self::RecognitionOfPriorLearning),
+            "personalizedAssessment" => Ok(Self::PersonalizedAssessment),
+            "byChoiceOfParticipant" => Ok(Self::ByChoiceOfParticipant),
+            _ => Err(()),
         }
     }
 }
@@ -254,33 +255,33 @@ mod tests {
     fn test_assessment_type_enum() {
         assert_eq!(
             AssessmentTypeEnum::from_str("testing"),
-            Some(AssessmentTypeEnum::Testing),
+            Ok(AssessmentTypeEnum::Testing),
         );
         assert_eq!(
             AssessmentTypeEnum::from_str("applicationOfSkill"),
-            Some(AssessmentTypeEnum::ApplicationOfSkill),
+            Ok(AssessmentTypeEnum::ApplicationOfSkill),
         );
         assert_eq!(
             AssessmentTypeEnum::from_str("portfolio"),
-            Some(AssessmentTypeEnum::Portfolio),
+            Ok(AssessmentTypeEnum::Portfolio),
         );
         assert_eq!(
             AssessmentTypeEnum::from_str("recognitionOfPriorLearning"),
-            Some(AssessmentTypeEnum::RecognitionOfPriorLearning),
+            Ok(AssessmentTypeEnum::RecognitionOfPriorLearning),
         );
         assert_eq!(
             AssessmentTypeEnum::from_str("personalizedAssessment"),
-            Some(AssessmentTypeEnum::PersonalizedAssessment),
+            Ok(AssessmentTypeEnum::PersonalizedAssessment),
         );
         assert_eq!(
             AssessmentTypeEnum::from_str("byChoiceOfParticipant"),
-            Some(AssessmentTypeEnum::ByChoiceOfParticipant),
+            Ok(AssessmentTypeEnum::ByChoiceOfParticipant),
         );
     }
 
     #[test]
     fn test_assessment_type_enum_unknown() {
-        assert_eq!(AssessmentTypeEnum::from_str("unknown_type"), None);
+        assert!(AssessmentTypeEnum::from_str("unknown_type").is_err());
     }
 
     #[test]
