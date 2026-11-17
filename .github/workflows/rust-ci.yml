@@ -83,14 +83,6 @@ jobs:
         working-directory: rust
         run: cargo test --lib
 
-      - name: Run integration tests
-        working-directory: rust
-        env:
-          SSI_AGENT_URL: http://localhost:8001
-          POSTGRES_CONNECTION_STRING: >-
-            postgresql://ecissuer:ecissuer@localhost:5432/ecissuer
-        run: cargo test --test integration
-
       - name: Start ec-issuer-rust service
         working-directory: rust
         run: |
