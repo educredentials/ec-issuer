@@ -28,7 +28,7 @@ jobs:
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88d57060df9aa5f4bc18554c
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
           fetch-depth: 0
