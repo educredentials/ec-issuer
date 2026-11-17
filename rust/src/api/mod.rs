@@ -142,12 +142,16 @@ pub fn build_router(state: AppState) -> Router {
 /// # Arguments
 ///
 /// * `config` - Application configuration.
+/// * `http_client` - Shared HTTP client, created outside the async context.
 ///
 /// # Panics
 ///
 /// Panics if the server fails to start.
-pub async fn run_server(config: Config) {
-    let offer_service = crate::offers::service::make_offer_service(&config).await;
+pub async fn run_server(
+    config: Config,
+    http_client: crate::helpers::reqwest_client::ReqwestHttpClientArc,
+) {
+    let offer_service = crate::offers::service::make_offer_service(&config, http_client).await;
 
     let state = AppState::new(config.clone(), offer_service);
 

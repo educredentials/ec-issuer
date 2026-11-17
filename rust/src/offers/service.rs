@@ -219,16 +219,22 @@ where
 
 /// Convenience constructor that builds all dependencies from a Config.
 ///
+/// # Arguments
+///
+/// * `config` - Application configuration.
+/// * `reqwest_client` - Shared HTTP client, created outside the async context
+///   because `reqwest::blocking::Client` panics when built inside one.
+///
 /// # Panics
 ///
 /// Panics if the database connection fails.
 pub async fn make_offer_service(
     config: &Config,
+    reqwest_client: ReqwestHttpClientArc,
 ) -> OfferService<
     crate::offers::postgres::OffersRepository,
     SsiAgentOffersClient<ReqwestHttpClientArc>,
 > {
-    let reqwest_client = ReqwestHttpClientArc::new();
     let access_control = Box::new(crate::access_control::TokenAccessControlAdapter)
         as Box<dyn crate::access_control::AccessControlPort + Send + Sync>;
     let awards_client = Box::new(new_http_awards_client_arc(

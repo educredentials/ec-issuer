@@ -3,6 +3,7 @@
 /// This binary starts the HTTP API server with CORS, health check,
 /// extension context serving, and credential offer creation endpoints.
 use ec_issuer::api;
+use ec_issuer::helpers::reqwest_client::ReqwestHttpClientArc;
 use tracing::info;
 
 fn main() {
@@ -17,20 +18,18 @@ fn main() {
 
     let config = ec_issuer::config::Config::load(None, None);
 
-    // reqwest::blocking::Client holds an internal Tokio runtime. When
-    // AppState (containing the ReqwestHttpClient) is dropped at the end of
-    // run_server, that internal runtime is also dropped. If we used
-    // #[tokio::main] the drop would happen from inside an async context —
-    // triggering the panic:
-    // "Cannot drop a runtime in a context where blocking is not allowed."
-    //
-    // By creating the runtime manually here (in sync main()), running the
-    // server, and then dropping the runtime at the end of main(), the drop
-    // happens in a sync context where blocking is allowed.
+    // reqwest::blocking::Client spawns an internal Tokio runtime, and both
+    // creating and dropping that runtime panics inside an async context
+    // ("Cannot drop a runtime in a context where blocking is not allowed").
+    // The client is therefore built here in sync main() and handed to the
+    // server, so no blocking client is ever created or dropped within
+    // run_server's async context.
+    let http_client = ReqwestHttpClientArc::new();
+
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .expect("build tokio runtime");
 
-    rt.block_on(api::run_server(config));
+    rt.block_on(api::run_server(config, http_client));
 }
