@@ -35,7 +35,7 @@ impl HttpClient for ReqwestHttpClient {
         for (k, v) in headers {
             request = request.header(k, v);
         }
-        self._process_response(request.send())
+        tokio::task::block_in_place(|| self._process_response(request.send()))
     }
 
     fn post(
@@ -49,7 +49,7 @@ impl HttpClient for ReqwestHttpClient {
         for (k, v) in headers {
             request = request.header(k, v);
         }
-        self._process_response(request.send())
+        tokio::task::block_in_place(|| self._process_response(request.send()))
     }
 
     fn delete(
@@ -61,7 +61,7 @@ impl HttpClient for ReqwestHttpClient {
         for (k, v) in headers {
             request = request.header(k, v);
         }
-        self._process_response(request.send())
+        tokio::task::block_in_place(|| self._process_response(request.send()))
     }
 
     fn patch(
@@ -75,7 +75,7 @@ impl HttpClient for ReqwestHttpClient {
         for (k, v) in headers {
             request = request.header(k, v);
         }
-        self._process_response(request.send())
+        tokio::task::block_in_place(|| self._process_response(request.send()))
     }
 }
 
