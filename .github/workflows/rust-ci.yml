@@ -2,7 +2,7 @@ name: Rust CI/CD
 
 on:
   push:
-    branches: [main, feature/rust-port]
+    branches: [feature/rust-port]
     tags: ["*"]
   pull_request:
     branches: [main]
