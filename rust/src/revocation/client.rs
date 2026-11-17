@@ -172,15 +172,6 @@ mod tests {
                 patch_body: Some(body.to_vec()),
             }
         }
-
-        fn with_patch_err() -> Self {
-            Self {
-                delete_status: None,
-                delete_body: None,
-                patch_status: None,
-                patch_body: None,
-            }
-        }
     }
 
     impl HttpClient for TestClient {
