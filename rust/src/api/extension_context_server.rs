@@ -101,30 +101,27 @@ impl ExtensionContextServer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
-    fn setup_test_dir() -> (String, String) {
-        let dir = std::env::temp_dir().join("ec_issuer_test_extensions");
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("Failed to create test dir");
+    fn setup_test_dir() -> (String, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("Failed to create temp dir");
 
-        let v1_dir = dir.join("v1/EQFExtension");
-        fs::create_dir_all(&v1_dir).expect("Failed to create test subdirs");
+        let v1_dir = dir.path().join("v1/EQFExtension");
+        std::fs::create_dir_all(&v1_dir).expect("Failed to create test subdirs");
 
-        fs::write(
+        std::fs::write(
             v1_dir.join("context.json"),
             r#"{"@context": ["${BASE_URL}/test"]}"#,
         )
         .expect("Failed to write test file");
 
         let base_url = "http://localhost:8000".to_string();
-        (base_url, dir.to_string_lossy().to_string())
+        (base_url, dir)
     }
 
     #[test]
     fn test_serve_valid_file() {
         let (base_url, dir) = setup_test_dir();
-        let server = ExtensionContextServer::new(&base_url, &dir);
+        let server = ExtensionContextServer::new(&base_url, dir.path().to_str().unwrap());
 
         let (content, status, _ct) = server.serve("v1/EQFExtension/context.json");
         assert_eq!(status, 200);
@@ -134,7 +131,7 @@ mod tests {
     #[test]
     fn test_serve_nonexistent_file() {
         let (base_url, dir) = setup_test_dir();
-        let server = ExtensionContextServer::new(&base_url, &dir);
+        let server = ExtensionContextServer::new(&base_url, dir.path().to_str().unwrap());
 
         let (content, status, _ct) = server.serve("v1/NonExistent/context.json");
         assert_eq!(status, 404);
@@ -144,7 +141,7 @@ mod tests {
     #[test]
     fn test_serve_path_traversal() {
         let (base_url, dir) = setup_test_dir();
-        let server = ExtensionContextServer::new(&base_url, &dir);
+        let server = ExtensionContextServer::new(&base_url, dir.path().to_str().unwrap());
 
         let (content, status, _ct) = server.serve("../../etc/passwd");
         assert_eq!(status, 404);
@@ -154,7 +151,7 @@ mod tests {
     #[test]
     fn test_serve_invalid_filename_pattern() {
         let (base_url, dir) = setup_test_dir();
-        let server = ExtensionContextServer::new(&base_url, &dir);
+        let server = ExtensionContextServer::new(&base_url, dir.path().to_str().unwrap());
 
         let (content, status, _ct) = server.serve("invalid_filename.txt");
         assert_eq!(status, 404);
