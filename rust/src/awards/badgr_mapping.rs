@@ -1,16 +1,7 @@
 /// Badgr DTOs and mapping to OB3 award domain model.
 use crate::awards::models::{
-    Achievement,
-    AchievementSubject,
-    Address,
-    Criteria,
-    CredentialContextItem,
-    IdentityObject,
-    IdentifierEntry,
-    Issuer,
-    OB3Award,
-    ParentOrg,
-    ob3_default_schema,
+    ob3_default_schema, Achievement, AchievementSubject, Address, CredentialContextItem, Criteria,
+    IdentifierEntry, IdentityObject, Issuer, OB3Award, ParentOrg,
 };
 use crate::offers::models::CredentialType;
 
@@ -411,7 +402,9 @@ fn _resolve_issuer(dto: &BadgrAwardResponse) -> Issuer {
 }
 
 fn _extract_extension_values(badgeclass: Option<&BadgrBadgeclass>) -> BadgeclassExtensions {
-    let Some(bc) = badgeclass else { return BadgeclassExtensions::default() };
+    let Some(bc) = badgeclass else {
+        return BadgeclassExtensions::default();
+    };
 
     BadgeclassExtensions {
         in_language: bc.language.clone(),
@@ -535,7 +528,8 @@ mod tests {
             },
         });
 
-        let result = ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
+        let result =
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
         assert!(result.is_ok());
         let award = result.unwrap();
         assert_eq!(award.id, "https://DOMAIN/assertions/3527");
@@ -545,14 +539,16 @@ mod tests {
     #[test]
     fn test_decode_response_with_missing_fields() {
         let raw = serde_json::json!({});
-        let result = ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
+        let result =
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_from_dict_unknown_fields_ignored() {
         let raw = serde_json::json!({"unknown_field": "ignored"});
-        let result = ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
+        let result =
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
         assert!(result.is_err());
     }
 
@@ -580,7 +576,8 @@ mod tests {
                 },
             },
         });
-        let result = ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
+        let result =
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
         assert!(result.is_ok());
         let award = result.unwrap();
         assert_eq!(award.name, "Test Badge");
@@ -599,7 +596,8 @@ mod tests {
                 "issuer": null,
             },
         });
-        let result = ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
+        let result =
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
         assert!(result.is_ok());
         let award = result.unwrap();
         assert_eq!(award.name, "Test Badge");
@@ -667,7 +665,8 @@ mod tests {
     #[test]
     fn test_raises_when_entity_id_missing() {
         let raw = serde_json::json!({"name": "Badge", "issued_on": "2024-01-01T00:00:00Z"});
-        let result = ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
+        let result =
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None);
         assert!(result.is_err());
     }
 
@@ -684,7 +683,8 @@ mod tests {
             },
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.name, "Fallback Badge Name");
     }
 
@@ -696,7 +696,8 @@ mod tests {
             "issued_on": null,
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.name, "");
     }
 
@@ -711,7 +712,8 @@ mod tests {
             "email": "jan@example.com",
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         let identifier = &result.credential_subject.identifier;
         assert_eq!(identifier.len(), 2);
         assert_eq!(identifier[0].identity_hash, "jan@example.com");
@@ -730,7 +732,8 @@ mod tests {
             "email": "solo@example.com",
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.credential_subject.identifier.len(), 1);
         assert_eq!(
             result.credential_subject.identifier[0].identity_hash,
@@ -748,7 +751,8 @@ mod tests {
             "family_name": "L",
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.credential_subject.identifier.len(), 1);
         assert_eq!(
             result.credential_subject.identifier[0].identity_type,
@@ -764,7 +768,8 @@ mod tests {
             "issued_on": "2024-01-01T00:00:00Z",
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert!(result.credential_subject.identifier.is_empty());
     }
 
@@ -778,7 +783,8 @@ mod tests {
             "family_name": null,
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.credential_subject.identifier.len(), 1);
         assert_eq!(
             result.credential_subject.identifier[0].identity_hash,
@@ -800,7 +806,8 @@ mod tests {
             },
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert!(result.credential_context.is_none());
     }
 
@@ -817,7 +824,8 @@ mod tests {
             },
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         let ctx = result.credential_context.unwrap();
         assert_eq!(ctx.len(), 1);
         if let CredentialContextItem::Url(url) = &ctx[0] {
@@ -845,7 +853,8 @@ mod tests {
             },
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         let ctx = result.credential_context.unwrap();
         assert_eq!(ctx.len(), 3);
     }
@@ -864,7 +873,8 @@ mod tests {
             },
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert!(result.credential_context.is_none());
     }
 
@@ -883,7 +893,8 @@ mod tests {
             },
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert!(result.credential_context.is_none());
     }
 
@@ -898,7 +909,8 @@ mod tests {
             "badgeclass": default_badgeclass(None, None, None, None, None, None),
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(
             result.valid_until,
             Some("2024-04-20T16:20:30.521307+02:00".to_string())
@@ -913,7 +925,8 @@ mod tests {
             "badgeclass": default_badgeclass(None, None, None, None, None, None),
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert!(result.valid_until.is_none());
     }
 
@@ -933,7 +946,8 @@ mod tests {
             ),
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.valid_until, Some("2025-01-01T00:00:00Z".to_string()));
         let ach = &result.credential_subject.achievement;
         assert_eq!(ach.in_language, Some("nl".to_string()));
@@ -973,7 +987,8 @@ mod tests {
             "badgeclass": default_badgeclass(None, None, None, None, None, Some("Organization".to_string())),
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.issuer.r#type, vec!["Organization"]);
     }
 
@@ -985,7 +1000,8 @@ mod tests {
             "badgeclass": default_badgeclass(None, None, None, None, None, None),
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         assert_eq!(result.issuer.r#type, vec!["Profile"]);
     }
 
@@ -1004,7 +1020,8 @@ mod tests {
             ),
         });
         let result =
-            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw, None, Some("http://localhost:8000"), None)
+                .unwrap();
         let ach = &result.credential_subject.achievement;
         assert_eq!(ach.assessment_type, Some("summative,formative".to_string()));
         assert_eq!(
@@ -1197,7 +1214,8 @@ mod tests {
             },
         });
         let result_schac =
-            ob3_award_from_badgr_api_response(&raw_schac, None, Some("https://DOMAIN"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw_schac, None, Some("https://DOMAIN"), None)
+                .unwrap();
         assert_eq!(
             result_schac
                 .issuer
@@ -1237,7 +1255,8 @@ mod tests {
             },
         });
         let result_brin =
-            ob3_award_from_badgr_api_response(&raw_brin, None, Some("https://DOMAIN"), None).unwrap();
+            ob3_award_from_badgr_api_response(&raw_brin, None, Some("https://DOMAIN"), None)
+                .unwrap();
         assert_eq!(
             result_brin
                 .issuer
@@ -1336,7 +1355,10 @@ mod tests {
         let result = _resolve_image(&dto, None);
         assert!(result.is_some());
         let map = result.unwrap();
-        assert_eq!(map.get("id"), Some(&"http://example.com/img.png".to_string()));
+        assert_eq!(
+            map.get("id"),
+            Some(&"http://example.com/img.png".to_string())
+        );
         assert_eq!(map.get("type"), Some(&"Image".to_string()));
     }
 
@@ -1350,7 +1372,10 @@ mod tests {
         let result = _resolve_image(&dto, None);
         assert!(result.is_some());
         let map = result.unwrap();
-        assert_eq!(map.get("id"), Some(&"https://example.com/img.png".to_string()));
+        assert_eq!(
+            map.get("id"),
+            Some(&"https://example.com/img.png".to_string())
+        );
     }
 
     #[test]
@@ -1376,7 +1401,10 @@ mod tests {
         let result = _resolve_image(&dto, Some("http://localhost:8000"));
         assert!(result.is_some());
         let map = result.unwrap();
-        assert_eq!(map.get("id"), Some(&"http://localhost:8000/uploads/badge.png".to_string()));
+        assert_eq!(
+            map.get("id"),
+            Some(&"http://localhost:8000/uploads/badge.png".to_string())
+        );
     }
 
     #[test]
@@ -1389,6 +1417,9 @@ mod tests {
         let result = _resolve_image(&dto, Some("http://localhost:8000"));
         assert!(result.is_some());
         let map = result.unwrap();
-        assert_eq!(map.get("id"), Some(&"http://example.com/img.png".to_string()));
+        assert_eq!(
+            map.get("id"),
+            Some(&"http://example.com/img.png".to_string())
+        );
     }
 }

@@ -240,7 +240,8 @@ mod tests {
     fn test_create_returns_ok() {
         let mock = MockClient::with_post_ok(200, b"{}");
         let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
-        let config = serde_json::json!({"id": "cfg-1", "type": ["VerifiedCertificate"], "name": "Test"});
+        let config =
+            serde_json::json!({"id": "cfg-1", "type": ["VerifiedCertificate"], "name": "Test"});
         let result = client.create(&config);
         assert!(result.is_ok());
     }

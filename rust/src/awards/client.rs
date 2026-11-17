@@ -1,10 +1,10 @@
 /// HTTP awards client adapter.
 use std::collections::HashMap;
 
-use crate::awards::badgr_mapping::{AwardMappingError, ob3_award_from_badgr_api_response};
+use crate::awards::badgr_mapping::{ob3_award_from_badgr_api_response, AwardMappingError};
 use crate::awards::models::OB3Award;
-use crate::helpers::http_client::HttpClient;
 use crate::helpers::http_client::helpers::{build_url, is_error, parse_json};
+use crate::helpers::http_client::HttpClient;
 
 /// Error raised when an award is not found.
 #[derive(Debug, thiserror::Error)]
@@ -77,8 +77,9 @@ impl<C: HttpClient> HttpAwardsClient<C> {
 
         let award_base_url = self.awards_service_base_url.clone();
 
-        let raw_value = serde_json::to_value(&raw)
-            .map_err(|e| AwardError::ClientError(AwardsClientError(format!("Failed to serialize award: {e}"))))?;
+        let raw_value = serde_json::to_value(&raw).map_err(|e| {
+            AwardError::ClientError(AwardsClientError(format!("Failed to serialize award: {e}")))
+        })?;
 
         let ob3 = ob3_award_from_badgr_api_response(
             &raw_value,
@@ -214,13 +215,27 @@ mod tests {
                 _ => Err(HttpClientError::Connection("not configured".to_string())),
             }
         }
-        fn post(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+        fn post(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
-        fn delete(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+        fn delete(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
-        fn patch(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+        fn patch(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
     }

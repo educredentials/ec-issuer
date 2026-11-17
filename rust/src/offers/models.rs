@@ -128,13 +128,21 @@ mod tests {
     fn test_credential_type_from_short_unknown() {
         let result = CredentialType::from_short("unknown");
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Unknown short credential type"));
+        assert!(result
+            .unwrap_err()
+            .contains("Unknown short credential type"));
     }
 
     #[test]
     fn test_credential_type_from_short_unchecked() {
-        assert_eq!(CredentialType::from_short_unchecked("ob3"), CredentialType::OB3);
-        assert_eq!(CredentialType::from_short_unchecked("edc"), CredentialType::EDC);
+        assert_eq!(
+            CredentialType::from_short_unchecked("ob3"),
+            CredentialType::OB3
+        );
+        assert_eq!(
+            CredentialType::from_short_unchecked("edc"),
+            CredentialType::EDC
+        );
     }
 
     #[test]
@@ -236,8 +244,8 @@ mod tests {
             serde_json::from_str("\"open_badges_3-0\"").expect("Failed to deserialize");
         assert_eq!(ob3, CredentialType::OB3);
 
-        let edc: CredentialType =
-            serde_json::from_str("\"european_learning_model_v3-3\"").expect("Failed to deserialize");
+        let edc: CredentialType = serde_json::from_str("\"european_learning_model_v3-3\"")
+            .expect("Failed to deserialize");
         assert_eq!(edc, CredentialType::EDC);
     }
 }

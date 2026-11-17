@@ -41,13 +41,15 @@ pub fn build_cors_layer(config: &Config) -> CorsLayer {
 /// `Ok(token)` when the header contains `Bearer <token>`.
 /// `Err(status_code)` when the header is missing or malformed.
 pub fn extract_bearer_token(headers: &HeaderMap) -> Result<String, StatusCode> {
-    headers.get("Authorization").map_or(Err(StatusCode::UNAUTHORIZED), |auth_header| {
-        let auth_str = auth_header.to_str().unwrap_or("");
-        auth_str
-            .strip_prefix("Bearer ")
-            .map(str::to_string)
-            .ok_or(StatusCode::UNAUTHORIZED)
-    })
+    headers
+        .get("Authorization")
+        .map_or(Err(StatusCode::UNAUTHORIZED), |auth_header| {
+            let auth_str = auth_header.to_str().unwrap_or("");
+            auth_str
+                .strip_prefix("Bearer ")
+                .map(str::to_string)
+                .ok_or(StatusCode::UNAUTHORIZED)
+        })
 }
 
 /// Map an offer service error string to an HTTP response.

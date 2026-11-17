@@ -18,7 +18,10 @@ impl<C: HttpClient> RevocationClient<C> {
     /// * `client` - HTTP client implementation.
     /// * `base_url` - Base URL of the vc-service.
     pub fn new(client: C, base_url: impl Into<String>) -> Self {
-        Self { client, base_url: base_url.into() }
+        Self {
+            client,
+            base_url: base_url.into(),
+        }
     }
 
     /// Revoke a credential by its credential status ID.
@@ -37,7 +40,7 @@ impl<C: HttpClient> RevocationClient<C> {
     ) -> Result<(), HttpClientError> {
         let url = build_url(
             &self.base_url,
-            &format!("/credential-status/{credential_status_id}/revoke")
+            &format!("/credential-status/{credential_status_id}/revoke"),
         );
 
         let mut headers = HashMap::new();
@@ -68,10 +71,7 @@ impl<C: HttpClient> RevocationClient<C> {
     ///
     /// Returns `HttpClientError` on network or revocation failures.
     pub fn revoke_via_ssi_agent(&self, credential_id: &str) -> Result<(), HttpClientError> {
-        let url = build_url(
-            &self.base_url,
-            &format!("/v0/credentials/{credential_id}")
-        );
+        let url = build_url(&self.base_url, &format!("/v0/credentials/{credential_id}"));
 
         let mut headers = HashMap::new();
         crate::helpers::http_client::helpers::add_content_type_json(&mut headers);
@@ -109,7 +109,7 @@ impl<C: HttpClient> RevocationClient<C> {
     ) -> Result<(), HttpClientError> {
         let url = build_url(
             &self.base_url,
-            &format!("/credential-status/{credential_status_id}/suspend")
+            &format!("/credential-status/{credential_status_id}/suspend"),
         );
 
         let mut headers = HashMap::new();
@@ -184,10 +184,19 @@ mod tests {
     }
 
     impl HttpClient for TestClient {
-        fn get(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+        fn get(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
-        fn post(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+        fn post(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
         fn delete(

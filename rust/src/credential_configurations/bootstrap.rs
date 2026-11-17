@@ -30,11 +30,23 @@ mod tests {
         let env = vec![
             ("SERVER_HOST".to_string(), "0.0.0.0".to_string()),
             ("SERVER_PORT".to_string(), "8080".to_string()),
-            ("SSI_AGENT_URL".to_string(), "http://localhost:8001".to_string()),
-            ("AWARDS_SERVICE_URL".to_string(), "http://localhost:8002".to_string()),
-            ("CREDENTIAL_CONVERTER_URL".to_string(), "http://localhost:8003".to_string()),
+            (
+                "SSI_AGENT_URL".to_string(),
+                "http://localhost:8001".to_string(),
+            ),
+            (
+                "AWARDS_SERVICE_URL".to_string(),
+                "http://localhost:8002".to_string(),
+            ),
+            (
+                "CREDENTIAL_CONVERTER_URL".to_string(),
+                "http://localhost:8003".to_string(),
+            ),
             ("DEBUG".to_string(), "false".to_string()),
-            ("POSTGRES_CONNECTION_STRING".to_string(), "postgres://localhost/test".to_string()),
+            (
+                "POSTGRES_CONNECTION_STRING".to_string(),
+                "postgres://localhost/test".to_string(),
+            ),
             ("ALLOWED_CORS_DOMAINS".to_string(), "*".to_string()),
         ];
         let config = Config::load(Some(env), None);

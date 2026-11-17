@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::awards::models::OB3Award;
-use crate::helpers::http_client::HttpClient;
 use crate::helpers::http_client::helpers::{
     add_content_type_json, build_url, is_error, parse_json,
 };
+use crate::helpers::http_client::HttpClient;
 use crate::offers::models::{CredentialType, Offer, OfferCreated};
 use crate::offers::port::{OffersClientError, OffersClientPort};
 
@@ -80,21 +80,18 @@ impl<C: HttpClient> SsiAgentOffersClient<C> {
         credential: &serde_json::Value,
     ) -> Vec<CredentialContextItem> {
         if credential_type == "ob3" {
-            let ctx_elements = award
-                .credential_context
-                .as_ref()
-                .map_or_default(|c| {
-                    c.iter()
-                        .map(|item| match item {
-                            crate::awards::models::CredentialContextItem::Url(url) => {
-                                CredentialContextItem::Url(url.clone())
-                            }
-                            crate::awards::models::CredentialContextItem::Inline(m) => {
-                                CredentialContextItem::Inline(m.clone())
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                });
+            let ctx_elements = award.credential_context.as_ref().map_or_default(|c| {
+                c.iter()
+                    .map(|item| match item {
+                        crate::awards::models::CredentialContextItem::Url(url) => {
+                            CredentialContextItem::Url(url.clone())
+                        }
+                        crate::awards::models::CredentialContextItem::Inline(m) => {
+                            CredentialContextItem::Inline(m.clone())
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            });
 
             let mut result = OB3_BASE_CONTEXTS
                 .iter()
@@ -151,9 +148,7 @@ impl<C: HttpClient> SsiAgentOffersClient<C> {
         // Extract numeric idx from entity_id URL (e.g. https://host/assertions/3527)
         let idx = if let Some(pos) = entity_id.rfind('/') {
             let captured = &entity_id[pos + 1..];
-            captured
-                .parse::<usize>()
-                .unwrap_or(0)
+            captured.parse::<usize>().unwrap_or(0)
         } else {
             return;
         };
@@ -363,7 +358,7 @@ impl<C: HttpClient> OffersClientPort for SsiAgentOffersClient<C> {
     fn get(&self, offer_id: &str) -> Result<Offer, OffersClientError> {
         let url = build_url(
             &self.ssi_agent_admin_base_url,
-            &format!("/v0/offers/{offer_id}")
+            &format!("/v0/offers/{offer_id}"),
         );
         let response = self.client.get(&url, &HashMap::new())?;
 
@@ -457,9 +452,7 @@ mod tests {
             }
         }
 
-        fn with_post_ok_seq(
-            responses: Vec<(u16, Vec<u8>, HashMap<String, String>)>,
-        ) -> Self {
+        fn with_post_ok_seq(responses: Vec<(u16, Vec<u8>, HashMap<String, String>)>) -> Self {
             Self {
                 get_status: None,
                 get_body: None,
@@ -601,11 +594,16 @@ mod tests {
         }
         let context = client._assemble_context(&award, "ob3", &serde_json::json!({}));
         let base_url = "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json";
-        let count = context.iter().filter(|item| {
-            if let CredentialContextItem::Url(url) = item {
-                url == base_url
-            } else { false }
-        }).count();
+        let count = context
+            .iter()
+            .filter(|item| {
+                if let CredentialContextItem::Url(url) = item {
+                    url == base_url
+                } else {
+                    false
+                }
+            })
+            .count();
         assert_eq!(count, 1);
     }
 
@@ -627,9 +625,14 @@ mod tests {
         let has_unique = context.iter().any(|item| {
             if let CredentialContextItem::Url(url) = item {
                 url == "https://example.com/unique-extension.json"
-            } else { false }
+            } else {
+                false
+            }
         });
-        assert!(has_unique, "non-base extension URL should appear in context");
+        assert!(
+            has_unique,
+            "non-base extension URL should appear in context"
+        );
     }
 
     #[test]
@@ -657,7 +660,10 @@ mod tests {
     fn test_post_credential_returns_id_from_location_header() {
         // Catches the + → -/* mutants at line 208:40
         let mut headers = HashMap::new();
-        headers.insert("Location".to_string(), "/v0/credentials/cred-42".to_string());
+        headers.insert(
+            "Location".to_string(),
+            "/v0/credentials/cred-42".to_string(),
+        );
         let mock = TestClient::with_post_ok_headers(201, b"", headers);
         let client = SsiAgentOffersClient::new("http://mock", HashMap::new(), mock);
         let result = client._post_credential("offer-1", &serde_json::json!({}), "tmpl-1");
@@ -741,8 +747,14 @@ mod tests {
         let result = client.create_edc("offer-1", &credential);
         assert!(result.is_ok());
         let offer = result.unwrap();
-        assert!(offer.credential_ids.is_some(), "credential_ids should be Some");
-        assert_eq!(offer.credential_ids.as_ref().unwrap(), &vec!["cred-edc".to_string()]);
+        assert!(
+            offer.credential_ids.is_some(),
+            "credential_ids should be Some"
+        );
+        assert_eq!(
+            offer.credential_ids.as_ref().unwrap(),
+            &vec!["cred-edc".to_string()]
+        );
     }
 
     #[test]
@@ -775,7 +787,10 @@ mod tests {
         let mut credential = serde_json::json!({"type": "VerifiableCredential"});
         client._attach_status_list(Some("https://host/assertions/3527"), &mut credential);
         assert!(credential.get("credentialStatus").is_some());
-        assert_eq!(credential["credentialStatus"]["idx"].as_u64().unwrap(), 3527);
+        assert_eq!(
+            credential["credentialStatus"]["idx"].as_u64().unwrap(),
+            3527
+        );
     }
 
     #[test]
@@ -827,7 +842,10 @@ mod tests {
             "pre_authorized_code": "",
             "status": "pending"
         });
-        let mock = GetClient { status: 200, body: body.to_string().into_bytes() };
+        let mock = GetClient {
+            status: 200,
+            body: body.to_string().into_bytes(),
+        };
         let client = SsiAgentOffersClient::new("http://mock", HashMap::new(), mock);
         let result = client.get("offer-1");
         assert!(result.is_ok());
@@ -839,7 +857,10 @@ mod tests {
 
     #[test]
     fn test_get_returns_error_on_404() {
-        let mock = GetClient { status: 404, body: b"Not found".to_vec() };
+        let mock = GetClient {
+            status: 404,
+            body: b"Not found".to_vec(),
+        };
         let client = SsiAgentOffersClient::new("http://mock", HashMap::new(), mock);
         assert!(client.get("offer-1").is_err());
     }
@@ -857,7 +878,11 @@ mod tests {
     }
 
     impl HttpClient for GetClient {
-        fn get(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+        fn get(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
             Ok(HttpResponse {
                 status_code: self.status,
                 url: "http://mock".to_string(),
@@ -865,13 +890,27 @@ mod tests {
                 content: self.body.clone(),
             })
         }
-        fn post(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+        fn post(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
-        fn delete(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+        fn delete(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
-        fn patch(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+        fn patch(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
     }

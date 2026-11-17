@@ -11,8 +11,8 @@ mod middleware;
 
 use std::net::SocketAddr;
 
-use axum::Router;
 use axum::routing::{get, post};
+use axum::Router;
 use serde::{Deserialize, Serialize};
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
@@ -172,12 +172,12 @@ pub async fn run_server(config: Config) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::Router;
     use axum::body::Body;
     use axum::http::Request;
     use axum::http::StatusCode;
     use axum::response::IntoResponse;
     use axum::routing::get;
+    use axum::Router;
     use tower::ServiceExt;
 
     #[test]
@@ -209,11 +209,7 @@ mod tests {
 
         let resp = tokio::runtime::Runtime::new()
             .unwrap()
-            .block_on(
-                router
-
-                    .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap()),
-            )
+            .block_on(router.oneshot(Request::builder().uri("/").body(Body::empty()).unwrap()))
             .unwrap();
 
         assert_eq!(resp.status(), StatusCode::OK);

@@ -4,11 +4,11 @@
 /// On persistence failure, rolls back the upstream offer.
 use std::collections::HashMap;
 
-use crate::awards::client::{AwardError, new_http_awards_client_arc};
+use crate::awards::client::{new_http_awards_client_arc, AwardError};
 use crate::config::Config;
 use crate::credential_converter::client::new_credential_converter_client_arc;
 use crate::helpers::reqwest_client::ReqwestHttpClientArc;
-use crate::offers::ssi_agent::{SsiAgentOffersClient, new_ssi_agent_offers_client_arc};
+use crate::offers::ssi_agent::{new_ssi_agent_offers_client_arc, SsiAgentOffersClient};
 use crate::offers::{models::Offer, port::OffersClientPort, port::OffersRepositoryPort};
 
 use super::models::CredentialType;
@@ -250,7 +250,9 @@ pub async fn make_offer_service(
     ))
         as Box<dyn crate::credential_converter::port::CredentialConverterPort + Send + Sync>;
 
-    let pool = sqlx::PgPool::connect(&config.postgresql_connection_string).await.unwrap();
+    let pool = sqlx::PgPool::connect(&config.postgresql_connection_string)
+        .await
+        .unwrap();
     let repository = crate::offers::postgres::OffersRepository::new(pool);
 
     OfferService::new(
@@ -267,17 +269,15 @@ mod tests {
     use std::sync::Mutex;
 
     use crate::awards::models::{
-        Achievement, AchievementSubject, CredentialContextItem, Criteria, Issuer, OB3Award,
-        ob3_default_schema,
+        ob3_default_schema, Achievement, AchievementSubject, CredentialContextItem, Criteria,
+        Issuer, OB3Award,
     };
     use crate::awards::port::AwardsClientPort;
     use crate::credential_converter::port::{
         CredentialConverterClientError, CredentialConverterPort,
     };
     use crate::offers::port::{OffersClientError, OffersClientPort, OffersRepositoryPort};
-    use crate::offers::service::{
-        OfferService, OfferServiceError,
-    };
+    use crate::offers::service::{OfferService, OfferServiceError};
 
     const SAMPLE_ELM_CREDENTIAL: &str = r#"{"@context":["https://www.w3.org/ns/credentials/v2"],"type":["VerifiableCredential","EuropeanDigitalCredential"],"credentialSubject":{"id":"did:example:subject"}}"#;
 
@@ -338,13 +338,19 @@ mod tests {
 
     #[allow(clippy::unused_async_trait_impl)]
     impl OffersRepositoryPort for OffersRepositorySpy {
-        async fn store(&self, offer: super::super::models::Offer) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        async fn store(
+            &self,
+            offer: super::super::models::Offer,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             self.calls.lock().unwrap().push("store".to_string());
             *self.store_offer.lock().unwrap() = Some(offer);
             Ok(())
         }
 
-        async fn get(&self, _offer_id: &str) -> Result<super::super::models::Offer, crate::offers::port::OfferNotFound> {
+        async fn get(
+            &self,
+            _offer_id: &str,
+        ) -> Result<super::super::models::Offer, crate::offers::port::OfferNotFound> {
             Ok(super::super::models::Offer {
                 offer_id: "offer-123".to_string(),
                 award_id: "award-123".to_string(),
@@ -367,14 +373,20 @@ mod tests {
 
     #[allow(clippy::unused_async_trait_impl)]
     impl OffersRepositoryPort for FailingOffersRepository {
-        async fn store(&self, _offer: super::super::models::Offer) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        async fn store(
+            &self,
+            _offer: super::super::models::Offer,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             if self.should_fail {
                 return Err(Box::new(std::io::Error::other("transient db failure")));
             }
             Ok(())
         }
 
-        async fn get(&self, _offer_id: &str) -> Result<super::super::models::Offer, crate::offers::port::OfferNotFound> {
+        async fn get(
+            &self,
+            _offer_id: &str,
+        ) -> Result<super::super::models::Offer, crate::offers::port::OfferNotFound> {
             Ok(super::super::models::Offer {
                 offer_id: "offer-123".to_string(),
                 award_id: "award-123".to_string(),
@@ -765,7 +777,10 @@ mod tests {
                 })
             }
 
-            fn get(&self, _offer_id: &str) -> Result<super::super::models::Offer, OffersClientError> {
+            fn get(
+                &self,
+                _offer_id: &str,
+            ) -> Result<super::super::models::Offer, OffersClientError> {
                 Err(OffersClientError("upstream failure".to_string()))
             }
 

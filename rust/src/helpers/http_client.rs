@@ -203,14 +203,18 @@ mod tests {
 
     #[test]
     fn test_build_url() {
-        assert_eq!(build_url("http://localhost:8001", "/v0/offers"),
-                   "http://localhost:8001/v0/offers");
+        assert_eq!(
+            build_url("http://localhost:8001", "/v0/offers"),
+            "http://localhost:8001/v0/offers"
+        );
     }
 
     #[test]
     fn test_build_url_single_segment() {
-        assert_eq!(build_url("http://api.test", "/health"),
-                   "http://api.test/health");
+        assert_eq!(
+            build_url("http://api.test", "/health"),
+            "http://api.test/health"
+        );
     }
 
     // ─── add_bearer_token ───────────────────────────────────────────
@@ -219,8 +223,10 @@ mod tests {
     fn test_add_bearer_token() {
         let mut headers = HashMap::new();
         add_bearer_token(&mut headers, "my-token-123");
-        assert_eq!(headers.get("Authorization"),
-                   Some(&"Bearer my-token-123".to_string()));
+        assert_eq!(
+            headers.get("Authorization"),
+            Some(&"Bearer my-token-123".to_string())
+        );
     }
 
     // ─── add_content_type_json ──────────────────────────────────────
@@ -229,8 +235,10 @@ mod tests {
     fn test_add_content_type_json() {
         let mut headers = HashMap::new();
         add_content_type_json(&mut headers);
-        assert_eq!(headers.get("Content-Type"),
-                   Some(&"application/json".to_string()));
+        assert_eq!(
+            headers.get("Content-Type"),
+            Some(&"application/json".to_string())
+        );
     }
 
     // ─── is_success boundary tests ─────────────────────────────────

@@ -49,9 +49,7 @@ pub fn route_command(args: &[&str]) -> CommandRoute {
         [] | ["credential-configuration"] | ["credential-configuration", ..] => {
             CommandRoute::ShowCredentialConfigUsage
         }
-        ["revoke", credential_id] => {
-            CommandRoute::RevokeCredential(credential_id.to_string())
-        }
+        ["revoke", credential_id] => CommandRoute::RevokeCredential(credential_id.to_string()),
         _ => CommandRoute::ShowUsage,
     }
 }
@@ -85,8 +83,7 @@ fn main() {
         ReqwestHttpClient::new(),
         &config.ssi_agent_url,
     );
-    let revocation_client =
-        RevocationClient::new(ReqwestHttpClient::new(), &config.ssi_agent_url);
+    let revocation_client = RevocationClient::new(ReqwestHttpClient::new(), &config.ssi_agent_url);
 
     match execute(args_ref.as_slice(), &config_client, &revocation_client) {
         Ok(()) => {}
@@ -203,7 +200,9 @@ fn handle_revoke<C: HttpClient>(
     client: &RevocationClient<C>,
     credential_id: &str,
 ) -> Result<(), String> {
-    client.revoke_via_ssi_agent(credential_id).map_err(|e| format!("{e}"))?;
+    client
+        .revoke_via_ssi_agent(credential_id)
+        .map_err(|e| format!("{e}"))?;
     println!("Credential \"{credential_id}\" revoked");
     Ok(())
 }
@@ -236,7 +235,12 @@ mod tests {
             }
         }
 
-        fn add_get_response(self, status: Option<u16>, body: Option<&[u8]>, err: Option<&str>) -> Self {
+        fn add_get_response(
+            self,
+            status: Option<u16>,
+            body: Option<&[u8]>,
+            err: Option<&str>,
+        ) -> Self {
             Self {
                 get_responses: {
                     let mut r = self.get_responses;
@@ -247,7 +251,12 @@ mod tests {
             }
         }
 
-        fn add_post_response(self, status: Option<u16>, body: Option<&[u8]>, err: Option<&str>) -> Self {
+        fn add_post_response(
+            self,
+            status: Option<u16>,
+            body: Option<&[u8]>,
+            err: Option<&str>,
+        ) -> Self {
             Self {
                 post_responses: {
                     let mut r = self.post_responses;
@@ -258,7 +267,12 @@ mod tests {
             }
         }
 
-        fn add_patch_response(self, status: Option<u16>, body: Option<&[u8]>, err: Option<&str>) -> Self {
+        fn add_patch_response(
+            self,
+            status: Option<u16>,
+            body: Option<&[u8]>,
+            err: Option<&str>,
+        ) -> Self {
             Self {
                 patch_responses: {
                     let mut r = self.patch_responses;
@@ -395,7 +409,10 @@ mod tests {
     #[test]
     fn route_create_credential_configuration() {
         let args = vec!["credential-configuration", "create", "some-id"];
-        assert_eq!(route_command(&args), CommandRoute::CreateCredentialConfiguration);
+        assert_eq!(
+            route_command(&args),
+            CommandRoute::CreateCredentialConfiguration
+        );
     }
 
     #[test]
@@ -410,7 +427,10 @@ mod tests {
     #[test]
     fn route_update_credential_configuration() {
         let args = vec!["credential-configuration", "update", "any-id"];
-        assert_eq!(route_command(&args), CommandRoute::UpdateCredentialConfiguration);
+        assert_eq!(
+            route_command(&args),
+            CommandRoute::UpdateCredentialConfiguration
+        );
     }
 
     #[test]
@@ -443,19 +463,28 @@ mod tests {
     #[test]
     fn route_empty_args_shows_credential_config_usage() {
         let args: Vec<&str> = vec![];
-        assert_eq!(route_command(&args), CommandRoute::ShowCredentialConfigUsage);
+        assert_eq!(
+            route_command(&args),
+            CommandRoute::ShowCredentialConfigUsage
+        );
     }
 
     #[test]
     fn route_credential_configuration_only_shows_credential_config_usage() {
         let args = vec!["credential-configuration"];
-        assert_eq!(route_command(&args), CommandRoute::ShowCredentialConfigUsage);
+        assert_eq!(
+            route_command(&args),
+            CommandRoute::ShowCredentialConfigUsage
+        );
     }
 
     #[test]
     fn route_credential_configuration_with_unknown_subcommand_shows_credential_config_usage() {
         let args = vec!["credential-configuration", "unknown"];
-        assert_eq!(route_command(&args), CommandRoute::ShowCredentialConfigUsage);
+        assert_eq!(
+            route_command(&args),
+            CommandRoute::ShowCredentialConfigUsage
+        );
     }
 
     #[test]
@@ -482,9 +511,7 @@ mod tests {
 
     #[test]
     fn handle_list_success() {
-        let mock = MockClient::new().with_list_json(vec![
-            serde_json::json!({"id": "cfg-1"}),
-        ]);
+        let mock = MockClient::new().with_list_json(vec![serde_json::json!({"id": "cfg-1"})]);
         let client = make_config_client(mock);
         let result = handle_list(&client);
         assert!(result.is_ok());
@@ -535,8 +562,11 @@ mod tests {
     #[test]
     fn handle_show_direct_get_success() {
         // CredentialConfiguration requires id, type, and name
-        let mock = MockClient::new()
-            .add_get_response(Some(200), Some(r#"{"id":"cfg-1","type":["VerifiedCertificate"],"name":"test"}"#.as_bytes()), None);
+        let mock = MockClient::new().add_get_response(
+            Some(200),
+            Some(r#"{"id":"cfg-1","type":["VerifiedCertificate"],"name":"test"}"#.as_bytes()),
+            None,
+        );
         let client = make_config_client(mock);
         let result = handle_show(&client, "cfg-1");
         assert!(result.is_ok());
@@ -546,11 +576,14 @@ mod tests {
     fn handle_show_fallback_list_match() {
         // First GET returns status 0 (fallback triggers list lookup)
         // Second GET (list) returns valid JSON with matching ID
-        let mock = MockClient::new()
-            .with_fallback_list(0, b"{}", vec![
+        let mock = MockClient::new().with_fallback_list(
+            0,
+            b"{}",
+            vec![
                 serde_json::json!({"id": "cfg-1", "name": "found"}),
                 serde_json::json!({"id": "cfg-2", "name": "other"}),
-            ]);
+            ],
+        );
         let client = make_config_client(mock);
         let result = handle_show(&client, "cfg-1");
         assert!(result.is_ok());
@@ -559,10 +592,11 @@ mod tests {
     #[test]
     fn handle_show_fallback_list_not_found() {
         // First GET returns status 0 (fallback), list returns non-matching config
-        let mock = MockClient::new()
-            .with_fallback_list(0, b"{}", vec![
-                serde_json::json!({"id": "cfg-1", "name": "other"}),
-            ]);
+        let mock = MockClient::new().with_fallback_list(
+            0,
+            b"{}",
+            vec![serde_json::json!({"id": "cfg-1", "name": "other"})],
+        );
         let client = make_config_client(mock);
         let result = handle_show(&client, "cfg-missing");
         assert!(result.is_err());
@@ -634,11 +668,7 @@ mod tests {
         let mock = MockClient::new().with_patch_response(200, b"{}");
         let config_client = make_config_client(MockClient::new());
         let revocation_client = make_revocation_client(mock);
-        let result = execute(
-            &["revoke", "cred-1"],
-            &config_client,
-            &revocation_client,
-        );
+        let result = execute(&["revoke", "cred-1"], &config_client, &revocation_client);
         assert!(result.is_ok());
     }
 
@@ -655,11 +685,7 @@ mod tests {
     fn execute_show_general_usage_for_unknown() {
         let config_client = make_config_client(MockClient::new());
         let revocation_client = make_revocation_client(MockClient::new());
-        let result = execute(
-            &["unknown-command"],
-            &config_client,
-            &revocation_client,
-        );
+        let result = execute(&["unknown-command"], &config_client, &revocation_client);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Unknown command");
     }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::helpers::http_client::helpers::{build_url, is_error};
 use crate::helpers::http_client::{HttpClient, HttpResponse};
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 
 use super::port::{CredentialConverterClientError, CredentialConverterPort};
 
@@ -196,10 +196,19 @@ mod tests {
     }
 
     impl HttpClient for MockClient {
-        fn get(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+        fn get(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
-        fn post(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+        fn post(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
             if let Some(ref err) = self.post_err {
                 return Err(HttpClientError::Connection(err.clone()));
             }
@@ -213,10 +222,19 @@ mod tests {
                 _ => Err(HttpClientError::Connection("not configured".to_string())),
             }
         }
-        fn delete(&self, _url: &str, _headers: &HashMap<String, String>) -> Result<HttpResponse, HttpClientError> {
+        fn delete(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
-        fn patch(&self, _url: &str, _headers: &HashMap<String, String>, _body: &str) -> Result<HttpResponse, HttpClientError> {
+        fn patch(
+            &self,
+            _url: &str,
+            _headers: &HashMap<String, String>,
+            _body: &str,
+        ) -> Result<HttpResponse, HttpClientError> {
             Err(HttpClientError::Connection("not configured".to_string()))
         }
     }
@@ -258,7 +276,10 @@ mod tests {
         assert_eq!(parsed["From"]["Version"], serde_json::json!("3.0"));
         assert_eq!(parsed["To"]["Name"], serde_json::json!("elm"));
         assert_eq!(parsed["To"]["Version"], serde_json::json!("3.2"));
-        assert_eq!(parsed["Parameters"]["PreferredLanguages"], serde_json::json!(["en"]));
+        assert_eq!(
+            parsed["Parameters"]["PreferredLanguages"],
+            serde_json::json!(["en"])
+        );
         assert_eq!(parsed["Content"], serde_json::json!("fake-content"));
     }
 
@@ -268,7 +289,10 @@ mod tests {
     fn test_http_post_200_succeeds() {
         // Pre-computed base64 of {"type":["VerifiableCredential"],"name":"Test"}
         let good_cred = serde_json::json!({"type":["VerifiableCredential"],"name":"Test"});
-        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, good_cred.to_string().as_bytes());
+        let encoded = base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            good_cred.to_string().as_bytes(),
+        );
         let response_body = serde_json::json!({"content": encoded});
         let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
         let client = CredentialConverterClient::new(mock, "http://mock");
@@ -335,7 +359,10 @@ mod tests {
     #[test]
     fn test_decode_response_valid_json() {
         let good_cred = serde_json::json!({"type":["VerifiableCredential"],"name":"Test"});
-        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, good_cred.to_string().as_bytes());
+        let encoded = base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            good_cred.to_string().as_bytes(),
+        );
         let response_body = serde_json::json!({"content": encoded});
         let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
         let client = CredentialConverterClient::new(mock, "http://mock");
@@ -395,7 +422,10 @@ mod tests {
     #[test]
     fn test_convert_returns_valid_json() {
         let valid_cred = serde_json::json!({"type": "VerifiableCredential", "name": "Test"});
-        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, valid_cred.to_string().as_bytes());
+        let encoded = base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            valid_cred.to_string().as_bytes(),
+        );
         let response_body = serde_json::json!({"content": encoded});
         let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
         let client = CredentialConverterClient::new(mock, "http://mock");
@@ -431,7 +461,10 @@ mod tests {
     #[test]
     fn test_do_convert_returns_correct_value() {
         let valid_cred = serde_json::json!({"result": "converted"});
-        let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, valid_cred.to_string().as_bytes());
+        let encoded = base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            valid_cred.to_string().as_bytes(),
+        );
         let response_body = serde_json::json!({"content": encoded});
         let mock = MockClient::with_post_ok(200, &response_body.to_string().into_bytes());
         let client = CredentialConverterClient::new(mock, "http://mock");

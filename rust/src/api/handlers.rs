@@ -1,8 +1,8 @@
-use axum::Json;
 /// Handlers for HTTP endpoints.
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::Json;
 
 use super::middleware::{extract_bearer_token, map_service_error};
 use super::{AppState, CreateOfferBody, CreateOfferResponse};
@@ -74,15 +74,16 @@ pub async fn create_offer(
         }
     };
 
-    let credential_type = match crate::offers::models::CredentialType::from_short(&body.credential_type) {
-        Ok(ct) => ct,
-        Err(msg) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({"error": msg})),
-            );
-        }
-    };
+    let credential_type =
+        match crate::offers::models::CredentialType::from_short(&body.credential_type) {
+            Ok(ct) => ct,
+            Err(msg) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({"error": msg})),
+                );
+            }
+        };
     let credential_type = match credential_type {
         crate::offers::models::CredentialType::OB3 => "ob3",
         crate::offers::models::CredentialType::EDC => "edc",
