@@ -97,7 +97,7 @@ jobs:
           export ALLOWED_CORS_DOMAINS="http://localhost:8000,\
             http://localhost:3000"
           export CREDENTIAL_TEMPLATE_JSON_DIR=${{ github.workspace }}/templates
-          nohup cargo run --bin ec-issuer-web \
+          nohup cargo run --bin web \
               > /tmp/ec-issuer.log 2>&1 &
 
           for i in $(seq 1 30); do
