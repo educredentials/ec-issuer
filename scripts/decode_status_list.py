@@ -25,9 +25,26 @@ import base64
 import json
 import sys
 import zlib
+from msgspec import Struct, convert
 
 
-def decode_jwt(token: str) -> tuple[dict, dict, list[str]]:
+class JwtHeader(Struct):
+    alg: str
+
+
+class StatusList(Struct):
+    bits: int
+    lst: str
+
+
+class JwtPayload(Struct):
+    sub: str
+    iat: int
+    status_list: StatusList
+    exp: int | None = None
+
+
+def decode_jwt(token: str) -> tuple[JwtHeader, JwtPayload, list[str]]:
     """Decode a JWT, returning (header, payload, parts).
     Accepts partial JWTs (header.payload only)."""
     parts = token.split(".")
@@ -39,8 +56,8 @@ def decode_jwt(token: str) -> tuple[dict, dict, list[str]]:
         s += "=" * (4 - len(s) % 4) if len(s) % 4 else ""
         return base64.b64decode(s)
 
-    header = json.loads(b64url_decode(parts[0]))
-    payload = json.loads(b64url_decode(parts[1]))
+    header = convert(json.loads(b64url_decode(parts[0])), JwtHeader)
+    payload = convert(json.loads(b64url_decode(parts[1])), JwtPayload)
     return header, payload, parts
 
 
@@ -113,7 +130,10 @@ def main():
         print(__doc__)
         print("Example: python3 decode_status_list.py <jwt_token>")
         print("Example: python3 decode_status_list.py <jwt_token> 42  # check entry 42")
-        print("Example: python3 decode_status_list.py <jwt_token> 42 --quiet  # silent: exit 0=VALID, 1=INVALID")
+        print(
+            "Example: python3 decode_status_list.py <jwt_token> 42 --quiet  "
+            + "# silent: exit 0=VALID, 1=INVALID"
+        )
         sys.exit(1)
 
     quiet = "--quiet" in sys.argv or "-q" in sys.argv
@@ -126,20 +146,24 @@ def main():
     # --- Decode JWT ---
     header, payload, jwt_parts = decode_jwt(token)
 
-    sub = payload.get("sub", "(no sub)")
-    iat = payload.get("iat", "?")
-    exp = payload.get("exp", None)
-    status_list = payload["status_list"]
-    bits = status_list["bits"]
-    lst_b64 = status_list["lst"]
+    sub = payload.sub
+    iat = payload.iat
+    exp = payload.exp
+    bits = payload.status_list.bits
+    lst_b64 = payload.status_list.lst
 
     if not quiet:
         jwt_part_count = len(jwt_parts)
         print("=" * 60)
         print("Token Status List (TSL) — Decoded")
         print("=" * 60)
-        print(f"  JWT parts : {jwt_part_count}/3 {'(missing signature, decoding anyway)' if jwt_part_count < 3 else '(full)'}")
-        print(f"  algorithm : {header.get('alg', '?')}")
+        part_status = (
+            "(missing signature, decoding anyway)"
+            if jwt_part_count < 3
+            else "(full)"
+        )
+        print(f"  JWT parts : {jwt_part_count}/3 {part_status}")
+        print(f"  algorithm : {header.alg}")
         print(f"  subject   : {sub}")
         print(f"  issued at : {iat}  ({iat_to_date(iat)})")
         print(f"  expires   : {exp_to(exp)}")
@@ -194,11 +218,18 @@ def main():
             sys.exit(0 if val == 0 else (4 if val not in STATUS_NAMES else val))
         else:
             if quiet:
-                print(f"ERROR: entry {idx_filter} out of range (0..{total_entries - 1})", file=sys.stderr)
+                msg = (
+                    f"ERROR: entry {idx_filter} out of range "
+                    + f"(0..{total_entries - 1})"
+                )
+                print(msg, file=sys.stderr)
             else:
-                print(f"Entry #{idx_filter} is out of range (0..{total_entries - 1})")
+                msg = (
+                    f"Entry #{idx_filter} is out of range "
+                    + f"(0..{total_entries - 1})"
+                )
+                print(msg)
             sys.exit(4)
-        return
 
     # --- Summary ---
     if not quiet:
@@ -236,7 +267,8 @@ def b64url_decode(s: str) -> bytes:
 def iat_to_date(ts: int) -> str:
     try:
         from datetime import datetime, timezone
-        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+        return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
     except Exception:
         return str(ts)
 
@@ -246,7 +278,8 @@ def exp_to(exp: int | None) -> str:
         return "(not set)"
     try:
         from datetime import datetime, timezone
-        return datetime.fromtimestamp(exp, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        dt = datetime.fromtimestamp(exp, tz=timezone.utc)
+        return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
     except Exception:
         return str(exp)
 
