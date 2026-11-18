@@ -1,5 +1,4 @@
 /// Admin HTTP client for e2e tests.
-
 use serde::{Deserialize, Serialize};
 
 use super::http_client::HttpClient;
@@ -19,11 +18,7 @@ impl AdminHttpClient {
         Self { client }
     }
 
-    pub async fn create_offer(
-        &self,
-        award_id: &str,
-        credential_type: &str,
-    ) -> CreateOfferResponse {
+    pub async fn create_offer(&self, award_id: &str, credential_type: &str) -> CreateOfferResponse {
         let json = serde_json::json!({
             "award_id": award_id,
             "credential_type": credential_type,
@@ -45,7 +40,13 @@ impl AdminHttpClient {
             response.status().as_u16() == 201,
             "Expected 201 Created, got {}: {}",
             response.status(),
-            response.text().await.unwrap_or_default().chars().take(200)
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
         );
 
         response

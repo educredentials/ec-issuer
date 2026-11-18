@@ -13,6 +13,7 @@ use std::net::SocketAddr;
 
 use axum::routing::{get, post};
 use axum::Router;
+use axum_prometheus::PrometheusMetricLayer;
 use serde::{Deserialize, Serialize};
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
@@ -117,8 +118,10 @@ impl AppState {
 /// The configured router.
 pub fn build_router(state: AppState) -> Router {
     let cors = middleware::build_cors_layer(&state.config);
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
 
     Router::new()
+        .route("/metrics", get(|| async move { metric_handle.render() }))
         .route("/health", get(handlers::health))
         .route("/", get(handlers::root))
         .route("/api/v1/offers", post(handlers::create_offer))
@@ -128,6 +131,7 @@ pub fn build_router(state: AppState) -> Router {
         )
         .with_state(state)
         .layer(cors)
+        .layer(prometheus_layer)
         .layer(
             ServiceBuilder::new().layer(
                 TraceLayer::new_for_http()

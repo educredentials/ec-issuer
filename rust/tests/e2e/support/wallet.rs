@@ -1,12 +1,11 @@
 /// Wallet client for e2e tests.
 ///
 /// Implements the OID4VCI wallet flow: parse offer → PAR → redirect → callback → token → credential.
-
 use std::path::PathBuf;
 
 use data_encoding::BASE64URL_NOPAD;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
+use sha2::{Digest, Sha256};
 
 use super::browser::Browser;
 use super::credential_issuer_metadata::CredentialIssuerMetadata;
@@ -15,6 +14,7 @@ use super::http_client::HttpClient;
 const _TESTS_E2E_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AccessTokenResponse {
     access_token: String,
     token_type: String,
@@ -25,6 +25,7 @@ struct AccessTokenResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct OpenidConfiguration {
     authorization_endpoint: String,
     issuer: String,
@@ -74,11 +75,10 @@ impl VerifiableCredential {
     pub fn from_jwt(jwt_str: &str) -> Self {
         let parts: Vec<&str> = jwt_str.split('.').collect();
         let claims_b64 = parts.get(1).expect("JWT must have 3 parts");
-        let mut padding = 0;
         let padded = format!(
             "{}{}",
             claims_b64,
-            "=".repeat(4 - (claims_b64.len() % 4) % 4)
+            "=".repeat((4 - claims_b64.len() % 4) % 4)
         );
         let decoded = BASE64URL_NOPAD.decode(padded.as_bytes()).unwrap();
         let claims: serde_json::Value = serde_json::from_slice(&decoded).unwrap();
@@ -133,7 +133,7 @@ impl WalletClient {
     }
 
     pub async fn use_offer(
-        &self,
+        &mut self,
         offer_uri: &str,
     ) -> (Offer, CredentialIssuerMetadata, String) {
         let offer = self.get_offer(offer_uri).await;
@@ -145,7 +145,7 @@ impl WalletClient {
 
         let code_verifier = generate_code_verifier();
         let code_challenge = generate_code_challenge(&code_verifier);
-        self.code_verifier = Some(code_verifier);
+        self.code_verifier = Some(code_verifier.clone());
 
         let config_id = offer
             .credential_configuration_ids
@@ -175,9 +175,9 @@ impl WalletClient {
 
         let par_response = self
             .http_client
-            .post(
+            .post_form(
                 &auth_metadata.pushed_authorization_request_endpoint,
-                Some(&serde_json::from_str(&auth_attributes).unwrap()),
+                &auth_attributes,
                 None,
             )
             .await;
@@ -186,7 +186,13 @@ impl WalletClient {
             par_response.status().as_u16() == 201,
             "Expected 201, got {}: {}",
             par_response.status(),
-            par_response.text().await.unwrap_or_default().chars().take(200)
+            par_response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
         );
 
         let par_resp: serde_json::Value = par_response.json().await.unwrap();
@@ -207,24 +213,146 @@ impl WalletClient {
     pub async fn open_callback_url(
         &self,
         callback_url: &str,
+        offer: &Offer,
+        metadata: &CredentialIssuerMetadata,
     ) -> VerifiableCredential {
         let query = parse_query(callback_url);
-        let authorization_code = query
-            .get("code")
-            .expect("code not found in callback URL");
+        let authorization_code = query.get("code").expect("code not found in callback URL");
 
-        // We need access to the metadata stored earlier - for now, use a simplified approach
-        // The callback handling needs the stored metadata from use_offer
-        // This is a simplification; in the full version we'd store metadata between calls
         let access_token = self
-            .exchange_authorization_code(authorization_code)
+            .exchange_authorization_code(metadata.authorization_server(), authorization_code)
             .await;
+        assert!(
+            !access_token.is_empty(),
+            "Failed to exchange authorization code"
+        );
 
-        // For now, return a placeholder - full implementation needs metadata access
-        // The real flow needs the Offer and CredentialIssuerMetadata from use_offer
-        // to complete the credential request
-        let _ = access_token;
-        unimplemented!("open_callback_url needs Offer and CredentialIssuerMetadata; use the combined flow")
+        let credential_response = self
+            .request_credential(metadata, offer, &access_token)
+            .await;
+        assert_eq!(
+            credential_response.credentials.len(),
+            1,
+            "Expected 1 credential, got {}",
+            credential_response.credentials.len()
+        );
+        let credential_jwt = &credential_response.credentials[0].credential;
+        VerifiableCredential::from_jwt(credential_jwt)
+    }
+
+    async fn get_nonce(&self, nonce_endpoint: &str) -> String {
+        let response = self
+            .http_client
+            .post(
+                nonce_endpoint,
+                None,
+                Some(&[("Accept", "application/json")]),
+            )
+            .await;
+        assert!(
+            response.status().as_u16() == 200,
+            "Expected 200, got {}: {}",
+            response.status(),
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
+        );
+        let data: serde_json::Value = response.json().await.unwrap();
+        data["c_nonce"]
+            .as_str()
+            .expect("c_nonce not found in response")
+            .to_string()
+    }
+
+    async fn request_credential(
+        &self,
+        metadata: &CredentialIssuerMetadata,
+        offer: &Offer,
+        access_token: &str,
+    ) -> CredentialResponse {
+        let nonce_endpoint = metadata
+            .nonce_endpoint
+            .as_ref()
+            .expect("nonce_endpoint is not available in metadata, but we require it");
+        let nonce = self.get_nonce(nonce_endpoint).await;
+        let proof = self.proof(&metadata.credential_issuer, &nonce);
+
+        let body = serde_json::json!({
+            "format": "jwt_vc_json",
+            "credential_configuration_id": offer.credential_configuration_ids[0],
+            "proofs": { "jwt": [proof] },
+            "proof": { "proof_type": "jwt", "jwt": proof },
+            "issuer_state": offer.issuer_state(),
+        });
+
+        let response = self
+            .http_client
+            .post(
+                &metadata.credential_endpoint,
+                Some(&body),
+                Some(&[
+                    ("Content-Type", "application/json"),
+                    ("Authorization", &format!("Bearer {access_token}")),
+                ]),
+            )
+            .await;
+        assert!(
+            response.status().as_u16() == 200,
+            "Expected 200, got {}: {}",
+            response.status(),
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
+        );
+        response.json::<CredentialResponse>().await.unwrap()
+    }
+
+    /// Generate an OID4VCI proof JWT signed with the wallet's EdDSA key.
+    fn proof(&self, credential_issuer: &str, nonce: &str) -> String {
+        let header = jsonwebtoken::Header {
+            typ: Some("openid4vci-proof+jwt".to_string()),
+            kid: Some(self.did()),
+            alg: jsonwebtoken::Algorithm::EdDSA,
+            ..Default::default()
+        };
+        let claims = serde_json::json!({
+            "iss": self.client_id,
+            "aud": credential_issuer,
+            "iat": chrono::Utc::now().timestamp(),
+            "nonce": nonce,
+        });
+        use ed25519_dalek::pkcs8::{DecodePrivateKey, EncodePrivateKey};
+        let signing_key = ed25519_dalek::SigningKey::from_pkcs8_pem(&self._private_key())
+            .expect("Failed to parse wallet private key");
+        let der = signing_key
+            .to_pkcs8_der()
+            .expect("Failed to encode key as DER");
+        let key = jsonwebtoken::EncodingKey::from_ed_der(der.as_bytes());
+        jsonwebtoken::encode(&header, &claims, &key).expect("Failed to encode proof JWT")
+    }
+
+    /// The wallet's did:jwk, derived from the public key.
+    fn did(&self) -> String {
+        use ed25519_dalek::pkcs8::DecodePublicKey;
+        let verifying_key = ed25519_dalek::VerifyingKey::from_public_key_pem(&self._public_key())
+            .expect("Failed to parse wallet public key");
+        let jwk = serde_json::json!({
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": BASE64URL_NOPAD.encode(verifying_key.as_bytes()),
+        });
+        format!(
+            "did:jwk:{}",
+            BASE64URL_NOPAD.encode(jwk.to_string().as_bytes())
+        )
     }
 
     async fn get_offer(&self, offer: &str) -> Offer {
@@ -242,7 +370,13 @@ impl WalletClient {
             response.status().as_u16() == 200,
             "Expected 200, got {}: {}",
             response.status(),
-            response.text().await.unwrap_or_default().chars().take(200)
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
         );
         response.json::<Offer>().await.unwrap()
     }
@@ -257,46 +391,66 @@ impl WalletClient {
             response.status().as_u16() == 200,
             "Expected 200, got {}: {}",
             response.status(),
-            response.text().await.unwrap_or_default().chars().take(200)
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
         );
         response.json().await.unwrap()
     }
 
     async fn get_auth_metadata(&self, auth_server_url: &str) -> OpenidConfiguration {
-        let url = format!(
-            "{}/.well-known/oauth-authorization-server",
-            auth_server_url
-        );
+        let url = format!("{}/.well-known/oauth-authorization-server", auth_server_url);
         let response = self.http_client.get(&url, None).await;
         assert!(
             response.status().as_u16() == 200,
             "Expected 200, got {}: {}",
             response.status(),
-            response.text().await.unwrap_or_default().chars().take(200)
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
         );
         response.json().await.unwrap()
     }
 
-    async fn exchange_authorization_code(&self, authorization_code: &str) -> String {
-        let token_endpoint = format!("{}/auth/token", env!("TEST_SSI_AGENT_URL", "TEST_SSI_AGENT_URL not set"));
-        let data = serde_json::json!({
+    async fn exchange_authorization_code(
+        &self,
+        auth_server_url: &str,
+        authorization_code: &str,
+    ) -> String {
+        let token_endpoint = format!("{}/auth/token", auth_server_url);
+        let data = serde_urlencoded::to_string(serde_json::json!({
             "grant_type": "authorization_code",
             "code": authorization_code,
-            "code_verifier": self.code_verifier,
+            "code_verifier": self.code_verifier.clone().unwrap_or_default(),
             "client_id": self.client_id,
             "redirect_uri": self.deeplink,
-        });
+        }))
+        .unwrap();
 
         let response = self
             .http_client
-            .post(&token_endpoint, Some(&data), None)
+            .post_form(&token_endpoint, &data, None)
             .await;
 
         assert!(
             response.status().as_u16() == 200,
             "Expected 200, got {}: {}",
             response.status(),
-            response.text().await.unwrap_or_default().chars().take(200)
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
         );
 
         let token_resp = response.json::<AccessTokenResponse>().await.unwrap();

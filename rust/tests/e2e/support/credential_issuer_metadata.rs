@@ -1,5 +1,4 @@
 /// Credential issuer metadata models.
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

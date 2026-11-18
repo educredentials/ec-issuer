@@ -1,5 +1,4 @@
 /// E2E test configuration.
-
 use std::env;
 
 #[derive(Clone)]

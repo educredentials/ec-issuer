@@ -1,5 +1,4 @@
 /// E2E test support modules.
-
 pub mod admin_client;
 pub mod browser;
 pub mod config;

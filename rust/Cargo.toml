@@ -11,7 +11,7 @@ keywords = ["credentials", "openbadges", "ssi", "education"]
 [dependencies]
 axum = { version = "0.8", features = ["json", "tokio"] }
 axum-extra = "0.10"
-axum-prometheus = "0.1"
+axum-prometheus = "0.8"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", features = ["json", "blocking"] }
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "json", "macros"] }
@@ -31,7 +31,6 @@ regex = "1"
 http = "1"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "cors", "trace"] }
-prometheus = "0.13"
 
 [dev-dependencies]
 wiremock = "0.6"
@@ -41,6 +40,8 @@ tempfile = "3"
 serde_urlencoded = "0.7"
 urlencoding = "2"
 url = "2"
+ed25519-dalek = { version = "2", features = ["pem", "pkcs8"] }
+jsonschema = "0.30"
 
 [lints.rust]
 unsafe_code = "forbid"

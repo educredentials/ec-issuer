@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["offer_id", "uri"],
+  "additionalProperties": false,
+  "properties": {
+    "offer_id": { "type": "string" },
+    "uri": { "type": "string" }
+  }
+}

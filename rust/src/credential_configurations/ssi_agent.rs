@@ -1,7 +1,6 @@
 /// SSI agent credential configurations client.
 use std::collections::HashMap;
 
-use crate::credential_configurations::models::CredentialConfiguration;
 use crate::helpers::http_client::helpers::{build_url, parse_json};
 use crate::helpers::http_client::{HttpClient, HttpClientError};
 
@@ -37,18 +36,17 @@ impl<C: HttpClient> SsiAgentCredentialConfigurationsClient<C> {
     ///
     /// # Errors
     ///
-    /// Returns `HttpClientError` on network errors.
-    pub fn get(&self, config_id: &str) -> Result<CredentialConfiguration, HttpClientError> {
-        let url = build_url(
-            &self.base_url,
-            &format!("/credential-configurations/{config_id}"),
-        );
-
-        let mut headers = HashMap::new();
-        headers.insert("Accept".to_string(), "application/json".to_string());
-
-        let body = self.client.get(&url, &headers)?;
-        parse_json(&body)
+    /// Returns `HttpClientError` on network errors, or when the ID is
+    /// absent from the listing.
+    pub fn get(&self, config_id: &str) -> Result<serde_json::Value, HttpClientError> {
+        // The SSI agent has no per-ID endpoint; the Python adapter
+        // retrieves from the listing and filters client-side.
+        let all = self.list()?;
+        all.into_iter()
+            .find(|t| t.get("id").and_then(serde_json::Value::as_str) == Some(config_id))
+            .ok_or_else(|| {
+                HttpClientError::Connection(format!("Credential template not found: {config_id}"))
+            })
     }
 
     /// Create a new credential configuration.
@@ -268,11 +266,20 @@ mod tests {
 
     #[test]
     fn test_get_returns_ok() {
-        let body = b"{\"id\":\"cfg-1\",\"type\":[\"VerifiedCertificate\"],\"name\":\"Test\"}";
+        let body = b"[{\"id\":\"cfg-1\",\"type\":[\"VerifiedCertificate\"],\"name\":\"Test\"}]";
         let mock = MockClient::with_get_ok(200, body);
         let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
-        let result = client.get("cfg-1");
-        assert!(result.is_ok());
+        let result = client.get("cfg-1").unwrap();
+        assert_eq!(result["id"], "cfg-1");
+    }
+
+    #[test]
+    fn test_get_returns_error_when_id_absent() {
+        let body = b"[{\"id\":\"cfg-1\"}]";
+        let mock = MockClient::with_get_ok(200, body);
+        let client = SsiAgentCredentialConfigurationsClient::new(mock, "http://mock");
+        let result = client.get("missing");
+        assert!(result.is_err());
     }
 
     #[test]

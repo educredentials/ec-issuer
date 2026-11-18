@@ -116,12 +116,11 @@ where
         let offer_id = uuid::Uuid::new_v4().to_string();
 
         // Fetch the award and create the upstream offer.
-        match credential_type {
-            crate::offers::models::CredentialType::EDC => {
-                let ob3_award =
-                    self.awards_client
-                        .get_ob3(award_id, bearer_token)
-                        .map_err(|e| match e {
+        let offer_created =
+            match credential_type {
+                crate::offers::models::CredentialType::EDC => {
+                    let ob3_award = self.awards_client.get_ob3(award_id, bearer_token).map_err(
+                        |e| match e {
                             AwardError::NotFound(_) => {
                                 OfferServiceError(format!("Award {award_id} not found"))
                             }
@@ -129,24 +128,23 @@ where
                                 OfferServiceError(format!("Access denied: {award_id}"))
                             }
                             other => OfferServiceError(other.to_string()),
-                        })?;
+                        },
+                    )?;
 
-                let raw_ob3 = serde_json::to_value(&ob3_award)
-                    .map_err(|e| OfferServiceError(e.to_string()))?;
-                let edc_value = self
-                    .credential_converter
-                    .convert(&raw_ob3)
-                    .map_err(|e| OfferServiceError(e.to_string()))?;
+                    let raw_ob3 = serde_json::to_value(&ob3_award)
+                        .map_err(|e| OfferServiceError(e.to_string()))?;
+                    let edc_value = self
+                        .credential_converter
+                        .convert(&raw_ob3)
+                        .map_err(|e| OfferServiceError(e.to_string()))?;
 
-                self.offers_client
-                    .create_edc(&offer_id, &edc_value)
-                    .map_err(|e| OfferServiceError(e.to_string()))?;
-            }
-            crate::offers::models::CredentialType::OB3 => {
-                let award =
-                    self.awards_client
-                        .get_ob3(award_id, bearer_token)
-                        .map_err(|e| match e {
+                    self.offers_client
+                        .create_edc(&offer_id, &edc_value)
+                        .map_err(|e| OfferServiceError(e.to_string()))?
+                }
+                crate::offers::models::CredentialType::OB3 => {
+                    let award = self.awards_client.get_ob3(award_id, bearer_token).map_err(
+                        |e| match e {
                             AwardError::NotFound(_) => {
                                 OfferServiceError(format!("Award {award_id} not found"))
                             }
@@ -154,20 +152,21 @@ where
                                 OfferServiceError(format!("Access denied: {award_id}"))
                             }
                             other => OfferServiceError(other.to_string()),
-                        })?;
+                        },
+                    )?;
 
-                self.offers_client
-                    .create_ob3(&offer_id, &award)
-                    .map_err(|e| OfferServiceError(e.to_string()))?;
-            }
-        }
+                    self.offers_client
+                        .create_ob3(&offer_id, &award)
+                        .map_err(|e| OfferServiceError(e.to_string()))?
+                }
+            };
 
         // Persist the offer. On failure, rollback the upstream offer.
         let offer = Offer {
             offer_id: offer_id.clone(),
             award_id: award_id.to_string(),
-            uri: None,
-            credential_ids: Vec::new(),
+            uri: Some(offer_created.uri),
+            credential_ids: offer_created.credential_ids.unwrap_or_default(),
             created_at: Some(chrono::Utc::now()),
         };
 
@@ -260,6 +259,10 @@ pub async fn make_offer_service(
         .await
         .unwrap();
     let repository = crate::offers::postgres::OffersRepository::new(pool);
+    repository
+        .init_db()
+        .await
+        .expect("Failed to initialise the offers table");
 
     OfferService::new(
         access_control,

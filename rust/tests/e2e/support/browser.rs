@@ -1,5 +1,4 @@
 /// Fake browser for simulating OIDC flows.
-
 use reqwest::Client;
 
 pub struct Browser {
@@ -33,7 +32,12 @@ impl Browser {
                 matches!(status, 301 | 302 | 303 | 307 | 308),
                 "Expected redirect, got {}: {}",
                 status,
-                resp.text().await.unwrap_or_default().chars().take(200)
+                resp.text()
+                    .await
+                    .unwrap_or_default()
+                    .chars()
+                    .take(200)
+                    .collect::<String>()
             );
 
             let location = resp

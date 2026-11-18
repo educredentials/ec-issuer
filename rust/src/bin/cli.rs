@@ -101,7 +101,7 @@ fn main() {
 /// Returns `Err` with an error message when the command fails:
 /// - `ShowCredentialConfigUsage` or `ShowUsage` routes return descriptive messages.
 /// - `handle_create` returns stdin read or JSON parse errors, or the client's error.
-/// - `handle_show` returns the client's error (direct or fallback list lookup).
+/// - `handle_show` returns the client's error.
 /// - `handle_list` returns the client's list error.
 /// - `handle_delete` returns the client's error.
 /// - `handle_revoke` returns the client's error.
@@ -161,19 +161,6 @@ fn handle_show<C: HttpClient>(
         Ok(config) => {
             println!("{}", serde_json::to_string(&config).unwrap());
             Ok(())
-        }
-        Err(ec_issuer::helpers::http_client::HttpClientError::Http { status: 0, .. }) => {
-            // Try list-based lookup
-            let templates = client.list().map_err(|e| format!("{e}"))?;
-            for template in templates {
-                if let Some(id) = template.get("id").and_then(|v| v.as_str()) {
-                    if id == config_id {
-                        println!("{}", serde_json::to_string(&template).unwrap());
-                        return Ok(());
-                    }
-                }
-            }
-            Err(format!("Configuration not found: {config_id}"))
         }
         Err(e) => Err(format!("{e}")),
     }
@@ -281,18 +268,6 @@ mod tests {
                 },
                 ..self
             }
-        }
-
-        /// Convenience: configure first GET to return status+body, second to return list JSON.
-        fn with_fallback_list(
-            self,
-            first_status: u16,
-            first_body: &[u8],
-            list_json: Vec<serde_json::Value>,
-        ) -> Self {
-            let list_body = serde_json::to_vec(&list_json).unwrap();
-            self.add_get_response(Some(first_status), Some(first_body), None)
-                .add_get_response(Some(200), Some(&list_body), None)
         }
 
         fn with_list_json(self, json: Vec<serde_json::Value>) -> Self {
@@ -560,62 +535,33 @@ mod tests {
     }
 
     #[test]
-    fn handle_show_direct_get_success() {
-        // CredentialConfiguration requires id, type, and name
-        let mock = MockClient::new().add_get_response(
-            Some(200),
-            Some(r#"{"id":"cfg-1","type":["VerifiedCertificate"],"name":"test"}"#.as_bytes()),
-            None,
-        );
+    #[test]
+    fn handle_show_found_in_listing() {
+        // get() lists all templates and filters by ID
+        let mock = MockClient::new().with_list_json(vec![serde_json::json!({
+            "id": "cfg-1",
+            "type": ["VerifiedCertificate"],
+            "name": "test"
+        })]);
         let client = make_config_client(mock);
         let result = handle_show(&client, "cfg-1");
         assert!(result.is_ok());
     }
 
     #[test]
-    fn handle_show_fallback_list_match() {
-        // First GET returns status 0 (fallback triggers list lookup)
-        // Second GET (list) returns valid JSON with matching ID
-        let mock = MockClient::new().with_fallback_list(
-            0,
-            b"{}",
-            vec![
-                serde_json::json!({"id": "cfg-1", "name": "found"}),
-                serde_json::json!({"id": "cfg-2", "name": "other"}),
-            ],
-        );
-        let client = make_config_client(mock);
-        let result = handle_show(&client, "cfg-1");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn handle_show_fallback_list_not_found() {
-        // First GET returns status 0 (fallback), list returns non-matching config
-        let mock = MockClient::new().with_fallback_list(
-            0,
-            b"{}",
-            vec![serde_json::json!({"id": "cfg-1", "name": "other"})],
-        );
+    fn handle_show_id_absent_from_listing() {
+        let mock = MockClient::new().with_list_json(vec![serde_json::json!({
+            "id": "cfg-2",
+            "name": "other"
+        })]);
         let client = make_config_client(mock);
         let result = handle_show(&client, "cfg-missing");
         assert!(result.is_err());
     }
 
     #[test]
-    fn handle_show_other_http_error() {
+    fn handle_show_listing_error() {
         let mock = MockClient::new().with_get_error("service unavailable");
-        let client = make_config_client(mock);
-        let result = handle_show(&client, "cfg-1");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn handle_show_fallback_list_error() {
-        // First GET returns status 0 (fallback), list GET returns connection error
-        let mock = MockClient::new()
-            .add_get_response(Some(0), Some(b"{}"), None)
-            .add_get_response(None, None, Some("list failed"));
         let client = make_config_client(mock);
         let result = handle_show(&client, "cfg-1");
         assert!(result.is_err());

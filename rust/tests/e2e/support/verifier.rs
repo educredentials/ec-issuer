@@ -1,10 +1,10 @@
 /// Verifier client for e2e tests.
-
 use serde::Deserialize;
 
 use super::http_client::HttpClient;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VerificationMethod {
     pub id: String,
     pub r#type: String,
@@ -13,6 +13,7 @@ pub struct VerificationMethod {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DidDocument {
     pub id: String,
     pub verification_method: Vec<VerificationMethod>,
@@ -29,17 +30,27 @@ impl Verifier {
         Self { http_client }
     }
 
+    /// Verify a credential JWT by resolving the issuer did:web and checking the EdDSA signature.
     pub async fn verify(&self, credential_jwt: &str, issuer_did: &str) -> bool {
         let did_document = self.resolve_did_web(issuer_did).await;
-        assert!(!did_document.verification_method.is_empty(),
+        assert!(
+            !did_document.verification_method.is_empty(),
             "No verification methods found in DID document"
         );
-        let verification_method = &did_document.verification_method[0];
+        let public_key_jwk = &did_document.verification_method[0].public_key_jwk;
 
-        // For E2E tests, we just check that the DID resolves and has a verification method.
-        // Full signature verification would require implementing JWT decoding with EdDSA.
-        // The credential_jwt is accepted if we can resolve the DID successfully.
-        !verification_method.public_key_jwk.is_null()
+        let jwk: jsonwebtoken::jwk::Jwk =
+            serde_json::from_value(public_key_jwk.clone()).expect("Invalid JWK in DID document");
+        let decoding_key = jsonwebtoken::DecodingKey::from_jwk(&jwk)
+            .expect("Failed to build decoding key from JWK");
+        let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::EdDSA);
+        // The mock credential JWT has no exp claim; like PyJWT, validate
+        // expiration only when the claim is present.
+        validation.required_spec_claims.clear();
+        validation.set_issuer(&[issuer_did]);
+
+        jsonwebtoken::decode::<serde_json::Value>(credential_jwt, &decoding_key, &validation)
+            .is_ok()
     }
 
     async fn resolve_did_web(&self, did_web: &str) -> DidDocument {
@@ -49,24 +60,27 @@ impl Verifier {
         let mut path = method_specific_id.replace(':', "/");
         path = path.replace("%3A", ":");
 
+        // Non-standard: allow http for localhost
         let url = if path.starts_with("localhost") {
             format!("http://{path}")
         } else {
             format!("https://{path}")
         };
 
-        let url = if url[8..].contains('/') {
-            format!("{url}/.well-known/did.json")
-        } else {
-            format!("{url}/.well-known/did.json")
-        };
+        let url = format!("{url}/.well-known/did.json");
 
         let response = self.http_client.get(&url, None).await;
         assert!(
             response.status().as_u16() == 200,
             "Expected 200, got {}: {}",
             response.status(),
-            response.text().await.unwrap_or_default().chars().take(200)
+            response
+                .text()
+                .await
+                .unwrap_or_default()
+                .chars()
+                .take(200)
+                .collect::<String>()
         );
 
         let did_document: DidDocument = response.json().await.unwrap();
